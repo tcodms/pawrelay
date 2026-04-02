@@ -8,6 +8,10 @@ build
 **/public/workbox-*.js
 **/public/fallback-*.js
 **/public/sw.js.map
+**/public/swe-worker-*.js
+
+# Claude Code 로컬 설정
+.claude/
 
 # Vercel 배포 관련 파일
 .vercel
