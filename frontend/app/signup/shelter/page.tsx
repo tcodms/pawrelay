@@ -32,30 +32,6 @@ function Spinner() {
 const INPUT =
   "h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:border-orange-400 focus:bg-white focus:outline-none";
 
-function SuccessModal({ onConfirm }: { onConfirm: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6 animate-fade-in">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-4 flex justify-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-100">
-            <span className="text-[28px] leading-none">🐾</span>
-          </div>
-        </div>
-        <h3 className="mb-2 text-center text-[17px] font-bold text-gray-900">가입 신청 완료!</h3>
-        <p className="mb-6 text-center text-[13px] leading-relaxed text-gray-500">
-          관리자의 사업자번호 검토 및 승인 후<br />로그인이 가능합니다.
-        </p>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="h-12 w-full rounded-xl bg-orange-500 text-[15px] font-bold text-white transition-all active:scale-[0.97]"
-        >
-          로그인 하러 가기
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function ShelterSignupPage() {
   const router = useRouter();
@@ -75,7 +51,6 @@ export default function ShelterSignupPage() {
   }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name } = e.target;
@@ -108,7 +83,7 @@ export default function ShelterSignupPage() {
         password: form.password,
         business_registration_number: form.businessNumber,
       });
-      setShowSuccess(true);
+      router.replace(`/signup/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -123,7 +98,6 @@ export default function ShelterSignupPage() {
   /* ── 가입 폼 ────────────────────────────────────────────────── */
   return (
     <main className="flex min-h-screen flex-col bg-white">
-      {showSuccess && <SuccessModal onConfirm={() => router.replace("/login")} />}
       {/* 상단 네비 */}
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white/90 px-4 py-4 backdrop-blur-sm">
         <Link

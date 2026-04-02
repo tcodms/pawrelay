@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signupVolunteer, ApiError, AnimalSize } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
-import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 
 // ── 공용 UI 컴포넌트 ──────────────────────────────────────────────────────────
 
@@ -101,7 +100,6 @@ export default function VolunteerSignupPage() {
   }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
 
   // ── 지역 칩 추가 / 제거 ─────────────────────────────────────────────────────
 
@@ -168,7 +166,7 @@ export default function VolunteerSignupPage() {
         max_animal_size: maxAnimalSize,
         activity_regions: activityRegions,
       });
-      setShowPwaPrompt(true);
+      router.replace(`/signup/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -178,14 +176,6 @@ export default function VolunteerSignupPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  // ── 가입 완료 후 PWA 안내 화면 ─────────────────────────────────────────────
-
-  if (showPwaPrompt) {
-    return (
-      <PwaInstallPrompt onDismiss={() => router.replace("/volunteer/chat")} />
-    );
   }
 
   // ── 공통 헤더 ───────────────────────────────────────────────────────────────
