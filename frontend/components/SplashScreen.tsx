@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { initPwaPromptCapture } from "@/lib/pwa";
 
 type State = "visible" | "fading" | "hidden";
 
@@ -8,6 +9,8 @@ export default function SplashScreen() {
   const [state, setState] = useState<State>("visible");
 
   useEffect(() => {
+    // 앱 초기 로드 시점에 beforeinstallprompt 이벤트를 최대한 일찍 캡처
+    initPwaPromptCapture();
     // 클라이언트 내비게이션(SPA 이동)에서는 재표시 방지
     if (sessionStorage.getItem("splash_shown")) {
       setState("hidden");

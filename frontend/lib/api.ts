@@ -78,10 +78,15 @@ export interface LoginResponse {
   user: User;
 }
 
+export type AnimalSize = "small" | "medium" | "large";
+
 export interface SignupVolunteerRequest {
   email: string;
   password: string;
   name: string;
+  vehicle_available: boolean;
+  max_animal_size: AnimalSize;
+  activity_regions: string[];
 }
 
 export interface SignupShelterRequest {

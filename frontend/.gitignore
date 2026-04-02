@@ -1,3 +1,23 @@
+# Next.js 빌드 결과물 (절대 깃허브에 올라가면 안 됨!)
+.next
+out
+build
+
+# Next-PWA 자동 생성 파일 (빌드할 때마다 알아서 생기므로 무시)
+**/public/sw.js
+**/public/workbox-*.js
+**/public/fallback-*.js
+**/public/sw.js.map
+
+# Vercel 배포 관련 파일
+.vercel
+
+# TypeScript 임시 캐시 파일
+*.tsbuildinfo
+
+# 테스트 커버리지 결과물
+coverage
+
 # Logs
 logs
 *.log
@@ -22,3 +42,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.env
+.env.local
+.env.*.local
