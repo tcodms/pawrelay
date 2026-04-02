@@ -32,6 +32,31 @@ function Spinner() {
 const INPUT =
   "h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:border-orange-400 focus:bg-white focus:outline-none";
 
+function SuccessModal({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6 animate-fade-in">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <div className="mb-4 flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-100">
+            <span className="text-[28px] leading-none">🐾</span>
+          </div>
+        </div>
+        <h3 className="mb-2 text-center text-[17px] font-bold text-gray-900">가입 신청 완료!</h3>
+        <p className="mb-6 text-center text-[13px] leading-relaxed text-gray-500">
+          관리자의 사업자번호 검토 및 승인 후<br />로그인이 가능합니다.
+        </p>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="h-12 w-full rounded-xl bg-orange-500 text-[15px] font-bold text-white transition-all active:scale-[0.97]"
+        >
+          로그인 하러 가기
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ShelterSignupPage() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -43,21 +68,37 @@ export default function ShelterSignupPage() {
   });
   const [showPw, setShowPw] = useState(false);
   const [showPwConfirm, setShowPwConfirm] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+    passwordConfirm?: string;
+  }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name } = e.target;
+    setForm((prev) => ({ ...prev, [name]: e.target.value }));
+    if (name === "email" || name === "password" || name === "passwordConfirm") {
+      setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
-    if (form.password !== form.passwordConfirm) {
-      setError("비밀번호가 일치하지 않습니다.");
+    const errors: typeof fieldErrors = {};
+    if (!form.email.includes("@")) errors.email = "올바른 이메일 형식이 아닙니다.";
+    if (form.password.length < 8) errors.password = "비밀번호는 8자 이상이어야 합니다.";
+    if (form.password !== form.passwordConfirm) errors.passwordConfirm = "비밀번호가 일치하지 않습니다.";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    setFieldErrors({});
 
     setLoading(true);
     try {
@@ -67,8 +108,7 @@ export default function ShelterSignupPage() {
         password: form.password,
         business_registration_number: form.businessNumber,
       });
-      alert("가입이 완료되었습니다. 관리자의 번호 검토 및 승인 후 로그인이 가능합니다.");
-      router.replace("/");
+      setShowSuccess(true);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -83,6 +123,7 @@ export default function ShelterSignupPage() {
   /* ── 가입 폼 ────────────────────────────────────────────────── */
   return (
     <main className="flex min-h-screen flex-col bg-white">
+      {showSuccess && <SuccessModal onConfirm={() => router.replace("/login")} />}
       {/* 상단 네비 */}
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white/90 px-4 py-4 backdrop-blur-sm">
         <Link
@@ -144,8 +185,9 @@ export default function ShelterSignupPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="이메일 주소를 입력해 주세요"
-              className={INPUT}
+              className={`${INPUT} ${fieldErrors.email ? "border-red-400 focus:border-red-400" : ""}`}
             />
+            {fieldErrors.email && <p className="text-[12px] text-red-500">{fieldErrors.email}</p>}
           </div>
 
           {/* 사업자번호 */}
@@ -180,7 +222,7 @@ export default function ShelterSignupPage() {
                 value={form.password}
                 onChange={handleChange}
                 placeholder="영문+숫자+특수문자를 포함해 주세요"
-                className={`${INPUT} pr-12`}
+                className={`${INPUT} pr-12 ${fieldErrors.password ? "border-red-400 focus:border-red-400" : ""}`}
               />
               <button
                 type="button"
@@ -192,6 +234,7 @@ export default function ShelterSignupPage() {
                 <EyeIcon visible={showPw} />
               </button>
             </div>
+            {fieldErrors.password && <p className="text-[12px] text-red-500">{fieldErrors.password}</p>}
           </div>
 
           {/* 비밀번호 확인 */}
@@ -209,7 +252,7 @@ export default function ShelterSignupPage() {
                 value={form.passwordConfirm}
                 onChange={handleChange}
                 placeholder="비밀번호를 다시 입력해 주세요"
-                className={`${INPUT} pr-12`}
+                className={`${INPUT} pr-12 ${fieldErrors.passwordConfirm ? "border-red-400 focus:border-red-400" : ""}`}
               />
               <button
                 type="button"
@@ -221,6 +264,7 @@ export default function ShelterSignupPage() {
                 <EyeIcon visible={showPwConfirm} />
               </button>
             </div>
+            {fieldErrors.passwordConfirm && <p className="text-[12px] text-red-500">{fieldErrors.passwordConfirm}</p>}
           </div>
 
           {/* 에러 */}

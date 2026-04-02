@@ -94,6 +94,11 @@ export default function VolunteerSignupPage() {
   const [vehicleAvailable, setVehicleAvailable] = useState<boolean | null>(null);
   const [maxAnimalSize, setMaxAnimalSize] = useState<AnimalSize | null>(null);
 
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+    passwordConfirm?: string;
+  }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPwaPrompt, setShowPwaPrompt] = useState(false);
@@ -119,10 +124,17 @@ export default function VolunteerSignupPage() {
   function handleStep1Next(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (password !== passwordConfirm) {
-      setError("비밀번호가 일치하지 않습니다.");
+
+    const errors: typeof fieldErrors = {};
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "올바른 이메일 형식이 아닙니다.";
+    if (password.length < 8) errors.password = "비밀번호는 8자 이상이어야 합니다.";
+    if (password !== passwordConfirm) errors.passwordConfirm = "비밀번호가 일치하지 않습니다.";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    setFieldErrors({});
     setStep(2);
     window.scrollTo({ top: 0 });
   }
@@ -209,7 +221,7 @@ export default function VolunteerSignupPage() {
         <div className="flex flex-1 flex-col px-6 pb-8">
           <p className="mb-5 text-[13px] text-gray-400">기본 정보를 입력해 주세요.</p>
 
-          <form onSubmit={handleStep1Next} className="flex flex-1 flex-col gap-3.5 animate-slide-up">
+          <form onSubmit={handleStep1Next} noValidate className="flex flex-1 flex-col gap-3.5 animate-slide-up">
             {/* 이름 */}
             <div className="space-y-1.5">
               <label htmlFor="name" className="block text-[13px] font-semibold text-gray-500">이름</label>
@@ -226,10 +238,11 @@ export default function VolunteerSignupPage() {
               <label htmlFor="email" className="block text-[13px] font-semibold text-gray-500">이메일</label>
               <input
                 id="email" name="email" type="email" autoComplete="email" required
-                value={email} onChange={(e) => setEmail(e.target.value)}
+                value={email} onChange={(e) => { setEmail(e.target.value); setFieldErrors((prev) => ({ ...prev, email: undefined })); }}
                 placeholder="이메일 주소를 입력해 주세요"
-                className={INPUT}
+                className={`${INPUT} ${fieldErrors.email ? "border-red-400 focus:border-red-400" : ""}`}
               />
+              {fieldErrors.email && <p className="text-[12px] text-red-500">{fieldErrors.email}</p>}
             </div>
 
             {/* 비밀번호 */}
@@ -240,9 +253,9 @@ export default function VolunteerSignupPage() {
                   id="password" name="password"
                   type={showPw ? "text" : "password"}
                   autoComplete="new-password" required
-                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
                   placeholder="영문+숫자+특수문자를 포함해 주세요"
-                  className={`${INPUT} pr-12`}
+                  className={`${INPUT} pr-12 ${fieldErrors.password ? "border-red-400 focus:border-red-400" : ""}`}
                 />
                 <button type="button" tabIndex={-1} onClick={() => setShowPw((v) => !v)}
                   aria-label={showPw ? "비밀번호 숨기기" : "비밀번호 보기"}
@@ -250,6 +263,7 @@ export default function VolunteerSignupPage() {
                   <EyeIcon visible={showPw} />
                 </button>
               </div>
+              {fieldErrors.password && <p className="text-[12px] text-red-500">{fieldErrors.password}</p>}
             </div>
 
             {/* 비밀번호 확인 */}
@@ -260,9 +274,9 @@ export default function VolunteerSignupPage() {
                   id="passwordConfirm" name="passwordConfirm"
                   type={showPwConfirm ? "text" : "password"}
                   autoComplete="new-password" required
-                  value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
+                  value={passwordConfirm} onChange={(e) => { setPasswordConfirm(e.target.value); setFieldErrors((prev) => ({ ...prev, passwordConfirm: undefined })); }}
                   placeholder="비밀번호를 다시 입력해 주세요"
-                  className={`${INPUT} pr-12`}
+                  className={`${INPUT} pr-12 ${fieldErrors.passwordConfirm ? "border-red-400 focus:border-red-400" : ""}`}
                 />
                 <button type="button" tabIndex={-1} onClick={() => setShowPwConfirm((v) => !v)}
                   aria-label={showPwConfirm ? "비밀번호 숨기기" : "비밀번호 보기"}
@@ -270,6 +284,7 @@ export default function VolunteerSignupPage() {
                   <EyeIcon visible={showPwConfirm} />
                 </button>
               </div>
+              {fieldErrors.passwordConfirm && <p className="text-[12px] text-red-500">{fieldErrors.passwordConfirm}</p>}
             </div>
 
             {error && <ErrorBox message={error} />}
