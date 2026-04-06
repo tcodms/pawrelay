@@ -12,7 +12,7 @@ const TABS = [
   },
   {
     href: "/volunteer/chat",
-    label: "채팅방",
+    label: "채팅",
     icon: MessageCircle,
   },
   {
@@ -22,7 +22,7 @@ const TABS = [
   },
   {
     href: "/volunteer/mypage",
-    label: "마이페이지",
+    label: "프로필",
     icon: User,
   },
 ] as const;
@@ -47,7 +47,7 @@ export default function BottomNav() {
                   className={active ? "text-orange-500" : "text-gray-400"}
                 />
                 <span
-                  className={`text-[10px] font-semibold ${
+                  className={`text-[9px] font-semibold ${
                     active ? "text-orange-500" : "text-gray-400"
                   }`}
                 >
