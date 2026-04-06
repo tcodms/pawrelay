@@ -90,7 +90,6 @@ export default function VolunteerSignupPage() {
   // 2단계 필드
   const [regionInput, setRegionInput] = useState("");
   const [activityRegions, setActivityRegions] = useState<string[]>([]);
-  const [vehicleAvailable, setVehicleAvailable] = useState<boolean | null>(null);
   const [maxAnimalSize, setMaxAnimalSize] = useState<AnimalSize | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<{
@@ -147,10 +146,6 @@ export default function VolunteerSignupPage() {
       setError("활동 지역을 최소 1개 이상 추가해 주세요.");
       return;
     }
-    if (vehicleAvailable === null) {
-      setError("차량 유무를 선택해 주세요.");
-      return;
-    }
     if (!maxAnimalSize) {
       setError("이송 가능한 동물 크기를 선택해 주세요.");
       return;
@@ -162,7 +157,6 @@ export default function VolunteerSignupPage() {
         name,
         email,
         password,
-        vehicle_available: vehicleAvailable,
         max_animal_size: maxAnimalSize,
         activity_regions: activityRegions,
       });
@@ -356,24 +350,6 @@ export default function VolunteerSignupPage() {
             </div>
           </div>
 
-          {/* 차량 유무 */}
-          <div className="space-y-2">
-            <label className="block text-[13px] font-semibold text-gray-500">차량 유무</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[{ value: true, label: "있음", icon: "🚗" }, { value: false, label: "없음", icon: "🚶" }].map((opt) => (
-                <button key={String(opt.value)} type="button"
-                  onClick={() => setVehicleAvailable(opt.value)}
-                  className={`flex h-14 items-center justify-center gap-2 rounded-xl border-2 text-[15px] font-bold transition-all duration-150 ${
-                    vehicleAvailable === opt.value
-                      ? "border-orange-500 bg-orange-50 text-orange-600"
-                      : "border-gray-200 bg-gray-50 text-gray-500"
-                  }`}>
-                  <span>{opt.icon}</span>
-                  <span>{opt.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* 최대 동물 크기 */}
           <div className="space-y-2">
