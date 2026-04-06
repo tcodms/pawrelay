@@ -2,147 +2,31 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { User, Plus, X, ChevronRight, Users, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { User, Plus, X, ChevronRight, ArrowRight, Users } from "lucide-react";
+import { DUMMY_POSTS, Post, PostStatus } from "@/lib/dummy-posts";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type PostStatus = "urgent" | "recruiting" | "waiting" | "in_progress" | "completed";
 type TabKey = "all" | "urgent" | "recruiting" | "waiting" | "completed";
-
-interface Volunteer {
-  id: number;
-  name: string;
-  from: string;
-  to: string;
-}
-
-interface RelaySegment {
-  volunteer: string;
-  from: string;
-  to: string;
-  time: string;
-}
-
-interface Post {
-  id: number;
-  animal: { name: string; size: "소형" | "중형" | "대형"; species: string };
-  origin: string;
-  destination: string;
-  scheduledDate: string;
-  status: PostStatus;
-  volunteers: Volunteer[];
-  relayChain?: RelaySegment[];
-  matchingReason?: string;
-}
-
-// ── Dummy Data ─────────────────────────────────────────────────────────────────
-
-const INITIAL_POSTS: Post[] = [
-  {
-    id: 1,
-    animal: { name: "초코", size: "소형", species: "강아지" },
-    origin: "광주광역시 북구",
-    destination: "서울특별시 강남구",
-    scheduledDate: "2026-04-10",
-    status: "waiting",
-    volunteers: [
-      { id: 1, name: "김봉사", from: "광주역", to: "천안역" },
-      { id: 2, name: "이릴레이", from: "천안역", to: "수원역" },
-      { id: 3, name: "박도움", from: "수원역", to: "서울 강남구" },
-    ],
-    relayChain: [
-      { volunteer: "김봉사", from: "광주역", to: "천안역", time: "09:00" },
-      { volunteer: "이릴레이", from: "천안역", to: "수원역", time: "11:30" },
-      { volunteer: "박도움", from: "수원역", to: "서울 강남구", time: "13:00" },
-    ],
-    matchingReason:
-      "세 분의 이동 경로가 완벽하게 연결되며, 인계 시간 간격이 모두 30분 이상 확보됩니다.",
-  },
-  {
-    id: 2,
-    animal: { name: "뽀삐", size: "중형", species: "강아지" },
-    origin: "부산광역시 해운대구",
-    destination: "대구광역시 수성구",
-    scheduledDate: "2026-04-12",
-    status: "recruiting",
-    volunteers: [
-      { id: 4, name: "최자원", from: "부산역", to: "밀양역" },
-      { id: 5, name: "정봉사", from: "밀양역", to: "경산역" },
-    ],
-  },
-  {
-    id: 3,
-    animal: { name: "나비", size: "소형", species: "고양이" },
-    origin: "인천광역시 남동구",
-    destination: "경기도 수원시",
-    scheduledDate: "2026-04-08",
-    status: "urgent",
-    volunteers: [
-      { id: 6, name: "홍길동", from: "인천터미널", to: "수원역" },
-    ],
-  },
-  {
-    id: 4,
-    animal: { name: "까미", size: "대형", species: "강아지" },
-    origin: "대전광역시 유성구",
-    destination: "서울특별시 송파구",
-    scheduledDate: "2026-03-28",
-    status: "completed",
-    volunteers: [
-      { id: 7, name: "신봉사", from: "대전역", to: "천안아산역" },
-      { id: 8, name: "오릴레이", from: "천안아산역", to: "서울 송파구" },
-    ],
-  },
-  {
-    id: 5,
-    animal: { name: "흰둥이", size: "소형", species: "강아지" },
-    origin: "광주광역시 동구",
-    destination: "경기도 성남시",
-    scheduledDate: "2026-04-15",
-    status: "waiting",
-    volunteers: [
-      { id: 9, name: "강자원", from: "광주송정역", to: "오송역" },
-      { id: 10, name: "배봉사", from: "오송역", to: "경기 성남" },
-    ],
-    relayChain: [
-      { volunteer: "강자원", from: "광주송정역", to: "오송역", time: "10:00" },
-      { volunteer: "배봉사", from: "오송역", to: "경기 성남", time: "12:00" },
-    ],
-    matchingReason:
-      "두 봉사자의 경로가 오송역에서 연결되며, 이동 시간과 인계 여유 시간이 최적화되어 있습니다.",
-  },
-  {
-    id: 6,
-    animal: { name: "루시", size: "중형", species: "강아지" },
-    origin: "대구광역시 달서구",
-    destination: "충청북도 청주시",
-    scheduledDate: "2026-04-20",
-    status: "recruiting",
-    volunteers: [
-      { id: 11, name: "임자원", from: "대구역", to: "김천구미역" },
-      { id: 12, name: "한봉사", from: "김천구미역", to: "오송역" },
-      { id: 13, name: "조릴레이", from: "오송역", to: "청주" },
-    ],
-  },
-];
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "all", label: "전체" },
-  { key: "urgent", label: "🚨 긴급" },
-  { key: "recruiting", label: "🟢 모집중" },
-  { key: "waiting", label: "🟡 대기중" },
-  { key: "completed", label: "⚪️ 봉사종료" },
+const TABS: { key: TabKey; label: string; dot: string }[] = [
+  { key: "all",        label: "전체",     dot: "bg-gray-400" },
+  { key: "urgent",     label: "긴급",     dot: "bg-red-500" },
+  { key: "recruiting", label: "모집 중",  dot: "bg-green-500" },
+  { key: "waiting",    label: "대기 중",  dot: "bg-yellow-400" },
+  { key: "completed",  label: "종료", dot: "bg-gray-300" },
 ];
 
 function statusBadge(status: PostStatus) {
   const map: Record<PostStatus, { label: string; className: string }> = {
-    urgent:      { label: "긴급",    className: "bg-red-100 text-red-600" },
-    recruiting:  { label: "모집중",  className: "bg-green-100 text-green-700" },
-    waiting:     { label: "대기중",  className: "bg-yellow-100 text-yellow-700" },
-    in_progress: { label: "봉사중",  className: "bg-blue-100 text-blue-700" },
-    completed:   { label: "봉사종료", className: "bg-gray-100 text-gray-500" },
+    urgent:      { label: "긴급",     className: "bg-red-100 text-red-600" },
+    recruiting:  { label: "모집 중", className: "bg-green-100 text-green-700" },
+    waiting:     { label: "대기 중", className: "bg-yellow-100 text-yellow-700" },
+    in_progress: { label: "봉사 중", className: "bg-blue-100 text-blue-700" },
+    completed:   { label: "봉사 종료", className: "bg-gray-100 text-gray-500" },
   };
   const { label, className } = map[status];
   return (
@@ -223,10 +107,12 @@ function PostCard({
   post,
   onShowApplicants,
   onShowMatching,
+  onNavigate,
 }: {
   post: Post;
   onShowApplicants: (post: Post) => void;
   onShowMatching: (post: Post) => void;
+  onNavigate: (id: number) => void;
 }) {
   const isUrgent = post.status === "urgent";
   const isWaiting = post.status === "waiting";
@@ -234,18 +120,14 @@ function PostCard({
 
   return (
     <div
-      className={`rounded-2xl bg-white border p-5 transition-shadow hover:shadow-md ${
-        isUrgent ? "border-red-200 ring-1 ring-red-100" :
-        isWaiting ? "border-yellow-200 ring-1 ring-yellow-100" :
-        "border-gray-100"
-      }`}
+      onClick={() => onNavigate(post.id)}
+      className="rounded-2xl bg-white border border-gray-100 p-5 transition-shadow hover:shadow-md cursor-pointer"
     >
       {/* 상단 행 */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           {statusBadge(post.status)}
           {sizeBadge(post.animal.size)}
-          <span className="text-[12px] text-gray-400">{post.animal.species}</span>
         </div>
         <span className="text-[12px] text-gray-400 shrink-0">{post.scheduledDate}</span>
       </div>
@@ -269,21 +151,25 @@ function PostCard({
       {/* 액션 영역 */}
       {isWaiting && (
         <button
-          onClick={() => onShowMatching(post)}
-          className="w-full rounded-xl bg-yellow-400 py-3 text-[14px] font-bold text-gray-900 transition-all active:scale-[0.98] hover:bg-yellow-300 shadow-sm"
+          onClick={(e) => { e.stopPropagation(); onShowMatching(post); }}
+          className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors active:scale-[0.98]"
         >
-          🔥 LLM 최적 매칭 결과 확인
+          <span className="flex-1 text-center">매칭 결과</span>
+          <ChevronRight size={15} className="text-yellow-400" />
         </button>
       )}
 
       {(isRecruiting || isUrgent) && (
         <button
-          onClick={() => onShowApplicants(post)}
-          className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-2.5 text-[13px] font-medium text-gray-600 transition-colors hover:bg-gray-50"
+          onClick={(e) => { e.stopPropagation(); onShowApplicants(post); }}
+          className={`w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold transition-colors active:scale-[0.98] ${
+            isUrgent
+              ? "bg-red-50 text-red-600 hover:bg-red-100"
+              : "bg-green-50 text-green-700 hover:bg-green-100"
+          }`}
         >
-          <Users size={14} />
-          지원자 목록 확인
-          <ChevronRight size={14} className="text-gray-400" />
+          <span className="flex-1 text-center">지원자 목록</span>
+          <ChevronRight size={15} className={isUrgent ? "text-red-400" : "text-green-400"} />
         </button>
       )}
     </div>
@@ -293,7 +179,8 @@ function PostCard({
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+  const router = useRouter();
+  const [posts, setPosts] = useState<Post[]>(DUMMY_POSTS);
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [sheetType, setSheetType] = useState<"applicants" | "matching" | null>(null);
@@ -362,43 +249,53 @@ export default function DashboardPage() {
               </span>
               <p className="text-[13px] text-gray-400 mt-0.5">행복 동물 보호소</p>
             </div>
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+            <Link
+              href="/dashboard/profile"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+            >
               <User size={18} />
-            </button>
+            </Link>
           </div>
         </header>
 
         {/* ── 통계 카드 ─────────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="rounded-2xl bg-white border border-gray-100 p-5">
-            <p className="text-[12px] text-gray-400 mb-1">현재 모집 중인 공고</p>
-            <p className="text-[32px] font-bold text-orange-500 leading-none">{recruitingCount}
-              <span className="text-[16px] font-semibold text-gray-400 ml-1">건</span>
+          <div className="rounded-2xl bg-white border border-gray-100 px-4 py-3 flex flex-col gap-1">
+            <p className="text-[12px] text-gray-400">모집중 공고</p>
+            <p className="text-[28px] font-bold text-orange-500 leading-none">{recruitingCount}
+              <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
             </p>
           </div>
-          <div className="rounded-2xl bg-white border border-gray-100 p-5">
-            <p className="text-[12px] text-gray-400 mb-1">매칭 대기 / 봉사중</p>
-            <p className="text-[32px] font-bold text-yellow-500 leading-none">{waitingCount}
-              <span className="text-[16px] font-semibold text-gray-400 ml-1">건</span>
+          <div className="rounded-2xl bg-white border border-gray-100 px-4 py-3 flex flex-col gap-1">
+            <p className="text-[12px] text-gray-400">대기중 공고</p>
+            <p className="text-[28px] font-bold text-yellow-500 leading-none">{waitingCount}
+              <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
             </p>
           </div>
         </div>
 
         {/* ── 탭 필터 ────────────────────────────────────────────── */}
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-hide">
-          {TABS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold transition-all ${
-                activeTab === key
-                  ? "bg-orange-500 text-white shadow-sm"
-                  : "bg-white border border-gray-200 text-gray-500 hover:border-orange-300"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="flex border-b border-gray-100 mb-5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+          {TABS.map(({ key, label, dot }) => {
+            const isActive = activeTab === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex shrink-0 items-center gap-1.5 px-3 pb-2.5 pt-1 text-[12px] transition-all relative ${
+                  isActive
+                    ? "font-bold text-gray-900"
+                    : "font-medium text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
+                {label}
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-orange-500" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* ── 공고 리스트 ─────────────────────────────────────────── */}
@@ -414,6 +311,7 @@ export default function DashboardPage() {
                 post={post}
                 onShowApplicants={handleShowApplicants}
                 onShowMatching={handleShowMatching}
+                onNavigate={(id) => router.push(`/dashboard/posts/${id}`)}
               />
             ))
           )}
@@ -470,9 +368,6 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            <p className="mt-5 text-center text-[11px] leading-relaxed text-gray-400">
-              체인 완성 후 LLM이 최적 팀을 자동 구성합니다.
-            </p>
           </>
         )}
       </BottomSheet>
@@ -483,7 +378,7 @@ export default function DashboardPage() {
           <>
             <div className="flex items-center justify-between pt-2 pb-4 border-b border-gray-100">
               <div>
-                <h3 className="text-[16px] font-bold text-gray-900">LLM 최적 매칭 결과</h3>
+                <h3 className="text-[16px] font-bold text-gray-900">최종 매칭 결과</h3>
                 <p className="text-[12px] text-gray-400 mt-0.5">
                   {selectedPost.animal.name} ·{" "}
                   {selectedPost.origin} → {selectedPost.destination}

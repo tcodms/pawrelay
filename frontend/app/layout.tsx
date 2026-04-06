@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Jua } from "next/font/google";
+import { Fredoka, Noto_Sans_KR } from "next/font/google";
 import SplashScreen from "@/components/SplashScreen";
 import "./globals.css";
 
-// 영문 로고용 — Nunito보다 획 끝이 더 둥글고 귀여운 폰트
+// 영문 로고용
 const fredoka = Fredoka({
   subsets: ["latin"],
   weight: ["600", "700"],
@@ -11,13 +11,13 @@ const fredoka = Fredoka({
   display: "swap",
 });
 
-// 한글 문구용 — 획이 둥글고 아기자기한 한국어 폰트
-const jua = Jua({
-  weight: "400",
+// 한글 본문용 — 깔끔하고 현대적인 산세리프
+const notoSansKr = Noto_Sans_KR({
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
-  variable: "--font-jua",
+  variable: "--font-noto",
   display: "swap",
-  preload: false, // 한글 폰트는 용량이 크므로 preload 비활성
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -45,12 +45,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko" className={`${fredoka.variable} ${jua.variable}`}>
+    <html lang="ko" className={`${fredoka.variable} ${notoSansKr.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="bg-white text-gray-900 antialiased">
+      <body className="bg-white text-gray-900 antialiased font-[family-name:var(--font-noto)]">
         <SplashScreen />
         {children}
       </body>
