@@ -50,6 +50,7 @@ function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({ email: "", password: "" });
   // 서버 응답 전역 에러
   const [globalError, setGlobalError] = useState("");
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
   const [toast, setToast]   = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -71,6 +72,7 @@ function LoginForm() {
     setEmail(e.target.value);
     if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: "" }));
     if (globalError) setGlobalError("");
+    if (emailNotVerified) setEmailNotVerified(false);
   }
 
   function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -112,6 +114,8 @@ function LoginForm() {
       // 보안: 로그인 실패 시 어떤 필드가 틀렸는지 노출하지 않음
       if (err instanceof ApiError && err.code === "INVALID_CREDENTIALS") {
         setGlobalError("이메일 또는 비밀번호가 일치하지 않습니다.");
+      } else if (err instanceof ApiError && err.code === "EMAIL_NOT_VERIFIED") {
+        setEmailNotVerified(true);
       } else {
         setGlobalError(
           err instanceof ApiError
@@ -207,6 +211,22 @@ function LoginForm() {
               </p>
             )}
           </div>
+
+          {/* ── 이메일 미인증 안내 ── */}
+          {emailNotVerified && (
+            <div role="alert" className="mb-3 rounded-xl bg-orange-50 border border-orange-100 px-4 py-3.5 animate-fade-in">
+              <p className="text-[13px] font-semibold text-orange-700 mb-1">이메일 인증이 필요합니다</p>
+              <p className="text-[12px] text-orange-600 leading-relaxed mb-2.5">
+                가입 시 발송된 인증 메일의 버튼을 클릭한 후 다시 로그인해 주세요.
+              </p>
+              <Link
+                href={`/signup/verify-email?email=${encodeURIComponent(email)}`}
+                className="inline-block text-[12px] font-semibold text-orange-500 underline underline-offset-2"
+              >
+                인증 메일 안내 다시 보기
+              </Link>
+            </div>
+          )}
 
           {/* ── 전역 서버 에러 (버튼 바로 위) ── */}
           {globalError && (

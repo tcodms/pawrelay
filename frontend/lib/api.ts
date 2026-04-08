@@ -92,7 +92,7 @@ export interface SignupShelterRequest {
   email: string;
   password: string;
   name: string;
-  business_registration_number: string;
+  business_registration_file: File;
 }
 
 export interface SignupShelterResponse {
@@ -123,10 +123,22 @@ export async function signupVolunteer(
 export async function signupShelter(
   data: SignupShelterRequest,
 ): Promise<SignupShelterResponse> {
-  return request<SignupShelterResponse>("/auth/signup/shelter", {
+  const formData = new FormData();
+  formData.append("email", data.email);
+  formData.append("password", data.password);
+  formData.append("name", data.name);
+  formData.append("business_registration_file", data.business_registration_file);
+
+  const res = await fetch(`${API_BASE}/auth/signup/shelter`, {
     method: "POST",
-    body: JSON.stringify(data),
+    credentials: "include",
+    body: formData,
   });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(body.error ?? "UNKNOWN_ERROR", res.status);
+  }
+  return res.json() as Promise<SignupShelterResponse>;
 }
 
 export async function logout(): Promise<void> {
