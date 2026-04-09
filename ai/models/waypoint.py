@@ -3,14 +3,13 @@ from enum import Enum
 
 class WaypointType(str, Enum):
     """인계 거점 유형."""
-    REST_AREA = "rest_area"   # 휴게소
-    TRAIN = "train"           # 기차역
-    BUS = "bus"               # 버스터미널
-    SHELTER = "shelter"       # 지자체 보호소
+    REST_AREA = "rest_area"
+    TRAIN = "train"
+    BUS = "bus"
+    SHELTER = "shelter"
 
 
-# SQLAlchemy 모델 (DB 연결 시 사용)
-# PostGIS 확장 필요: CREATE EXTENSION postgis;
+# 데이터 모델 및 스키마 정의
 
 WAYPOINT_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS waypoints (
@@ -33,19 +32,15 @@ class WaypointModel:
     """waypoints 테이블 데이터 구조.
 
     공공데이터포털 API에서 수집한 데이터를 이 형식으로 변환하여 저장한다.
-
-    Attributes:
-        name: 거점 이름 (예: "천안아산역", "천안휴게소")
-        type: 거점 유형 (rest_area | train | bus | shelter)
-        address: 주소
-        phone: 연락처 (보호소만 해당)
-        latitude: 위도
-        longitude: 경도
-        source: 데이터 출처 (예: "공공데이터포털_교통API")
     """
 
     def __init__(self, name, waypoint_type, latitude, longitude,
                  address=None, phone=None, source=None):
+        if not (-90 <= latitude <= 90):
+            raise ValueError(f"위도 범위 초과: {latitude} (허용: -90 ~ 90)")
+        if not (-180 <= longitude <= 180):
+            raise ValueError(f"경도 범위 초과: {longitude} (허용: -180 ~ 180)")
+
         self.name = name
         self.type = WaypointType(waypoint_type)
         self.address = address
@@ -55,7 +50,6 @@ class WaypointModel:
         self.source = source
 
     def to_dict(self):
-        """API 응답 또는 DB 저장용 딕셔너리 반환."""
         return {
             "name": self.name,
             "type": self.type.value,
@@ -67,7 +61,6 @@ class WaypointModel:
         }
 
     def to_postgis_insert(self):
-        """PostGIS INSERT 쿼리 파라미터 반환."""
         return {
             "name": self.name,
             "type": self.type.value,
@@ -78,7 +71,6 @@ class WaypointModel:
         }
 
 
-# 공공데이터포털 API → WaypointModel 변환 매핑
 API_SOURCE_MAP = {
     "rest_area": "공공데이터포털_휴게소API",
     "train": "공공데이터포털_기차역API",

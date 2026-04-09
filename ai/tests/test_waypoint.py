@@ -14,6 +14,8 @@ def test_waypoint_creation():
     )
 
     assert waypoint.type == WaypointType.TRAIN
+    assert waypoint.to_dict()["type"] == "train"
+    assert waypoint.to_dict()["latitude"] == 36.7946
     print(f"이름: {waypoint.name}")
     print(f"타입: {waypoint.type.value}")
     print(f"dict: {waypoint.to_dict()}")
@@ -36,9 +38,14 @@ def test_shelter_with_phone():
 
     assert shelter.type == WaypointType.SHELTER
     assert shelter.phone == "041-521-3000"
+
+    postgis = shelter.to_postgis_insert()
+    assert postgis["type"] == "shelter"
+    assert postgis["phone"] == "041-521-3000"
+    assert "POINT(127.1139 36.8151)" in postgis["geom"]
     print(f"보호소: {shelter.name}")
     print(f"연락처: {shelter.phone}")
-    print(f"PostGIS: {shelter.to_postgis_insert()}")
+    print(f"PostGIS: {postgis}")
 
     print("=== 보호소 waypoint 테스트 성공 ===\n")
 
@@ -56,8 +63,29 @@ def test_all_types():
     print("=== 전체 타입 테스트 성공 ===\n")
 
 
+def test_invalid_coordinates():
+    print("=== 좌표 범위 검증 테스트 ===")
+
+    try:
+        WaypointModel(name="잘못된 위도", waypoint_type="train",
+                      latitude=91.0, longitude=127.0)
+        assert False, "위도 검증 실패"
+    except ValueError as e:
+        print(f"  위도 초과 검출: {e}")
+
+    try:
+        WaypointModel(name="잘못된 경도", waypoint_type="train",
+                      latitude=36.0, longitude=181.0)
+        assert False, "경도 검증 실패"
+    except ValueError as e:
+        print(f"  경도 초과 검출: {e}")
+
+    print("=== 좌표 범위 검증 테스트 성공 ===\n")
+
+
 if __name__ == "__main__":
     test_waypoint_creation()
     test_shelter_with_phone()
     test_all_types()
+    test_invalid_coordinates()
     print("모든 테스트 통과!")
