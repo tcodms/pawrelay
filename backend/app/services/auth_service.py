@@ -2,6 +2,7 @@ from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.redis import redis_client
 from app.core.security import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     create_access_token,
@@ -14,10 +15,18 @@ from app.models.user import User
 from app.repositories import user_repo
 from app.schemas.auth import LoginRequest, ShelterSignupRequest, VolunteerSignupRequest
 
+_REFRESH_TOKEN_TTL = 60 * 60 * 24 * REFRESH_TOKEN_EXPIRE_DAYS
 
-def _set_auth_cookies(response: Response, user_id: int) -> None:
+
+async def _set_auth_cookies(response: Response, user_id: int) -> None:
     access_token = create_access_token(user_id)
     refresh_token = create_refresh_token(user_id)
+
+    await redis_client.set(
+        f"refresh_token:{user_id}",
+        refresh_token,
+        ex=_REFRESH_TOKEN_TTL,
+    )
 
     response.set_cookie(
         key="access_token",
@@ -33,7 +42,7 @@ def _set_auth_cookies(response: Response, user_id: int) -> None:
         httponly=True,
         secure=settings.is_production,
         samesite="strict",
-        max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRE_DAYS,
+        max_age=_REFRESH_TOKEN_TTL,
     )
 
 
@@ -53,7 +62,7 @@ async def signup_volunteer(
         name=body.name,
         activity_regions=body.activity_regions,
     )
-    _set_auth_cookies(response, user.id)
+    await _set_auth_cookies(response, user.id)
     return user
 
 
@@ -90,11 +99,12 @@ async def login(
     if not user.email_verified_at:
         raise ValueError("EMAIL_NOT_VERIFIED")
 
-    _set_auth_cookies(response, user.id)
+    await _set_auth_cookies(response, user.id)
     return user
 
 
-async def logout(response: Response) -> None:
+async def logout(response: Response, user_id: int) -> None:
+    await redis_client.delete(f"refresh_token:{user_id}")
     response.delete_cookie("access_token", path="/", samesite="strict")
     response.delete_cookie("refresh_token", path="/", samesite="strict")
 
@@ -110,8 +120,16 @@ async def refresh(
     if not user_id:
         raise ValueError("REFRESH_TOKEN_EXPIRED")
 
+    stored_token = await redis_client.get(f"refresh_token:{user_id}")
+    if not stored_token or stored_token != refresh_token:
+        raise ValueError("REFRESH_TOKEN_EXPIRED")
+
     user = await user_repo.get_user_by_id(db, user_id)
     if not user or user.account_status in ("suspended", "banned"):
         raise ValueError("REFRESH_TOKEN_EXPIRED")
 
-    _set_auth_cookies(response, user_id)
+    await _set_auth_cookies(response, user_id)
+
+
+async def revoke_refresh_token(user_id: int) -> None:
+    await redis_client.delete(f"refresh_token:{user_id}")

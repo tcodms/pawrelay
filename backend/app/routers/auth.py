@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user, get_current_user_id, get_db
 from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -67,9 +67,9 @@ async def login(
 @router.post("/logout")
 async def logout(
     response: Response,
-    _=Depends(get_current_user),
+    user_id: int = Depends(get_current_user_id),
 ):
-    await auth_service.logout(response)
+    await auth_service.logout(response, user_id)
     return {"ok": True}
 
 
