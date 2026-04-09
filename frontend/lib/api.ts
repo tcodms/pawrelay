@@ -26,7 +26,7 @@ async function refreshToken(): Promise<void> {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   // FormData일 때는 Content-Type을 직접 지정하지 않음 (브라우저가 boundary 포함하여 자동 설정)
   const isFormData = init.body instanceof FormData;
   const options: RequestInit = {

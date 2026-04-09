@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowDown, ArrowRight, Calendar, MapPin, Pencil, Trash2, Users } from "lucide-react";
-import { DUMMY_POSTS, PostStatus } from "@/lib/dummy-posts";
+import { getPost, PostStatus } from "@/lib/api/posts";
 
 function statusBadge(status: PostStatus) {
   const map: Record<PostStatus, { label: string; className: string }> = {
@@ -34,9 +34,8 @@ function SizeTag({ size }: { size: string }) {
   );
 }
 
-export default function PostDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
-  const post = DUMMY_POSTS.find((p) => p.id === Number(id));
+export default async function PostDetailPage({ params }: { params: { id: string } }) {
+  const post = await getPost(Number(params.id));
 
   if (!post) {
     return (
@@ -59,7 +58,7 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
         <h2 className="flex-1 text-[17px] font-bold text-gray-900">공고 상세</h2>
         <div className="flex items-center gap-1">
           <Link
-            href={`/dashboard/posts/${id}/edit`}
+            href={`/dashboard/posts/${params.id}/edit`}
             className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             aria-label="공고 수정"
           >

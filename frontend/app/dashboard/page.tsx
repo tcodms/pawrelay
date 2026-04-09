@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Plus, X, ChevronRight, ArrowRight, Users } from "lucide-react";
-import { DUMMY_POSTS, Post, PostStatus } from "@/lib/dummy-posts";
+import { getPosts, Post, PostStatus } from "@/lib/api/posts";
+import { approveShelterMatching, rejectShelterMatching } from "@/lib/api/matching";
+import { getShelterProfile } from "@/lib/api/shelter";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -180,7 +182,9 @@ function PostCard({
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [posts, setPosts] = useState<Post[]>(DUMMY_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [shelterName, setShelterName] = useState("보호소");
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [sheetType, setSheetType] = useState<"applicants" | "matching" | null>(null);
@@ -188,6 +192,8 @@ export default function DashboardPage() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    getPosts().then(setPosts).finally(() => setLoading(false));
+    getShelterProfile().then((p) => setShelterName(p.name));
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
   }, []);
 
@@ -212,8 +218,9 @@ export default function DashboardPage() {
     setSheetType("matching");
   }
 
-  function handleApprove() {
+  async function handleApprove() {
     if (!selectedPost) return;
+    await approveShelterMatching(selectedPost.id);
     setPosts((prev) =>
       prev.map((p) =>
         p.id === selectedPost.id ? { ...p, status: "in_progress" } : p
@@ -223,7 +230,9 @@ export default function DashboardPage() {
     showToast("릴레이 매칭이 확정되었습니다! 모든 봉사자에게 안내 이메일이 발송됩니다.");
   }
 
-  function handleReject() {
+  async function handleReject() {
+    if (!selectedPost) return;
+    await rejectShelterMatching(selectedPost.id);
     closeSheet();
     showToast("재매칭 요청이 접수되었습니다. 다음 배치 시 재처리됩니다.");
   }
@@ -253,7 +262,7 @@ export default function DashboardPage() {
               <span className="font-[family-name:var(--font-fredoka)] text-[24px] font-bold text-orange-500">
                 PawRelay
               </span>
-              <p className="text-[13px] text-gray-400 mt-0.5">행복 동물 보호소</p>
+              <p className="text-[13px] text-gray-400 mt-0.5">{shelterName}</p>
             </div>
             <Link
               href="/dashboard/profile"
@@ -306,7 +315,11 @@ export default function DashboardPage() {
 
         {/* ── 공고 리스트 ─────────────────────────────────────────── */}
         <div className="flex flex-col gap-3">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <p className="text-[14px]">해당 상태의 공고가 없습니다.</p>
             </div>
