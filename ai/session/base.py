@@ -7,6 +7,10 @@ class SessionManager(ABC):
 
     Redis 연동 전 MockSessionManager로 개발하고,
     나중에 RedisSessionManager로 교체한다.
+
+    Note:
+        만료된 세션을 get()/update() 할 경우 SessionExpiredError를 raise한다.
+        존재하지 않는 세션은 None을 반환한다.
     """
 
     @abstractmethod
@@ -21,13 +25,20 @@ class SessionManager(ABC):
 
         Returns:
             dict: {state, collected_data, auto_filled, post_id, created_at}
-            None: 세션이 없거나 만료된 경우
+            None: 세션이 존재하지 않는 경우
+
+        Raises:
+            SessionExpiredError: 세션이 만료된 경우
         """
         pass
 
     @abstractmethod
     async def update(self, session_id: str, data: dict) -> bool:
-        """세션 데이터를 업데이트한다."""
+        """세션 데이터를 업데이트한다.
+
+        Raises:
+            SessionExpiredError: 세션이 만료된 경우
+        """
         pass
 
     @abstractmethod

@@ -33,3 +33,17 @@ class ScheduleSaveFailedError(ChatbotError):
 
     def __init__(self, message="등록에 실패했습니다. 다시 시도해주세요."):
         super().__init__("SCHEDULE_SAVE_FAILED", message)
+
+
+class ParseFailedError(ChatbotError):
+    """LLM 응답 파싱 실패."""
+
+    def __init__(self, message="입력을 이해하지 못했습니다. 다시 말씀해주세요."):
+        super().__init__("PARSE_FAILED", message)
+
+
+class LLMError(ChatbotError):
+    """LLM API 호출 실패."""
+
+    def __init__(self, message="AI 처리 중 오류가 발생했습니다. 다시 시도해주세요."):
+        super().__init__("LLM_ERROR", message)
