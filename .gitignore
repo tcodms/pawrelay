@@ -1,4 +1,4 @@
-# 환경변수
+# 환경변수 (절대 커밋 금지)
 .env
 .env.local
 .env.*.local
@@ -8,24 +8,22 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-.Python
-
-# 가상환경
-venv/
 .venv/
-env/
-.env/
-
-# 빌드/배포
+venv/
+*.egg-info/
 dist/
 build/
-*.egg-info/
+
+# Node.js
+node_modules/
+.next/
+out/
 
 # IDE
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 *.swp
-*.swo
 
 # OS
 .DS_Store
@@ -36,6 +34,5 @@ Thumbs.db
 .coverage
 htmlcov/
 
-# Node
-node_modules/
-.next/
+# 로그
+*.log
