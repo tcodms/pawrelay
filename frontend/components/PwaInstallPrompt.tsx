@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getDeferredInstallPrompt, clearDeferredInstallPrompt } from "@/lib/pwa";
 
 type Platform = "ios" | "android" | "other";
 
 function detectPlatform(): Platform {
   const ua = navigator.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream) return "ios";
+  if (/iPad|iPhone|iPod/.test(ua)) return "ios";
   if (/Android/.test(ua)) return "android";
   return "other";
 }
@@ -15,7 +15,7 @@ function detectPlatform(): Platform {
 function isAlreadyInstalled(): boolean {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as any).standalone === true
+    ("standalone" in navigator && (navigator as { standalone: boolean }).standalone === true)
   );
 }
 
@@ -187,11 +187,14 @@ function AndroidGuide({ onDismiss }: { onDismiss: () => void }) {
 
 export default function PwaInstallPrompt({ onDismiss }: Props) {
   const [platform, setPlatform] = useState<Platform | null>(null);
+  // onDismiss를 ref로 보관해 useEffect dependency 없이 항상 최신 참조를 사용
+  const onDismissRef = useRef(onDismiss);
+  useEffect(() => { onDismissRef.current = onDismiss; }, [onDismiss]);
 
   useEffect(() => {
     // 이미 standalone(설치된 앱)으로 실행 중이면 바로 진행
     if (isAlreadyInstalled()) {
-      onDismiss();
+      onDismissRef.current();
       return;
     }
 
@@ -200,9 +203,8 @@ export default function PwaInstallPrompt({ onDismiss }: Props) {
 
     // 데스크탑이면 안내 없이 바로 진행
     if (detected === "other") {
-      onDismiss();
+      onDismissRef.current();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 플랫폼 감지 전, 또는 데스크탑이면 아무것도 렌더링하지 않음

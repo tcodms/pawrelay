@@ -27,13 +27,14 @@ async function refreshToken(): Promise<void> {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // FormData일 때는 Content-Type을 직접 지정하지 않음 (브라우저가 boundary 포함하여 자동 설정)
+  const isFormData = init.body instanceof FormData;
   const options: RequestInit = {
     ...init,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
+    headers: isFormData
+      ? { ...(init.headers ?? {}) }
+      : { "Content-Type": "application/json", ...(init.headers ?? {}) },
   };
 
   const res = await fetch(`${API_BASE}${path}`, options);
@@ -129,16 +130,10 @@ export async function signupShelter(
   formData.append("name", data.name);
   formData.append("business_registration_file", data.business_registration_file);
 
-  const res = await fetch(`${API_BASE}/auth/signup/shelter`, {
+  return request<SignupShelterResponse>("/auth/signup/shelter", {
     method: "POST",
-    credentials: "include",
     body: formData,
   });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiError(body.error ?? "UNKNOWN_ERROR", res.status);
-  }
-  return res.json() as Promise<SignupShelterResponse>;
 }
 
 export async function logout(): Promise<void> {

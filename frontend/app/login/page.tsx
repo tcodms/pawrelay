@@ -5,29 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, ApiError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
-
-function EyeIcon({ visible }: { visible: boolean }) {
-  return visible ? (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  ) : (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3" />
-      <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
-  );
-}
+import EyeIcon from "@/components/ui/EyeIcon";
+import Spinner from "@/components/ui/Spinner";
 
 const INPUT_BASE =
   "h-12 w-full rounded-xl border bg-gray-50 px-4 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:bg-white focus:outline-none";
@@ -109,7 +88,7 @@ function LoginForm() {
     setLoading(true);
     try {
       const { user } = await login(email, password);
-      router.replace(user.role === "volunteer" ? "/volunteer/chat" : "/dashboard");
+      router.replace(user.role === "volunteer" ? "/volunteer/posts" : "/dashboard");
     } catch (err) {
       // 보안: 로그인 실패 시 어떤 필드가 틀렸는지 노출하지 않음
       if (err instanceof ApiError && err.code === "INVALID_CREDENTIALS") {
