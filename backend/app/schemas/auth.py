@@ -35,6 +35,11 @@ class ShelterSignupRequest(BaseModel):
         return v
 
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: str
@@ -44,4 +49,8 @@ class UserResponse(BaseModel):
 
 
 class SignupResponse(BaseModel):
+    user: UserResponse
+
+
+class LoginResponse(BaseModel):
     user: UserResponse

@@ -1,15 +1,18 @@
 from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.security import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     create_access_token,
     create_refresh_token,
+    decode_refresh_token,
     hash_password,
+    verify_password,
 )
 from app.models.user import User
 from app.repositories import user_repo
-from app.schemas.auth import ShelterSignupRequest, VolunteerSignupRequest
+from app.schemas.auth import LoginRequest, ShelterSignupRequest, VolunteerSignupRequest
 
 
 def _set_auth_cookies(response: Response, user_id: int) -> None:
@@ -20,6 +23,7 @@ def _set_auth_cookies(response: Response, user_id: int) -> None:
         key="access_token",
         value=access_token,
         httponly=True,
+        secure=settings.is_production,
         samesite="strict",
         max_age=60 * 15,
     )
@@ -27,7 +31,7 @@ def _set_auth_cookies(response: Response, user_id: int) -> None:
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
+        secure=settings.is_production,
         samesite="strict",
         max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRE_DAYS,
     )
@@ -71,3 +75,43 @@ async def signup_shelter(
         address=body.address,
         shelter_registration_doc_url=body.shelter_registration_doc_url,
     )
+
+
+async def login(
+    db: AsyncSession,
+    body: LoginRequest,
+    response: Response,
+) -> User:
+    user = await user_repo.get_user_by_email(db, body.email)
+    if not user or not verify_password(body.password, user.password_hash):
+        raise ValueError("INVALID_CREDENTIALS")
+    if user.account_status in ("suspended", "banned"):
+        raise ValueError("ACCOUNT_SUSPENDED")
+    if not user.email_verified_at:
+        raise ValueError("EMAIL_NOT_VERIFIED")
+
+    _set_auth_cookies(response, user.id)
+    return user
+
+
+async def logout(response: Response) -> None:
+    response.delete_cookie("access_token", path="/", samesite="strict")
+    response.delete_cookie("refresh_token", path="/", samesite="strict")
+
+
+async def refresh(
+    refresh_token: str | None,
+    response: Response,
+    db: AsyncSession,
+) -> None:
+    if not refresh_token:
+        raise ValueError("REFRESH_TOKEN_EXPIRED")
+    user_id = decode_refresh_token(refresh_token)
+    if not user_id:
+        raise ValueError("REFRESH_TOKEN_EXPIRED")
+
+    user = await user_repo.get_user_by_id(db, user_id)
+    if not user or user.account_status in ("suspended", "banned"):
+        raise ValueError("REFRESH_TOKEN_EXPIRED")
+
+    _set_auth_cookies(response, user_id)
