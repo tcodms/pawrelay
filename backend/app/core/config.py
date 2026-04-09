@@ -14,6 +14,11 @@ class Settings(BaseSettings):
 
     secret_key: str
     algorithm: str = "HS256"
+    environment: str = "development"
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
 
     @property
     def database_url(self) -> str:
