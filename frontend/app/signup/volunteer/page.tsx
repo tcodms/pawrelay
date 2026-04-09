@@ -93,6 +93,7 @@ export default function VolunteerSignupPage() {
   const [maxAnimalSize, setMaxAnimalSize] = useState<AnimalSize | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
     email?: string;
     password?: string;
     passwordConfirm?: string;
@@ -123,6 +124,7 @@ export default function VolunteerSignupPage() {
     setError("");
 
     const errors: typeof fieldErrors = {};
+    if (!name.trim()) errors.name = "이름을 입력해 주세요.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "올바른 이메일 형식이 아닙니다.";
     if (password.length < 8) errors.password = "비밀번호는 8자 이상이어야 합니다.";
     if (password !== passwordConfirm) errors.passwordConfirm = "비밀번호가 일치하지 않습니다.";
@@ -211,10 +213,11 @@ export default function VolunteerSignupPage() {
               <label htmlFor="name" className="block text-[13px] font-semibold text-gray-500">이름</label>
               <input
                 id="name" name="name" type="text" autoComplete="name" required
-                value={name} onChange={(e) => setName(e.target.value)}
+                value={name} onChange={(e) => { setName(e.target.value); setFieldErrors((prev) => ({ ...prev, name: undefined })); }}
                 placeholder="실명을 입력해 주세요"
-                className={INPUT}
+                className={`${INPUT} ${fieldErrors.name ? "border-red-400 focus:border-red-400" : ""}`}
               />
+              {fieldErrors.name && <p className="text-[12px] text-red-500">{fieldErrors.name}</p>}
             </div>
 
             {/* 이메일 */}

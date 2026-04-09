@@ -113,7 +113,7 @@ function LoginForm() {
     } catch (err) {
       // 보안: 로그인 실패 시 어떤 필드가 틀렸는지 노출하지 않음
       if (err instanceof ApiError && err.code === "INVALID_CREDENTIALS") {
-        setGlobalError("이메일 또는 비밀번호가 일치하지 않습니다.");
+        setGlobalError("이메일 또는 비밀번호를 다시 확인해 주세요.");
       } else if (err instanceof ApiError && err.code === "EMAIL_NOT_VERIFIED") {
         setEmailNotVerified(true);
       } else {
