@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Plus, X, ChevronRight, ArrowRight, Users } from "lucide-react";
@@ -185,10 +185,16 @@ export default function DashboardPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [sheetType, setSheetType] = useState<"applicants" | "matching" | null>(null);
   const [toast, setToast] = useState("");
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
+  }, []);
 
   function showToast(msg: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(msg);
-    setTimeout(() => setToast(""), 4000);
+    toastTimerRef.current = setTimeout(() => setToast(""), 4000);
   }
 
   function closeSheet() {

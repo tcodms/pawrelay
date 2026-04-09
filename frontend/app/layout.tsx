@@ -31,6 +31,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "PawRelay",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
@@ -48,7 +51,6 @@ export default function RootLayout({
     <html lang="ko" className={`${fredoka.variable} ${notoSansKr.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-white text-gray-900 antialiased font-[family-name:var(--font-noto)]">
         <SplashScreen />
