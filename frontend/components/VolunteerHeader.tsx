@@ -6,9 +6,9 @@ export default function VolunteerHeader({ title }: { title: string }) {
           PawRelay
         </span>
         <span className="text-gray-300">|</span>
-        <h1 className="font-[family-name:var(--font-jua)] text-[15px] text-gray-500">
+        <span className="text-[15px] text-gray-500">
           {title}
-        </h1>
+        </span>
       </div>
     </header>
   );

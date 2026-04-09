@@ -7,7 +7,7 @@ export default function VolunteerLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <div className="flex-1 pb-16">{children}</div>
+      <div className="flex-1" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>{children}</div>
       <BottomNav />
     </div>
   );

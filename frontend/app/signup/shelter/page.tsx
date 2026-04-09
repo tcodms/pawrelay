@@ -43,6 +43,7 @@ export default function ShelterSignupPage() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     if (file && file.type !== "application/pdf") {
+      setBusinessFile(null);
       setFileError("PDF 파일만 업로드 가능합니다.");
       return;
     }

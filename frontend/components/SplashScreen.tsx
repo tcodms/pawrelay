@@ -40,7 +40,7 @@ export default function SplashScreen() {
     >
       {/* 한글 문구 — Jua, 따뜻한 무채색 */}
       <p
-        className="font-[family-name:var(--font-jua)] mb-3 text-center text-[14px] leading-relaxed text-stone-400 animate-fade-in"
+        className="font-[family-name:var(--font-noto)] mb-3 text-center text-[14px] leading-relaxed text-stone-400 animate-fade-in"
       >
         새로운 가족으로 향하는 따뜻한 릴레이
       </p>

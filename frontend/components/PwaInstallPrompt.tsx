@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getDeferredInstallPrompt, clearDeferredInstallPrompt } from "@/lib/pwa";
+import { getDeferredInstallPrompt, clearDeferredInstallPrompt, BeforeInstallPromptEvent } from "@/lib/pwa";
 
 type Platform = "ios" | "android" | "other";
 
@@ -99,7 +99,15 @@ function IosGuide({ onDismiss }: { onDismiss: () => void }) {
 
 function AndroidGuide({ onDismiss }: { onDismiss: () => void }) {
   const [installing, setInstalling] = useState(false);
-  const deferredPrompt = getDeferredInstallPrompt();
+  const [deferredPrompt, setDeferredPrompt] = useState(getDeferredInstallPrompt);
+
+  useEffect(() => {
+    function handlePrompt(e: Event) {
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    }
+    window.addEventListener("beforeinstallprompt", handlePrompt);
+    return () => window.removeEventListener("beforeinstallprompt", handlePrompt);
+  }, []);
 
   async function handleInstall() {
     if (!deferredPrompt) return;
@@ -108,6 +116,7 @@ function AndroidGuide({ onDismiss }: { onDismiss: () => void }) {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       clearDeferredInstallPrompt();
+      setDeferredPrompt(null);
       if (outcome === "accepted") {
         onDismiss();
       }

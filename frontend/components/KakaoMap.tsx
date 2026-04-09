@@ -28,7 +28,7 @@ export default function KakaoMap({
 
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
-    if (!apiKey || apiKey === "여기에_발급받은_JavaScript_키_입력") {
+    if (!apiKey || apiKey.startsWith("your_")) {
       setMapState("no-key");
       return;
     }
