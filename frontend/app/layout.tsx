@@ -16,7 +16,7 @@ const fredoka = Fredoka({
 // 한글 문구용 — 획이 둥글고 아기자기한 한국어 폰트
 const jua = Jua({
   weight: "400",
-  subsets: ["latin"],
+  subsets: ["korean"],
   variable: "--font-jua",
   display: "swap",
   preload: false, // 한글 폰트는 용량이 크므로 preload 비활성
@@ -36,8 +36,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: "#F97316",
 };
 

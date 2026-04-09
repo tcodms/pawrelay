@@ -5,6 +5,7 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   body {
     -webkit-font-smoothing: antialiased;

@@ -165,7 +165,7 @@ function LoginForm() {
             </label>
             <input
               id="email"
-              type="text"
+              type="email"
               inputMode="email"
               autoComplete="email"
               value={email}
