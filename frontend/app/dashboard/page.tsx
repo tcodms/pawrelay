@@ -10,13 +10,12 @@ import { StatusBadge, SizeBadge } from "@/components/ui/PostBadges";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type TabKey = "all" | "urgent" | "recruiting" | "waiting" | "in_progress" | "completed";
+type TabKey = "all" | "recruiting" | "waiting" | "in_progress" | "completed";
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 const TABS: { key: TabKey; label: string; dot: string }[] = [
   { key: "all",         label: "전체",    dot: "bg-gray-400" },
-  { key: "urgent",      label: "긴급",    dot: "bg-red-500" },
   { key: "recruiting",  label: "모집 중", dot: "bg-green-500" },
   { key: "waiting",     label: "대기 중", dot: "bg-yellow-400" },
   { key: "in_progress", label: "봉사 중", dot: "bg-blue-400" },
@@ -202,8 +201,7 @@ export default function DashboardPage() {
 
   const filtered = posts.filter((p) => {
     if (activeTab === "all")         return true;
-    if (activeTab === "urgent")      return p.status === "urgent";
-    if (activeTab === "recruiting")  return p.status === "recruiting";
+    if (activeTab === "recruiting")  return p.status === "recruiting" || p.status === "urgent";
     if (activeTab === "waiting")     return p.status === "waiting";
     if (activeTab === "in_progress") return p.status === "in_progress";
     if (activeTab === "completed")   return p.status === "completed";
