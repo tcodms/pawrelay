@@ -34,12 +34,12 @@ Request:
 {
   "email": "test@gmail.com",
   "password": "abc123!",
-  "name": "홍길동"
+  "name": "홍길동",
+  "activity_regions": ["서울특별시", "경기도"]
 }
 
 Response 200:
 {
-  "access_token": "eyJ...",
   "user": { "id": 1, "email": "test@gmail.com", "role": "volunteer" }
 }
 ```
@@ -60,7 +60,10 @@ Request:
   "email": "shelter@gmail.com",
   "password": "abc123!",
   "name": "행복보호소",
-  "business_registration_number": "1234567890"
+  "phone": "062-000-0000",
+  "contact_email": "contact@shelter.com",
+  "address": "광주광역시 서구 OO로 1",
+  "shelter_registration_doc_url": "https://s3.../doc.pdf"
 }
 
 Response 200:
@@ -69,12 +72,13 @@ Response 200:
 }
 ```
 
+> `contact_email`: 알림 수신용 이메일 (로그인 email과 별도).
+> `shelter_registration_doc_url`: nullable. 가입 시 미첨부 가능, 이후 별도 업로드.
 > 가입 후 관리자 승인 전까지 대시보드 접근 제한.
 
 | 에러 코드 | 조건 |
 |----------|------|
 | `EMAIL_ALREADY_EXISTS` | 이미 가입된 이메일 |
-| `INVALID_BUSINESS_NUMBER` | 사업자번호 10자리 형식 미충족 |
 
 ---
 
@@ -647,7 +651,7 @@ Response 200:
       "id": 1,
       "name": "행복보호소",
       "email": "shelter@gmail.com",
-      "business_registration_number": "1234567890",
+      "shelter_registration_doc_url": "https://s3.../doc.pdf",
       "created_at": "2026-04-01T09:00:00Z"
     }
   ]
