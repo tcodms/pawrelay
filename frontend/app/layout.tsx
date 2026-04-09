@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Jua } from "next/font/google";
-import SplashScreen from "@/components/SplashScreen";
+import dynamic from "next/dynamic";
 import "./globals.css";
+
+const SplashScreen = dynamic(() => import("@/components/SplashScreen"), { ssr: false });
 
 // 영문 로고용 — Nunito보다 획 끝이 더 둥글고 귀여운 폰트
 const fredoka = Fredoka({
