@@ -68,17 +68,22 @@ pawrelay/
 ## 핵심 비즈니스 로직
 
 ### 매칭 플로우 (자정 배치)
-1. `volunteer_schedules` 테이블에서 `status=available` 일정 수집
-2. **1단계 SQL**: PostGIS로 경로 근접성·날짜·동물크기 필터 (수백→수십 건)
+1. `transport_posts` 에서 `status=recruiting` 공고 전체 수집 (날짜 무관, 매일 재시도)
+2. **1단계 SQL**: 각 공고의 `scheduled_date`와 `available_date`가 일치하는 `volunteer_schedules` 수집
+   - `post_id`가 해당 공고인 봉사자는 가중치 높게 처리 (직접 지원)
+   - `post_id=NULL`인 봉사자는 날짜·동선 기준으로 전체 공고 대상
+   - PostGIS로 경로 근접성·동물크기 필터 (수백→수십 건)
 3. **2단계 Python**: 인계 시간 간격 검증 (`HANDOVER_BUFFER = 30분`), 연결 가능 체인만 남김
 4. **3단계 LLM**: 최적 체인 선택 + `matching_reason` 한국어 생성
 5. 보호소 확인(24시간) → 봉사자 수락(24시간) → 매칭 확정
+6. 매칭 확정 시 `volunteer_schedules.status = matched` → 다음 배치 대상에서 제외
 
-### 챗봇 (상태 머신, LLM 미사용)
+### 챗봇 (자연어 기반 LLM 파이프라인)
+봉사자의 자유 입력을 LLM이 파싱·정규화해 DB 저장 형태로 변환. 누락 필드는 Multi-turn으로 추가 질문.
 ```
-ASK_ORIGIN → ASK_DESTINATION → ASK_DATE → ASK_VEHICLE → ASK_ANIMAL_SIZE → CONFIRM → COMPLETED
+봉사자 자유 입력 → LLM 파싱·정규화 → 누락 필드 추가 질문(Multi-turn) → DB 저장
 ```
-- `post_id` 있는 진입: `ASK_DATE`, `ASK_ANIMAL_SIZE` 스킵
+- `post_id` 있는 진입: LLM이 공고 요구사항을 인지한 상태로 시작, 불필요한 질문 생략
 - 세션: Redis 저장, FE는 `sessionStorage`에 `session_id` 보관
 
 ### 인계 확인 (6자리 코드)
@@ -164,7 +169,7 @@ waypoints           — name, type(rest_area|train|bus|shelter), geom(PostGIS)
 ## MVP 범위
 
 **MVP에 포함:**
-- 챗봇 동선 등록 (상태 머신, LLM 없음)
+- 챗봇 동선 등록 (자연어 LLM 파이프라인)
 - LLM 배치 매칭 (자정 1회)
 - 릴레이 트래킹 (체크포인트, 6자리 코드 인계)
 - Web Push + WebSocket 알림
