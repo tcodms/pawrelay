@@ -8,6 +8,7 @@ import PwaInstallPrompt from "@/components/PwaInstallPrompt";
  * 확인 후 이 파일(app/test-pwa/)을 삭제하세요.
  */
 export default function TestPwaPage() {
+  if (process.env.NODE_ENV !== "development") return null;
   const [show, setShow] = useState(false);
 
   if (show) {

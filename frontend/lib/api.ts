@@ -39,7 +39,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${API_BASE}${path}`, options);
 
-  if (res.status === 401) {
+  const isAuthEndpoint = path === "/auth/login" || path.startsWith("/auth/signup");
+
+  if (res.status === 401 && !isAuthEndpoint) {
     // Deduplicate concurrent refresh calls
     if (!refreshPromise) {
       refreshPromise = refreshToken().finally(() => {

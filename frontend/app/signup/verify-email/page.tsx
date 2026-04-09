@@ -101,7 +101,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" /></div>}>
       <VerifyEmailContent />
     </Suspense>
   );
