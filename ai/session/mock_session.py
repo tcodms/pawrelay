@@ -1,57 +1,47 @@
 import uuid
 import time
+import copy
 from typing import Optional
 from .base import SessionManager
 
 
-SESSION_TTL_SECONDS = 3600  # 1시간
+SESSION_TTL_SECONDS = 3600
 
 
 class MockSessionManager(SessionManager):
-    """메모리 기반 Mock 세션 매니저.
-
-    Redis 연동 전 개발/테스트용.
-    딕셔너리에 세션을 저장하고 TTL 1시간 만료를 처리한다.
-    """
-
     def __init__(self):
         self._sessions = {}
 
-    async def create(self, post_id: Optional[int] = None,
-                     auto_filled: Optional[dict] = None) -> str:
+    async def create(self, post_id=None, auto_filled=None) -> str:
         session_id = str(uuid.uuid4())
-
         self._sessions[session_id] = {
             "state": "ASK_ORIGIN",
             "collected_data": {},
-            "auto_filled": auto_filled or {},
+            "auto_filled": copy.deepcopy(auto_filled) if auto_filled else {},
             "post_id": post_id,
             "created_at": time.time(),
         }
-
         return session_id
 
     async def get(self, session_id: str) -> Optional[dict]:
         session = self._sessions.get(session_id)
-
         if session is None:
             return None
-
         elapsed = time.time() - session["created_at"]
         if elapsed > SESSION_TTL_SECONDS:
             del self._sessions[session_id]
             return None
-
-        return session
+        return copy.deepcopy(session)
 
     async def update(self, session_id: str, data: dict) -> bool:
-        session = await self.get(session_id)
-
+        session = self._sessions.get(session_id)
         if session is None:
             return False
-
-        session.update(data)
-        self._sessions[session_id] = session
+        elapsed = time.time() - session["created_at"]
+        if elapsed > SESSION_TTL_SECONDS:
+            del self._sessions[session_id]
+            return False
+        session.update(copy.deepcopy(data))
         return True
 
     async def delete(self, session_id: str) -> bool:
