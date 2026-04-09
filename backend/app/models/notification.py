@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, SmallInteger, Text, Enum, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import BigInteger, String, SmallInteger, Text, Enum, DateTime, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -9,6 +9,9 @@ from app.models import Base
 
 class Notification(Base):
     __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notifications_user_id_read_at", "user_id", "read_at"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)

@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Date, DateTime, Enum, ForeignKey, Numeric, Text
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, Enum, ForeignKey, Numeric, String, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy import Column
@@ -9,15 +9,20 @@ from app.models import Base
 
 class VolunteerSchedule(Base):
     __tablename__ = "volunteer_schedules"
+    __table_args__ = (
+        Index("ix_volunteer_schedules_volunteer_id", "volunteer_id"),
+        Index("ix_volunteer_schedules_available_date_status", "available_date", "status"),
+        Index("ix_volunteer_schedules_route", "route", postgresql_using="gist"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     volunteer_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
     post_id = Column(BigInteger, ForeignKey("transport_posts.id"), nullable=True)
     route_description = Column(Text, nullable=False)
-    route = Column(Geometry("LINESTRING", srid=4326), nullable=False)
+    route = Column(Geometry("LINESTRING", srid=4326, spatial_index=False), nullable=False)
     available_date = Column(Date, nullable=False)
-    origin_area = Column(Text, nullable=False)
-    destination_area = Column(Text, nullable=False)
+    origin_area = Column(String(100), nullable=False)
+    destination_area = Column(String(100), nullable=False)
     vehicle_available = Column(Boolean, nullable=False)
     max_animal_size = Column(
         Enum("small", "medium", "large", name="animal_size_schedule_enum"),

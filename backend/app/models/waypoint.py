@@ -1,5 +1,4 @@
-from sqlalchemy import BigInteger, String, Enum
-from sqlalchemy.orm import relationship
+from sqlalchemy import BigInteger, String, Enum, Index
 from sqlalchemy import Column
 from geoalchemy2 import Geometry
 
@@ -8,6 +7,9 @@ from app.models import Base
 
 class Waypoint(Base):
     __tablename__ = "waypoints"
+    __table_args__ = (
+        Index("ix_waypoints_geom", "geom", postgresql_using="gist"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
@@ -17,5 +19,5 @@ class Waypoint(Base):
     )
     address = Column(String(255), nullable=False)
     phone = Column(String(20), nullable=True)
-    geom = Column(Geometry("POINT", srid=4326), nullable=False)
+    geom = Column(Geometry("POINT", srid=4326, spatial_index=False), nullable=False)
     source = Column(String(50), nullable=False)

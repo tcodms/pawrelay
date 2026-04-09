@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, Enum, DateTime, Date, Text, ForeignKey
+from sqlalchemy import BigInteger, String, Enum, DateTime, Date, Text, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -10,6 +10,9 @@ from app.models import Base
 
 class TransportPost(Base):
     __tablename__ = "transport_posts"
+    __table_args__ = (
+        Index("ix_transport_posts_status_scheduled_date", "status", "scheduled_date"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     shelter_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)

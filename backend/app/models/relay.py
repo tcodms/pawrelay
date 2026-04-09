@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, SmallInteger, String, Text, Enum, DateTime, Numeric, ForeignKey, CHAR
+from sqlalchemy import BigInteger, SmallInteger, String, Text, Enum, DateTime, Numeric, ForeignKey, CHAR, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -9,6 +9,9 @@ from app.models import Base
 
 class RelayChain(Base):
     __tablename__ = "relay_chains"
+    __table_args__ = (
+        Index("ix_relay_chains_transport_post_id", "transport_post_id"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     transport_post_id = Column(BigInteger, ForeignKey("transport_posts.id"), nullable=False)
@@ -29,6 +32,10 @@ class RelayChain(Base):
 
 class RelaySegment(Base):
     __tablename__ = "relay_segments"
+    __table_args__ = (
+        Index("ix_relay_segments_chain_id", "chain_id"),
+        Index("ix_relay_segments_volunteer_id_status", "volunteer_id", "status"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     chain_id = Column(BigInteger, ForeignKey("relay_chains.id"), nullable=False)
@@ -70,6 +77,9 @@ class RelaySegment(Base):
 
 class Checkpoint(Base):
     __tablename__ = "checkpoints"
+    __table_args__ = (
+        Index("ix_checkpoints_segment_id", "segment_id"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     segment_id = Column(BigInteger, ForeignKey("relay_segments.id"), nullable=False)

@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, Enum, DateTime, Boolean, ARRAY, ForeignKey
+from sqlalchemy import BigInteger, String, Text, Enum, DateTime, Boolean, ARRAY, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy import Column
@@ -44,7 +44,7 @@ class ShelterProfile(Base):
     email = Column(String(255), nullable=False)
     address = Column(String(255), nullable=False)
     shelter_registration_doc_url = Column(String(500), nullable=True)
-    verification_notes = Column(String, nullable=True)
+    verification_notes = Column(Text, nullable=True)
     operating_hours = Column(String(100), nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
 
