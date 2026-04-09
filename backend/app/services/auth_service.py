@@ -104,9 +104,13 @@ async def login(
 
 
 async def logout(response: Response, user_id: int) -> None:
-    await redis_client.delete(f"refresh_token:{user_id}")
-    response.delete_cookie("access_token", path="/", samesite="strict")
-    response.delete_cookie("refresh_token", path="/", samesite="strict")
+    try:
+        await redis_client.delete(f"refresh_token:{user_id}")
+    except Exception:
+        pass
+    finally:
+        response.delete_cookie("access_token", path="/", samesite="strict")
+        response.delete_cookie("refresh_token", path="/", samesite="strict")
 
 
 async def refresh(
