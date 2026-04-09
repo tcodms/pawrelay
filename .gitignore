@@ -29,5 +29,10 @@ out/
 .DS_Store
 Thumbs.db
 
+# 테스트
+.pytest_cache/
+.coverage
+htmlcov/
+
 # 로그
 *.log
