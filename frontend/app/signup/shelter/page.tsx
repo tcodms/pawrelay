@@ -5,65 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signupShelter, ApiError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
-
-function EyeIcon({ visible }: { visible: boolean }) {
-  return visible ? (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  ) : (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3" />
-      <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
-  );
-}
-
-function StepIndicator({ current }: { current: 1 | 2 }) {
-  return (
-    <div className="flex items-center justify-center gap-2 py-4">
-      {[1, 2].map((s) => (
-        <div key={s} className="flex items-center gap-2">
-          <div
-            className={`flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-bold transition-colors duration-200 ${
-              s <= current ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-400"
-            }`}
-          >
-            {s}
-          </div>
-          {s === 1 && (
-            <div className={`h-px w-10 transition-colors duration-200 ${current === 2 ? "bg-orange-400" : "bg-gray-200"}`} />
-          )}
-        </div>
-      ))}
-      <div className="sr-only">{current}단계 / 2단계</div>
-    </div>
-  );
-}
-
-function ErrorBox({ message }: { message: string }) {
-  return (
-    <div role="alert" className="flex items-start gap-2.5 rounded-xl bg-red-50 px-4 py-3 animate-fade-in">
-      <svg className="mt-px shrink-0 text-red-400" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-      </svg>
-      <p className="text-[13px] leading-snug text-red-600">{message}</p>
-    </div>
-  );
-}
+import EyeIcon from "@/components/ui/EyeIcon";
+import Spinner from "@/components/ui/Spinner";
+import ErrorBox from "@/components/ui/ErrorBox";
+import StepIndicator from "@/components/ui/StepIndicator";
 
 const INPUT =
   "h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:border-orange-400 focus:bg-white focus:outline-none";
+
+const PW_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 
 export default function ShelterSignupPage() {
   const router = useRouter();
@@ -107,7 +57,7 @@ export default function ShelterSignupPage() {
     const errors: typeof fieldErrors = {};
     if (!name.trim()) errors.name = "보호소 이름을 입력해 주세요.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "올바른 이메일 형식이 아닙니다.";
-    if (password.length < 8) errors.password = "비밀번호는 8자 이상이어야 합니다.";
+    if (!PW_REGEX.test(password)) errors.password = "영문+숫자+특수문자를 포함해 8자 이상 입력해 주세요.";
     if (password !== passwordConfirm) errors.passwordConfirm = "비밀번호가 일치하지 않습니다.";
 
     if (Object.keys(errors).length > 0) {

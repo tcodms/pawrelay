@@ -58,14 +58,25 @@ function VerifyEmailContent() {
           </div>
         </div>
 
-        {/* 스팸 안내 */}
-        <div className="mb-6 flex items-start gap-2 rounded-xl bg-gray-50 px-4 py-3">
-          <svg className="mt-0.5 shrink-0 text-gray-400" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-          </svg>
-          <p className="text-[12px] leading-relaxed text-gray-400">
-            메일이 오지 않으면 스팸함을 확인해 주세요.
-          </p>
+        {/* 스팸 안내 + 재발송 */}
+        <div className="mb-6 flex flex-col gap-2">
+          <div className="flex items-start gap-2 rounded-xl bg-gray-50 px-4 py-3">
+            <svg className="mt-0.5 shrink-0 text-gray-400" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+            <p className="text-[12px] leading-relaxed text-gray-400">
+              메일이 오지 않으면 스팸함을 확인하거나 아래 버튼으로 재발송하세요.
+            </p>
+          </div>
+
+          {/* TODO: 백엔드 POST /auth/resend-verification 구현 후 연동 */}
+          <button
+            type="button"
+            disabled
+            className="w-full rounded-xl border border-gray-200 py-3 text-[13px] font-semibold text-gray-300"
+          >
+            인증 메일 재발송
+          </button>
         </div>
 
         {/* 로그인 페이지로 */}
@@ -90,7 +101,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" /></div>}>
       <VerifyEmailContent />
     </Suspense>
   );

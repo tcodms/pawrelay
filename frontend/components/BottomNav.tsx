@@ -39,6 +39,7 @@ export default function BottomNav() {
             <li key={href} className="flex flex-1">
               <Link
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className="flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors"
               >
                 <Icon
