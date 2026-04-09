@@ -1,41 +1,44 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowDown, ArrowRight, Calendar, MapPin, Pencil, Trash2, Users } from "lucide-react";
-import { getPost, PostStatus } from "@/lib/api/posts";
+import { getPost, deletePost } from "@/lib/api/posts";
+import type { Post } from "@/lib/api/posts";
+import { StatusBadge, SizeBadge } from "@/components/ui/PostBadges";
 
-function statusBadge(status: PostStatus) {
-  const map: Record<PostStatus, { label: string; className: string }> = {
-    urgent:      { label: "긴급",     className: "bg-red-100 text-red-600" },
-    recruiting:  { label: "모집 중", className: "bg-green-100 text-green-700" },
-    waiting:     { label: "대기 중", className: "bg-yellow-100 text-yellow-700" },
-    in_progress: { label: "봉사 중", className: "bg-blue-100 text-blue-700" },
-    completed:   { label: "봉사 종료", className: "bg-gray-100 text-gray-500" },
-  };
-  const { label, className } = map[status];
-  return (
-    <span className={`rounded-full px-3 py-1 text-[12px] font-semibold ${className}`}>
-      {label}
-    </span>
-  );
-}
+export default function PostDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
 
-function SizeTag({ size }: { size: string }) {
-  const map: Record<string, string> = {
-    소형: "bg-sky-50 text-sky-600",
-    중형: "bg-indigo-50 text-indigo-600",
-    대형: "bg-purple-50 text-purple-600",
-  };
-  return (
-    <span className={`rounded-full px-3 py-1 text-[12px] font-medium ${map[size] ?? ""}`}>
-      {size}
-    </span>
-  );
-}
+  useEffect(() => {
+    getPost(Number(params.id))
+      .then(setPost)
+      .finally(() => setLoading(false));
+  }, [params.id]);
 
-export default async function PostDetailPage({ params }: { params: { id: string } }) {
-  const post = await getPost(Number(params.id));
+  async function handleDelete() {
+    if (!post) return;
+    if (!confirm(`"${post.animal.name}" 공고를 삭제할까요?`)) return;
+    try {
+      await deletePost(post.id);
+      router.push("/dashboard");
+    } catch {
+      // TODO: 백엔드 연동 후 실제 삭제 구현 (DELETE /posts/{id} 스펙 확정 필요)
+      alert("삭제 기능은 백엔드 연동 후 사용 가능합니다.");
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+      </main>
+    );
+  }
 
   if (!post) {
     return (
@@ -52,6 +55,7 @@ export default async function PostDetailPage({ params }: { params: { id: string 
         <Link
           href="/dashboard"
           className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+          aria-label="목록으로 돌아가기"
         >
           <ArrowLeft size={20} />
         </Link>
@@ -65,6 +69,7 @@ export default async function PostDetailPage({ params }: { params: { id: string 
             <Pencil size={17} />
           </Link>
           <button
+            onClick={handleDelete}
             className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
             aria-label="공고 삭제"
           >
@@ -94,8 +99,8 @@ export default async function PostDetailPage({ params }: { params: { id: string 
         {/* 기본 정보 카드 */}
         <div className="rounded-2xl bg-white border border-gray-100 p-5">
           <div className="flex items-center gap-2 mb-3">
-            {statusBadge(post.status)}
-            <SizeTag size={post.animal.size} />
+            <StatusBadge status={post.status} />
+            <SizeBadge size={post.animal.size} />
           </div>
 
           <h1 className="text-[22px] font-bold text-gray-900 mb-4">{post.animal.name}</h1>

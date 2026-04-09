@@ -2,54 +2,26 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { User, Plus, X, ChevronRight, ArrowRight, Users } from "lucide-react";
-import { getPosts, Post, PostStatus } from "@/lib/api/posts";
+import { getPosts, Post } from "@/lib/api/posts";
 import { approveShelterMatching, rejectShelterMatching } from "@/lib/api/matching";
 import { getShelterProfile } from "@/lib/api/shelter";
+import { StatusBadge, SizeBadge } from "@/components/ui/PostBadges";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type TabKey = "all" | "urgent" | "recruiting" | "waiting" | "completed";
+type TabKey = "all" | "urgent" | "recruiting" | "waiting" | "in_progress" | "completed";
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 const TABS: { key: TabKey; label: string; dot: string }[] = [
-  { key: "all",        label: "전체",     dot: "bg-gray-400" },
-  { key: "urgent",     label: "긴급",     dot: "bg-red-500" },
-  { key: "recruiting", label: "모집 중",  dot: "bg-green-500" },
-  { key: "waiting",    label: "대기 중",  dot: "bg-yellow-400" },
-  { key: "completed",  label: "종료", dot: "bg-gray-300" },
+  { key: "all",         label: "전체",    dot: "bg-gray-400" },
+  { key: "urgent",      label: "긴급",    dot: "bg-red-500" },
+  { key: "recruiting",  label: "모집 중", dot: "bg-green-500" },
+  { key: "waiting",     label: "대기 중", dot: "bg-yellow-400" },
+  { key: "in_progress", label: "봉사 중", dot: "bg-blue-400" },
+  { key: "completed",   label: "종료",    dot: "bg-gray-300" },
 ];
-
-function statusBadge(status: PostStatus) {
-  const map: Record<PostStatus, { label: string; className: string }> = {
-    urgent:      { label: "긴급",     className: "bg-red-100 text-red-600" },
-    recruiting:  { label: "모집 중", className: "bg-green-100 text-green-700" },
-    waiting:     { label: "대기 중", className: "bg-yellow-100 text-yellow-700" },
-    in_progress: { label: "봉사 중", className: "bg-blue-100 text-blue-700" },
-    completed:   { label: "봉사 종료", className: "bg-gray-100 text-gray-500" },
-  };
-  const { label, className } = map[status];
-  return (
-    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${className}`}>
-      {label}
-    </span>
-  );
-}
-
-function sizeBadge(size: string) {
-  const map: Record<string, string> = {
-    소형: "bg-sky-50 text-sky-600",
-    중형: "bg-indigo-50 text-indigo-600",
-    대형: "bg-purple-50 text-purple-600",
-  };
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${map[size] ?? ""}`}>
-      {size}
-    </span>
-  );
-}
 
 // ── Bottom Sheet ───────────────────────────────────────────────────────────────
 
@@ -77,7 +49,6 @@ function BottomSheet({
         onClick={onClose}
       />
       <div className="relative z-10 w-full max-w-lg rounded-t-3xl bg-white shadow-2xl animate-slide-up max-h-[85vh] flex flex-col">
-        {/* 핸들 */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
           <div className="h-1 w-10 rounded-full bg-gray-200" />
         </div>
@@ -92,9 +63,14 @@ function BottomSheet({
 function Toast({ message }: { message: string }) {
   if (!message) return null;
   return (
-    <div className="fixed inset-x-0 top-5 z-[60] flex justify-center px-4 animate-fade-in">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="fixed inset-x-0 top-5 z-[60] flex justify-center px-4 animate-fade-in"
+    >
       <div className="flex items-center gap-2.5 rounded-2xl bg-gray-900 px-5 py-3.5 shadow-xl">
-        <svg className="shrink-0 text-green-400" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <svg aria-hidden="true" className="shrink-0 text-green-400" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <polyline points="20 6 9 17 4 12" />
         </svg>
         <span className="text-[13px] font-semibold text-white">{message}</span>
@@ -109,70 +85,70 @@ function PostCard({
   post,
   onShowApplicants,
   onShowMatching,
-  onNavigate,
 }: {
   post: Post;
   onShowApplicants: (post: Post) => void;
   onShowMatching: (post: Post) => void;
-  onNavigate: (id: number) => void;
 }) {
   const isUrgent = post.status === "urgent";
   const isWaiting = post.status === "waiting";
   const isRecruiting = post.status === "recruiting";
+  const hasAction = isWaiting || isRecruiting || isUrgent;
 
   return (
-    <div
-      onClick={() => onNavigate(post.id)}
-      className="rounded-2xl bg-white border border-gray-100 p-5 transition-shadow hover:shadow-md cursor-pointer"
-    >
-      {/* 상단 행 */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          {statusBadge(post.status)}
-          {sizeBadge(post.animal.size)}
+    <div className="rounded-2xl bg-white border border-gray-100 transition-shadow hover:shadow-md">
+      {/* 상세 페이지 링크 — 카드 정보 영역 전체 */}
+      <Link
+        href={`/dashboard/posts/${post.id}`}
+        className={`block p-5 ${hasAction ? "pb-3" : ""}`}
+      >
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatusBadge status={post.status} variant="sm" />
+            <SizeBadge size={post.animal.size} variant="sm" />
+          </div>
+          <span className="text-[12px] text-gray-400 shrink-0">{post.scheduledDate}</span>
         </div>
-        <span className="text-[12px] text-gray-400 shrink-0">{post.scheduledDate}</span>
-      </div>
 
-      {/* 동물 이름 + 경로 */}
-      <p className="text-[16px] font-bold text-gray-900 mb-1">
-        {post.animal.name}
-      </p>
-      <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-4">
-        <span>{post.origin}</span>
-        <ArrowRight size={13} className="text-gray-300 shrink-0" />
-        <span>{post.destination}</span>
-      </div>
+        <p className="text-[16px] font-bold text-gray-900 mb-1">{post.animal.name}</p>
+        <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-4">
+          <span>{post.origin}</span>
+          <ArrowRight size={13} className="text-gray-300 shrink-0" />
+          <span>{post.destination}</span>
+        </div>
 
-      {/* 지원자 수 */}
-      <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-4">
-        <Users size={14} className="text-gray-400" />
-        <span>현재 지원: <span className="font-semibold text-gray-700">{post.volunteers.length}명</span></span>
-      </div>
+        <div className="flex items-center gap-1.5 text-[13px] text-gray-500">
+          <Users size={14} className="text-gray-400" />
+          <span>현재 지원: <span className="font-semibold text-gray-700">{post.volunteers.length}명</span></span>
+        </div>
+      </Link>
 
-      {/* 액션 영역 */}
-      {isWaiting && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onShowMatching(post); }}
-          className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors active:scale-[0.98]"
-        >
-          <span className="flex-1 text-center">매칭 결과</span>
-          <ChevronRight size={15} className="text-yellow-400" />
-        </button>
-      )}
-
-      {(isRecruiting || isUrgent) && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onShowApplicants(post); }}
-          className={`w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold transition-colors active:scale-[0.98] ${
-            isUrgent
-              ? "bg-red-50 text-red-600 hover:bg-red-100"
-              : "bg-green-50 text-green-700 hover:bg-green-100"
-          }`}
-        >
-          <span className="flex-1 text-center">지원자 목록</span>
-          <ChevronRight size={15} className={isUrgent ? "text-red-400" : "text-green-400"} />
-        </button>
+      {/* 액션 버튼 — Link 바깥에 배치하여 중첩 방지 */}
+      {hasAction && (
+        <div className="px-5 pb-5">
+          {isWaiting && (
+            <button
+              onClick={() => onShowMatching(post)}
+              className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors active:scale-[0.98]"
+            >
+              <span className="flex-1 text-center">매칭 결과</span>
+              <ChevronRight size={15} className="text-yellow-400" />
+            </button>
+          )}
+          {(isRecruiting || isUrgent) && (
+            <button
+              onClick={() => onShowApplicants(post)}
+              className={`w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold transition-colors active:scale-[0.98] ${
+                isUrgent
+                  ? "bg-red-50 text-red-600 hover:bg-red-100"
+                  : "bg-green-50 text-green-700 hover:bg-green-100"
+              }`}
+            >
+              <span className="flex-1 text-center">지원자 목록</span>
+              <ChevronRight size={15} className={isUrgent ? "text-red-400" : "text-green-400"} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -181,7 +157,6 @@ function PostCard({
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [shelterName, setShelterName] = useState("보호소");
@@ -208,23 +183,11 @@ export default function DashboardPage() {
     setSheetType(null);
   }
 
-  function handleShowApplicants(post: Post) {
-    setSelectedPost(post);
-    setSheetType("applicants");
-  }
-
-  function handleShowMatching(post: Post) {
-    setSelectedPost(post);
-    setSheetType("matching");
-  }
-
   async function handleApprove() {
     if (!selectedPost) return;
     await approveShelterMatching(selectedPost.id);
     setPosts((prev) =>
-      prev.map((p) =>
-        p.id === selectedPost.id ? { ...p, status: "in_progress" } : p
-      )
+      prev.map((p) => p.id === selectedPost.id ? { ...p, status: "in_progress" } : p)
     );
     closeSheet();
     showToast("릴레이 매칭이 확정되었습니다! 모든 봉사자에게 안내 이메일이 발송됩니다.");
@@ -238,16 +201,17 @@ export default function DashboardPage() {
   }
 
   const filtered = posts.filter((p) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "urgent") return p.status === "urgent";
-    if (activeTab === "recruiting") return p.status === "recruiting";
-    if (activeTab === "waiting") return p.status === "waiting";
-    if (activeTab === "completed") return p.status === "completed" || p.status === "in_progress";
+    if (activeTab === "all")         return true;
+    if (activeTab === "urgent")      return p.status === "urgent";
+    if (activeTab === "recruiting")  return p.status === "recruiting";
+    if (activeTab === "waiting")     return p.status === "waiting";
+    if (activeTab === "in_progress") return p.status === "in_progress";
+    if (activeTab === "completed")   return p.status === "completed";
     return true;
   });
 
   const recruitingCount = posts.filter((p) => p.status === "recruiting" || p.status === "urgent").length;
-  const waitingCount = posts.filter((p) => p.status === "waiting" || p.status === "in_progress").length;
+  const waitingCount    = posts.filter((p) => p.status === "waiting").length;
 
   return (
     <>
@@ -266,6 +230,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/dashboard/profile"
+              aria-label="프로필"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
             >
               <User size={18} />
@@ -282,7 +247,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="rounded-2xl bg-white border border-gray-100 px-4 py-3 flex flex-col gap-1">
-            <p className="text-[12px] text-gray-400">대기중 공고</p>
+            <p className="text-[12px] text-gray-400">매칭 대기 공고</p>
             <p className="text-[28px] font-bold text-yellow-500 leading-none">{waitingCount}
               <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
             </p>
@@ -297,6 +262,7 @@ export default function DashboardPage() {
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
+                aria-current={isActive ? "true" : undefined}
                 className={`flex shrink-0 items-center gap-1.5 px-3 pb-2.5 pt-1 text-[12px] transition-all relative ${
                   isActive
                     ? "font-bold text-gray-900"
@@ -328,9 +294,8 @@ export default function DashboardPage() {
               <PostCard
                 key={post.id}
                 post={post}
-                onShowApplicants={handleShowApplicants}
-                onShowMatching={handleShowMatching}
-                onNavigate={(id) => router.push(`/dashboard/posts/${id}`)}
+                onShowApplicants={(p) => { setSelectedPost(p); setSheetType("applicants"); }}
+                onShowMatching={(p)   => { setSelectedPost(p); setSheetType("matching"); }}
               />
             ))
           )}
@@ -359,21 +324,16 @@ export default function DashboardPage() {
                   총 {selectedPost.volunteers.length}명 지원
                 </p>
               </div>
-              <button onClick={closeSheet} className="text-gray-400 hover:text-gray-600">
+              <button onClick={closeSheet} aria-label="닫기" className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
 
             <div className="flex flex-col gap-2.5 mt-4">
               {selectedPost.volunteers.map((v) => (
-                <div
-                  key={v.id}
-                  className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3.5"
-                >
+                <div key={v.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3.5">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100">
-                    <span className="text-[13px] font-bold text-orange-600">
-                      {v.name[0]}
-                    </span>
+                    <span className="text-[13px] font-bold text-orange-600">{v.name[0]}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-gray-800">{v.name}</p>
@@ -386,7 +346,6 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-
           </>
         )}
       </BottomSheet>
@@ -399,11 +358,10 @@ export default function DashboardPage() {
               <div>
                 <h3 className="text-[16px] font-bold text-gray-900">최종 매칭 결과</h3>
                 <p className="text-[12px] text-gray-400 mt-0.5">
-                  {selectedPost.animal.name} ·{" "}
-                  {selectedPost.origin} → {selectedPost.destination}
+                  {selectedPost.animal.name} · {selectedPost.origin} → {selectedPost.destination}
                 </p>
               </div>
-              <button onClick={closeSheet} className="text-gray-400 hover:text-gray-600">
+              <button onClick={closeSheet} aria-label="닫기" className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
@@ -416,14 +374,12 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-0">
                 {selectedPost.relayChain.map((seg, i) => (
                   <div key={i} className="flex gap-3">
-                    {/* 타임라인 선 */}
                     <div className="flex flex-col items-center">
                       <div className="h-3 w-3 rounded-full bg-orange-400 ring-2 ring-orange-100 mt-1 shrink-0" />
                       {i < selectedPost.relayChain!.length - 1 && (
                         <div className="w-0.5 flex-1 bg-orange-100 my-1" />
                       )}
                     </div>
-                    {/* 내용 */}
                     <div className="pb-5">
                       <div className="rounded-xl bg-orange-50 border border-orange-100 px-4 py-3">
                         <div className="flex items-center justify-between gap-3 mb-1">
@@ -439,7 +395,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 ))}
-                {/* 도착 */}
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <div className="h-3 w-3 rounded-full bg-green-400 ring-2 ring-green-100 mt-1 shrink-0" />
@@ -459,7 +414,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* 버튼 */}
             <div className="flex flex-col gap-2.5">
               <button
                 onClick={handleApprove}
