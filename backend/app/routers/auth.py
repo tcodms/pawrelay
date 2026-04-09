@@ -12,7 +12,8 @@ from app.schemas.auth import (
 )
 from app.services import auth_service
 
-KNOWN_AUTH_ERRORS = {"EMAIL_ALREADY_EXISTS", "INVALID_CREDENTIALS", "ACCOUNT_SUSPENDED", "EMAIL_NOT_VERIFIED", "REFRESH_TOKEN_EXPIRED"}
+_400_ERRORS = {"EMAIL_ALREADY_EXISTS", "ACCOUNT_SUSPENDED", "EMAIL_NOT_VERIFIED"}
+_401_ERRORS = {"INVALID_CREDENTIALS", "REFRESH_TOKEN_EXPIRED"}
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ async def signup_volunteer(
     try:
         user = await auth_service.signup_volunteer(db, body, response)
     except ValueError as e:
-        if str(e) in KNOWN_AUTH_ERRORS:
+        if str(e) in _400_ERRORS:
             raise HTTPException(status_code=400, detail={"error": str(e)}) from e
         raise
     return SignupResponse(user=UserResponse.model_validate(user))
@@ -40,7 +41,7 @@ async def signup_shelter(
     try:
         user = await auth_service.signup_shelter(db, body)
     except ValueError as e:
-        if str(e) in KNOWN_AUTH_ERRORS:
+        if str(e) in _400_ERRORS:
             raise HTTPException(status_code=400, detail={"error": str(e)}) from e
         raise
     return SignupResponse(user=UserResponse.model_validate(user))
@@ -55,7 +56,9 @@ async def login(
     try:
         user = await auth_service.login(db, body, response)
     except ValueError as e:
-        if str(e) in KNOWN_AUTH_ERRORS:
+        if str(e) in _401_ERRORS:
+            raise HTTPException(status_code=401, detail={"error": str(e)}) from e
+        if str(e) in _400_ERRORS:
             raise HTTPException(status_code=400, detail={"error": str(e)}) from e
         raise
     return LoginResponse(user=UserResponse.model_validate(user))
@@ -74,9 +77,10 @@ async def logout(
 async def refresh(
     response: Response,
     refresh_token: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
-        await auth_service.refresh(refresh_token, response)
+        await auth_service.refresh(refresh_token, response, db)
     except ValueError as e:
         raise HTTPException(status_code=401, detail={"error": str(e)}) from e
     return {"ok": True}

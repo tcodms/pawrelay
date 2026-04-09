@@ -85,7 +85,7 @@ async def login(
     user = await user_repo.get_user_by_email(db, body.email)
     if not user or not verify_password(body.password, user.password_hash):
         raise ValueError("INVALID_CREDENTIALS")
-    if user.account_status == "suspended":
+    if user.account_status in ("suspended", "banned"):
         raise ValueError("ACCOUNT_SUSPENDED")
     if not user.email_verified_at:
         raise ValueError("EMAIL_NOT_VERIFIED")
@@ -95,17 +95,23 @@ async def login(
 
 
 async def logout(response: Response) -> None:
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+    response.delete_cookie("access_token", path="/", samesite="strict")
+    response.delete_cookie("refresh_token", path="/", samesite="strict")
 
 
 async def refresh(
     refresh_token: str | None,
     response: Response,
+    db: AsyncSession,
 ) -> None:
     if not refresh_token:
         raise ValueError("REFRESH_TOKEN_EXPIRED")
     user_id = decode_refresh_token(refresh_token)
     if not user_id:
         raise ValueError("REFRESH_TOKEN_EXPIRED")
+
+    user = await user_repo.get_user_by_id(db, user_id)
+    if not user or user.account_status in ("suspended", "banned"):
+        raise ValueError("REFRESH_TOKEN_EXPIRED")
+
     _set_auth_cookies(response, user_id)

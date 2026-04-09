@@ -27,7 +27,6 @@ async def get_current_user(
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.repositories import user_repo
     from sqlalchemy import select
     from app.models.user import User
 
@@ -37,4 +36,6 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail={"error": "UNAUTHORIZED"})
     if user.account_status == "suspended":
         raise HTTPException(status_code=403, detail={"error": "ACCOUNT_SUSPENDED"})
+    if user.account_status == "banned":
+        raise HTTPException(status_code=403, detail={"error": "ACCOUNT_BANNED"})
     return user
