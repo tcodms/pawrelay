@@ -6,11 +6,14 @@ from app.core.redis import redis_client
 from app.core.security import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     create_access_token,
+    create_email_verification_token,
     create_refresh_token,
+    decode_email_verification_token,
     decode_refresh_token,
     hash_password,
     verify_password,
 )
+from app.services.email_service import send_verification_email
 from app.models.user import User
 from app.repositories import user_repo
 from app.schemas.auth import LoginRequest, ShelterSignupRequest, VolunteerSignupRequest
@@ -49,7 +52,6 @@ async def _set_auth_cookies(response: Response, user_id: int) -> None:
 async def signup_volunteer(
     db: AsyncSession,
     body: VolunteerSignupRequest,
-    response: Response,
 ) -> User:
     existing = await user_repo.get_user_by_email(db, body.email)
     if existing:
@@ -64,7 +66,8 @@ async def signup_volunteer(
         max_animal_size=body.max_animal_size,
         activity_regions=body.activity_regions,
     )
-    await _set_auth_cookies(response, user.id)
+    token = create_email_verification_token(user.id)
+    await send_verification_email(body.email, token)
     return user
 
 
@@ -76,7 +79,7 @@ async def signup_shelter(
     if existing:
         raise ValueError("EMAIL_ALREADY_EXISTS")
 
-    return await user_repo.create_shelter(
+    user = await user_repo.create_shelter(
         db=db,
         email=body.email,
         password_hash=hash_password(body.password),
@@ -86,6 +89,16 @@ async def signup_shelter(
         address=body.address,
         shelter_registration_doc_url=body.shelter_registration_doc_url,
     )
+    token = create_email_verification_token(user.id)
+    await send_verification_email(body.email, token)
+    return user
+
+
+async def verify_email(token: str, db: AsyncSession) -> None:
+    user_id = decode_email_verification_token(token)
+    if not user_id:
+        raise ValueError("INVALID_VERIFICATION_TOKEN")
+    await user_repo.verify_email(db, user_id)
 
 
 async def login(
@@ -98,9 +111,8 @@ async def login(
         raise ValueError("INVALID_CREDENTIALS")
     if user.account_status in ("suspended", "banned"):
         raise ValueError("ACCOUNT_SUSPENDED")
-    # TODO: #23 완료 후 주석 해제
-    # if not user.email_verified_at:
-    #     raise ValueError("EMAIL_NOT_VERIFIED")
+    if not user.email_verified_at:
+        raise ValueError("EMAIL_NOT_VERIFIED")
 
     await _set_auth_cookies(response, user.id)
     return user

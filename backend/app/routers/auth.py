@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings
 
 from app.core.dependencies import get_current_user, get_current_user_id, get_db
 from app.schemas.auth import (
@@ -12,7 +15,7 @@ from app.schemas.auth import (
 )
 from app.services import auth_service
 
-_400_ERRORS = {"EMAIL_ALREADY_EXISTS", "ACCOUNT_SUSPENDED", "EMAIL_NOT_VERIFIED"}
+_400_ERRORS = {"EMAIL_ALREADY_EXISTS", "ACCOUNT_SUSPENDED", "EMAIL_NOT_VERIFIED", "INVALID_VERIFICATION_TOKEN"}
 _401_ERRORS = {"INVALID_CREDENTIALS", "REFRESH_TOKEN_EXPIRED"}
 
 router = APIRouter()
@@ -21,11 +24,10 @@ router = APIRouter()
 @router.post("/signup/volunteer", response_model=SignupResponse)
 async def signup_volunteer(
     body: VolunteerSignupRequest,
-    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        user = await auth_service.signup_volunteer(db, body, response)
+        user = await auth_service.signup_volunteer(db, body)
     except ValueError as e:
         if str(e) in _400_ERRORS:
             raise HTTPException(status_code=400, detail={"error": str(e)}) from e
@@ -45,6 +47,15 @@ async def signup_shelter(
             raise HTTPException(status_code=400, detail={"error": str(e)}) from e
         raise
     return SignupResponse(user=UserResponse.model_validate(user))
+
+
+@router.get("/verify-email/{token}")
+async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
+    try:
+        await auth_service.verify_email(token, db)
+    except ValueError:
+        return RedirectResponse(f"{settings.frontend_url}/auth/verify-email?error=invalid")
+    return RedirectResponse(f"{settings.frontend_url}/auth/verify-email?success=true")
 
 
 @router.post("/login", response_model=LoginResponse)
