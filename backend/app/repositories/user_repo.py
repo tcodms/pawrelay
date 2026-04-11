@@ -1,11 +1,13 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import ShelterProfile, User, VolunteerProfile
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
-    result = await db.execute(select(User).where(User.email == email))
+    normalized = email.strip().lower()
+    result = await db.execute(select(User).where(User.email == normalized))
     return result.scalar_one_or_none()
 
 
@@ -23,7 +25,7 @@ async def create_volunteer(
     max_animal_size: str,
     activity_regions: list[str],
 ) -> User:
-    user = User(email=email, password_hash=password_hash, name=name, role="volunteer")
+    user = User(email=email.strip().lower(), password_hash=password_hash, name=name, role="volunteer")
     db.add(user)
     await db.flush()
 
@@ -34,7 +36,11 @@ async def create_volunteer(
         activity_regions=activity_regions,
     )
     db.add(profile)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise ValueError("EMAIL_ALREADY_EXISTS")
     await db.refresh(user)
     return user
 
@@ -49,7 +55,7 @@ async def create_shelter(
     address: str,
     shelter_registration_doc_url: str | None,
 ) -> User:
-    user = User(email=email, password_hash=password_hash, name=name, role="shelter")
+    user = User(email=email.strip().lower(), password_hash=password_hash, name=name, role="shelter")
     db.add(user)
     await db.flush()
 
@@ -62,6 +68,10 @@ async def create_shelter(
         shelter_registration_doc_url=shelter_registration_doc_url,
     )
     db.add(profile)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise ValueError("EMAIL_ALREADY_EXISTS")
     await db.refresh(user)
     return user
