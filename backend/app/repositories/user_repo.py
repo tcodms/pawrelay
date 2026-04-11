@@ -19,6 +19,8 @@ async def create_volunteer(
     email: str,
     password_hash: str,
     name: str,
+    vehicle_available: bool,
+    max_animal_size: str,
     activity_regions: list[str],
 ) -> User:
     user = User(email=email, password_hash=password_hash, name=name, role="volunteer")
@@ -27,7 +29,8 @@ async def create_volunteer(
 
     profile = VolunteerProfile(
         user_id=user.id,
-        vehicle_available=False,
+        vehicle_available=vehicle_available,
+        max_animal_size=max_animal_size,
         activity_regions=activity_regions,
     )
     db.add(profile)

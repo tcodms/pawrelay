@@ -60,6 +60,8 @@ async def signup_volunteer(
         email=body.email,
         password_hash=hash_password(body.password),
         name=body.name,
+        vehicle_available=body.vehicle_available,
+        max_animal_size=body.max_animal_size,
         activity_regions=body.activity_regions,
     )
     await _set_auth_cookies(response, user.id)
@@ -96,8 +98,9 @@ async def login(
         raise ValueError("INVALID_CREDENTIALS")
     if user.account_status in ("suspended", "banned"):
         raise ValueError("ACCOUNT_SUSPENDED")
-    if not user.email_verified_at:
-        raise ValueError("EMAIL_NOT_VERIFIED")
+    # TODO: #23 완료 후 주석 해제
+    # if not user.email_verified_at:
+    #     raise ValueError("EMAIL_NOT_VERIFIED")
 
     await _set_auth_cookies(response, user.id)
     return user
