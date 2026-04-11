@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,6 +39,13 @@ async def create_volunteer(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+async def verify_email(db: AsyncSession, user_id: int) -> None:
+    user = await get_user_by_id(db, user_id)
+    if user and not user.email_verified_at:
+        user.email_verified_at = datetime.now(timezone.utc)
+        await db.commit()
 
 
 async def create_shelter(
