@@ -9,6 +9,8 @@ _PW_SPECIAL = r"[!@#$%^&*()_+\-=\[\]{};:'\"\\|,.<>/?]"
 
 
 class _PasswordMixin(BaseModel):
+    password: str
+
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
