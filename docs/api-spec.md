@@ -125,7 +125,7 @@ Response: { "ok": true }
 
 ---
 
-### POST `/auth/verify-email/{token}`
+### GET `/auth/verify-email/{token}`
 인증 불필요.
 
 > BE: 처리 완료 후 302 리다이렉트.
