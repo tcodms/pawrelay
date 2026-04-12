@@ -213,6 +213,21 @@ Response 200:
 
 ---
 
+### DELETE `/posts/{id}`
+보호소 인증 필요. 본인 공고만 삭제 가능.
+
+```json
+Response 200: { "ok": true }
+```
+
+| 에러 코드 | 조건 |
+|----------|------|
+| `POST_NOT_FOUND` | 존재하지 않는 공고 |
+| `UNAUTHORIZED` | 본인 공고 아님 |
+| `POST_ALREADY_MATCHED` | 매칭 확정된 공고 (삭제 불가) |
+
+---
+
 ### PUT `/posts/{id}`
 보호소 인증 필요. 본인 공고만 수정 가능.
 
@@ -327,6 +342,41 @@ Response 200:
 ---
 
 ## 4. 매칭
+
+### PATCH `/matching/relay-chains/{chain_id}/approve`
+보호소 인증 필요.
+
+```json
+Response 200: { "ok": true }
+```
+
+> 매칭 플로우: 보호소 승인 → 봉사자 수락(24시간) → 매칭 확정.
+
+| 에러 코드 | 조건 |
+|----------|------|
+| `CHAIN_NOT_FOUND` | 존재하지 않는 체인 |
+| `CHAIN_ALREADY_APPROVED` | 이미 승인된 체인 |
+| `CHAIN_EXPIRED` | 24시간 초과 |
+| `UNAUTHORIZED` | 본인 공고의 체인이 아님 |
+
+---
+
+### PATCH `/matching/relay-chains/{chain_id}/reject`
+보호소 인증 필요.
+
+```json
+Response 200: { "ok": true }
+```
+
+> 거절 시 해당 `transport_post`의 status가 `recruiting`으로 복귀 → 다음 자정 배치 재처리 대상.
+
+| 에러 코드 | 조건 |
+|----------|------|
+| `CHAIN_NOT_FOUND` | 존재하지 않는 체인 |
+| `CHAIN_ALREADY_APPROVED` | 이미 승인된 체인 |
+| `UNAUTHORIZED` | 본인 공고의 체인이 아님 |
+
+---
 
 ### POST `/matching/accept/{segment_id}`
 봉사자 인증 필요.
@@ -590,6 +640,21 @@ Response 200: { "ok": true }
 ---
 
 ## 7. 보호소 대시보드
+
+### GET `/shelter/me`
+보호소 인증 필요.
+
+```json
+Response 200:
+{
+  "id": 1,
+  "name": "행복 동물 보호소",
+  "email": "shelter@example.com",
+  "verified_at": "2026-04-01T00:00:00Z"
+}
+```
+
+---
 
 ### GET `/shelter/dashboard`
 보호소 인증 필요.
