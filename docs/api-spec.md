@@ -35,6 +35,8 @@ Request:
   "email": "test@gmail.com",
   "password": "abc123!",
   "name": "홍길동",
+  "vehicle_available": true,
+  "max_animal_size": "small",
   "activity_regions": ["서울특별시", "경기도"]
 }
 
@@ -125,7 +127,7 @@ Response: { "ok": true }
 
 ---
 
-### POST `/auth/verify-email/{token}`
+### GET `/auth/verify-email/{token}`
 인증 불필요.
 
 > BE: 처리 완료 후 302 리다이렉트.
