@@ -35,6 +35,8 @@ Request:
   "email": "test@gmail.com",
   "password": "abc123!",
   "name": "홍길동",
+  "vehicle_available": true,
+  "max_animal_size": "small",
   "activity_regions": ["서울특별시", "경기도"]
 }
 
