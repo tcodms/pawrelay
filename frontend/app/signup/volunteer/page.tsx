@@ -32,6 +32,7 @@ export default function VolunteerSignupPage() {
   // 2단계 필드
   const [regionInput, setRegionInput] = useState("");
   const [activityRegions, setActivityRegions] = useState<string[]>([]);
+  const [vehicleAvailable, setVehicleAvailable] = useState<boolean | null>(null);
   const [maxAnimalSize, setMaxAnimalSize] = useState<AnimalSize | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<{
@@ -90,6 +91,10 @@ export default function VolunteerSignupPage() {
       setError("활동 지역을 최소 1개 이상 추가해 주세요.");
       return;
     }
+    if (vehicleAvailable === null) {
+      setError("차량 소유 여부를 선택해 주세요.");
+      return;
+    }
     if (!maxAnimalSize) {
       setError("이송 가능한 동물 크기를 선택해 주세요.");
       return;
@@ -101,6 +106,7 @@ export default function VolunteerSignupPage() {
         name,
         email,
         password,
+        vehicle_available: vehicleAvailable,
         max_animal_size: maxAnimalSize,
         activity_regions: activityRegions,
       });
@@ -296,6 +302,27 @@ export default function VolunteerSignupPage() {
             </div>
           </div>
 
+
+          {/* 차량 소유 여부 */}
+          <div className="space-y-2">
+            <label className="block text-[13px] font-semibold text-gray-500">차량 소유 여부</label>
+            <div className="grid grid-cols-2 gap-2.5">
+              {([true, false] as const).map((val) => (
+                <button key={String(val)} type="button"
+                  onClick={() => setVehicleAvailable(val)}
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 py-4 transition-all duration-150 ${
+                    vehicleAvailable === val
+                      ? "border-orange-500 bg-orange-50"
+                      : "border-gray-200 bg-gray-50"
+                  }`}>
+                  <span className="text-[24px] leading-none">{val ? "🚗" : "🚶"}</span>
+                  <span className={`text-[15px] font-bold ${vehicleAvailable === val ? "text-orange-600" : "text-gray-700"}`}>
+                    {val ? "있어요" : "없어요"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* 최대 동물 크기 */}
           <div className="space-y-2">

@@ -77,7 +77,6 @@ export async function updatePost(id: number, data: Partial<CreatePostData>): Pro
 }
 
 export async function deletePost(id: number): Promise<void> {
-  // api-spec.md 미확정 — 백엔드 팀에 DELETE /posts/{id} 추가 요청 필요
   await request<{ ok: boolean }>(`/posts/${id}`, { method: "DELETE" });
 }
 
