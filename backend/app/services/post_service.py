@@ -85,13 +85,17 @@ async def update_post(db: AsyncSession, post_id: int, shelter_id: int, data) -> 
     if post.status != "recruiting":
         raise HTTPException(status_code=409, detail={"error": "POST_ALREADY_MATCHED"})
 
-    notes = data.animal_info.notes if data.animal_info else None
-    await post_repo.update_post(
+    animal_notes_provided = data.animal_info is not None
+    notes = data.animal_info.notes if animal_notes_provided else None
+    updated = await post_repo.update_post(
         db,
-        post,
+        post_id,
         scheduled_date=data.scheduled_date,
         animal_notes=notes,
+        animal_notes_provided=animal_notes_provided,
     )
+    if not updated:
+        raise HTTPException(status_code=409, detail={"error": "POST_ALREADY_MATCHED"})
 
 
 async def delete_post(db: AsyncSession, post_id: int, shelter_id: int) -> None:
@@ -100,10 +104,9 @@ async def delete_post(db: AsyncSession, post_id: int, shelter_id: int) -> None:
         raise HTTPException(status_code=404, detail={"error": "POST_NOT_FOUND"})
     if post.shelter_id != shelter_id:
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
-    if post.status not in ("recruiting",):
+    cancelled = await post_repo.cancel_post(db, post_id)
+    if not cancelled:
         raise HTTPException(status_code=409, detail={"error": "POST_ALREADY_MATCHED"})
-
-    await post_repo.cancel_post(db, post)
 
 
 async def get_public_post(db: AsyncSession, share_token: UUID) -> PostPublicResponse:
@@ -134,7 +137,7 @@ async def get_public_post(db: AsyncSession, share_token: UUID) -> PostPublicResp
                 recorded_at=cp.recorded_at,
             )
             for cp in checkpoints
-            if cp.latitude and cp.longitude
+            if cp.latitude is not None and cp.longitude is not None
         ],
         timeline=[
             TimelineItem(

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.post import TransportPost
@@ -97,20 +97,37 @@ async def get_post_by_share_token(db: AsyncSession, share_token: UUID) -> Transp
 
 async def update_post(
     db: AsyncSession,
-    post: TransportPost,
+    post_id: int,
     scheduled_date=None,
-    animal_notes: str | None = None,
-) -> None:
+    animal_notes=None,
+    animal_notes_provided: bool = False,
+) -> bool:
+    values = {}
     if scheduled_date is not None:
-        post.scheduled_date = scheduled_date
-    if animal_notes is not None:
-        post.animal_notes = animal_notes
+        values["scheduled_date"] = scheduled_date
+    if animal_notes_provided:
+        values["animal_notes"] = animal_notes
+
+    if not values:
+        return True
+
+    result = await db.execute(
+        update(TransportPost)
+        .where(TransportPost.id == post_id, TransportPost.status == "recruiting")
+        .values(**values)
+    )
     await db.commit()
+    return result.rowcount > 0
 
 
-async def cancel_post(db: AsyncSession, post: TransportPost) -> None:
-    post.status = "cancelled"
+async def cancel_post(db: AsyncSession, post_id: int) -> bool:
+    result = await db.execute(
+        update(TransportPost)
+        .where(TransportPost.id == post_id, TransportPost.status == "recruiting")
+        .values(status="cancelled")
+    )
     await db.commit()
+    return result.rowcount > 0
 
 
 async def get_public_post_data(
