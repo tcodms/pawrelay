@@ -53,6 +53,11 @@ async def create_volunteer(
     return user
 
 
+async def get_shelter_profile(db: AsyncSession, user_id: int) -> ShelterProfile | None:
+    result = await db.execute(select(ShelterProfile).where(ShelterProfile.user_id == user_id))
+    return result.scalar_one_or_none()
+
+
 async def verify_email(db: AsyncSession, user_id: int) -> bool:
     user = await get_user_by_id(db, user_id)
     if not user:
