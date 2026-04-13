@@ -8,6 +8,11 @@ def _configure() -> None:
 
 
 async def send_verification_email(to: str, token: str) -> None:
+    # TODO: 배포 시 이 분기 제거하고 Resend 도메인 인증 후 실제 발송으로 교체
+    # 현재 로컬(development) 환경에서는 이메일 발송을 스킵함
+    if settings.environment == "development":
+        return
+
     _configure()
     verify_url = f"{settings.frontend_url}/auth/verify-email?token={token}"
     resend.Emails.send({
