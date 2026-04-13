@@ -41,6 +41,7 @@ _TRAIN_COL_LNG = 8
 
 
 def _parse_float(value: str) -> Optional[float]:
+    """문자열을 float으로 변환. 실패 시 None 반환."""
     try:
         return float(value.strip())
     except (ValueError, AttributeError):
@@ -139,6 +140,7 @@ def parse_train_stations(filepath: str) -> list[WaypointModel]:
 
 
 def _main():
+    """CLI 진입점: 버스터미널·기차역 CSV 파싱 후 저장."""
     parser = argparse.ArgumentParser(description="버스터미널·기차역 CSV 파서")
     parser.add_argument("--bus", help="버스 CSV 파일 경로")
     parser.add_argument("--train", help="기차역 CSV 파일 경로")

@@ -17,6 +17,7 @@ from ai.models.waypoint import WaypointModel, WaypointType
 
 
 def _normalize_phone(raw: Optional[str]) -> Optional[str]:
+    """전화번호를 0XX-XXX(X)-XXXX 형식으로 정규화."""
     if not raw:
         return None
     digits = "".join(c for c in raw if c.isdigit())
@@ -78,6 +79,7 @@ def parse_rest_area_json(filepath: str) -> list[WaypointModel]:
 
 
 def _main():
+    """CLI 진입점: 휴게소 JSON 파싱 후 저장."""
     parser = argparse.ArgumentParser(description="전국 휴게소 waypoints 파싱")
     parser.add_argument("--file", required=True, help="전국휴게소정보표준데이터.json 경로")
     parser.add_argument("--output", default=None, help="저장할 JSON 파일 경로")

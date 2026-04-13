@@ -27,6 +27,7 @@ async def _fetch_json(
     url: str,
     params: dict,
 ) -> dict:
+    """단일 HTTP GET 요청을 보내고 JSON 응답을 반환."""
     response = await client.get(url, params=params, timeout=_TIMEOUT_SECONDS)
     response.raise_for_status()
     return response.json()
@@ -135,6 +136,7 @@ async def collect_shelters(service_key: str) -> list[WaypointModel]:
 
 
 async def _main():
+    """CLI 진입점: 보호소 수집 후 JSON 파일로 저장."""
     parser = argparse.ArgumentParser(description="APMS 보호소 waypoints 수집")
     parser.add_argument("--output", default=None, help="저장할 JSON 파일 경로")
     args = parser.parse_args()
