@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Date, DateTime, Enum, ForeignKey, Numeric, String, Text, Index
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, Enum, ForeignKey, Numeric, String, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy import Column
@@ -13,6 +13,10 @@ class VolunteerSchedule(Base):
         Index("ix_volunteer_schedules_volunteer_id", "volunteer_id"),
         Index("ix_volunteer_schedules_available_date_status", "available_date", "status"),
         Index("ix_volunteer_schedules_route", "route", postgresql_using="gist"),
+        CheckConstraint(
+            "available_time IS NULL OR available_time ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'",
+            name="ck_volunteer_schedules_available_time_hhmm",
+        ),
     )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
