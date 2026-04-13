@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     email_from: str = "onboarding@resend.dev"
     frontend_url: str = "http://localhost:3000"
 
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_s3_bucket: str = ""
+    aws_region: str = "ap-northeast-2"
+
     @property
     def is_production(self) -> bool:
         return self.environment == "production"

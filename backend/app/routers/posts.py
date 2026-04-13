@@ -15,8 +15,20 @@ from app.schemas.post import (
     PostUpdateRequest,
 )
 from app.services import post_service
+from app.services.s3_service import generate_upload_url
 
 router = APIRouter()
+
+
+@router.get("/upload-url")
+async def get_upload_url(
+    filename: str = Query(...),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "shelter":
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+    upload_url, photo_url = generate_upload_url(filename)
+    return {"upload_url": upload_url, "photo_url": photo_url}
 
 
 @router.get("", response_model=PostListResponse)
