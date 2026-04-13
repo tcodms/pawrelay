@@ -46,6 +46,9 @@ def parse_rest_area_json(filepath: str) -> list[WaypointModel]:
     field_keys = [field["id"] for field in data.get("fields", [])]
     records = data.get("records", [])
 
+    if len(field_keys) < 7:
+        raise ValueError(f"fields 개수 부족: {len(field_keys)}개 (최소 7개 필요)")
+
     name_key = field_keys[0]
     lat_key = field_keys[5]
     lng_key = field_keys[6]

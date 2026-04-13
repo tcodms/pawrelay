@@ -130,7 +130,7 @@ async def collect_shelters(service_key: str) -> list[WaypointModel]:
     skipped = len(items) - len(valid)
 
     if skipped:
-        print(f"[경고] 좌표 없음으로 제외된 항목: {skipped}건")
+        print(f"[경고] 파싱 실패 또는 좌표 없음으로 제외된 항목: {skipped}건")
 
     return valid
 

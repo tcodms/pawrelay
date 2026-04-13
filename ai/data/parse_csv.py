@@ -55,7 +55,10 @@ def parse_bus_terminals(filepath: str) -> list[WaypointModel]:
 
     with open(filepath, encoding=_ENCODING, errors="replace") as f:
         reader = csv.reader(f)
-        next(reader)  # 헤더 스킵
+        try:
+            next(reader)  # 헤더 스킵
+        except StopIteration:
+            return results
 
         for row in reader:
             if len(row) <= _BUS_COL_REGION:
@@ -83,7 +86,7 @@ def parse_bus_terminals(filepath: str) -> list[WaypointModel]:
                     address=region or None,
                     source="버스정류소CSV_터미널필터",
                 ))
-            except Exception:
+            except (ValueError, TypeError):
                 skipped += 1
 
     if skipped:
@@ -99,7 +102,10 @@ def parse_train_stations(filepath: str) -> list[WaypointModel]:
 
     with open(filepath, encoding=_ENCODING, errors="replace") as f:
         reader = csv.reader(f)
-        next(reader)  # 헤더 스킵
+        try:
+            next(reader)  # 헤더 스킵
+        except StopIteration:
+            return results
 
         for row in reader:
             if len(row) <= _TRAIN_COL_LNG:
@@ -130,7 +136,7 @@ def parse_train_stations(filepath: str) -> list[WaypointModel]:
                     address=address,
                     source="철도역CSV_운행중필터",
                 ))
-            except Exception:
+            except (ValueError, TypeError):
                 skipped += 1
 
     if skipped:
