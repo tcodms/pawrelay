@@ -153,6 +153,9 @@ def _main():
     parser.add_argument("--output", help="저장할 JSON 파일 경로")
     args = parser.parse_args()
 
+    if not args.bus and not args.train:
+        parser.error("--bus 또는 --train 중 하나 이상 지정해주세요.")
+
     output_data = {}
 
     if args.bus:
