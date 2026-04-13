@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS waypoints (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_waypoints_name_type ON waypoints(name, type);
 CREATE INDEX IF NOT EXISTS idx_waypoints_type ON waypoints(type);
 CREATE INDEX IF NOT EXISTS idx_waypoints_geom ON waypoints USING GIST(geom);
 """

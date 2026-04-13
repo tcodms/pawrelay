@@ -58,7 +58,11 @@ def parse_rest_area_json(filepath: str) -> list[WaypointModel]:
         try:
             lat = float(record[lat_key])
             lng = float(record[lng_key])
-            name = str(record[name_key]).strip()
+            raw_name = record[name_key]
+            if raw_name is None:
+                skipped += 1
+                continue
+            name = str(raw_name).strip()
 
             if not name:
                 skipped += 1

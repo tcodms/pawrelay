@@ -61,6 +61,9 @@ async def _fetch_all_pages(
         if isinstance(item_list, dict):
             item_list = [item_list]
 
+        if not item_list:
+            break
+
         results.extend(item_list)
 
         if len(results) >= total_count:

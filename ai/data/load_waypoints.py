@@ -44,7 +44,7 @@ def _load_records(
         INSERT INTO waypoints (name, type, address, phone, geom, source)
         VALUES (%(name)s, %(type)s, %(address)s, %(phone)s,
                 ST_GeomFromEWKT(%(geom)s), %(source)s)
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (name, type) DO NOTHING
     """
 
     with conn.cursor() as cur:
