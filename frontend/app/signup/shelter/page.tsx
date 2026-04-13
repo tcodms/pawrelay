@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signupShelter, ApiError } from "@/lib/api";
+import { getPhotoUploadUrl } from "@/lib/api/posts";
 import { getErrorMessage } from "@/lib/errors";
 import EyeIcon from "@/components/ui/EyeIcon";
 import Spinner from "@/components/ui/Spinner";
@@ -14,6 +15,7 @@ const INPUT =
   "h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:border-orange-400 focus:bg-white focus:outline-none";
 
 const PW_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ShelterSignupPage() {
   const router = useRouter();
@@ -28,6 +30,9 @@ export default function ShelterSignupPage() {
   const [showPwConfirm, setShowPwConfirm] = useState(false);
 
   // 2단계
+  const [phone, setPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [address, setAddress] = useState("");
   const [businessFile, setBusinessFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
 
@@ -57,7 +62,7 @@ export default function ShelterSignupPage() {
 
     const errors: typeof fieldErrors = {};
     if (!name.trim()) errors.name = "보호소 이름을 입력해 주세요.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "올바른 이메일 형식이 아닙니다.";
+    if (!EMAIL_REGEX.test(email)) errors.email = "올바른 이메일 형식이 아닙니다.";
     if (!PW_REGEX.test(password)) errors.password = "영문+숫자+특수문자를 포함해 8자 이상 입력해 주세요.";
     if (password !== passwordConfirm) errors.passwordConfirm = "비밀번호가 일치하지 않습니다.";
 
@@ -73,7 +78,20 @@ export default function ShelterSignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFileError("");
 
+    if (!phone.trim()) {
+      setError("전화번호를 입력해 주세요.");
+      return;
+    }
+    if (!EMAIL_REGEX.test(contactEmail)) {
+      setError("올바른 알림 수신 이메일을 입력해 주세요.");
+      return;
+    }
+    if (!address.trim()) {
+      setError("주소를 입력해 주세요.");
+      return;
+    }
     if (!businessFile) {
       setFileError("증빙 서류 PDF를 업로드해 주세요.");
       return;
@@ -81,19 +99,40 @@ export default function ShelterSignupPage() {
 
     setLoading(true);
     try {
+      // 1. S3 Presigned URL 발급
+      const { upload_url, photo_url } = await getPhotoUploadUrl(businessFile.name);
+
+      // 2. S3에 파일 직접 업로드 (PUT)
+      const s3Res = await fetch(upload_url, {
+        method: "PUT",
+        body: businessFile,
+        headers: { "Content-Type": "application/pdf" },
+      });
+      if (!s3Res.ok) throw new Error("S3_UPLOAD_FAILED");
+
+      // 3. 회원가입 API 호출 (JSON)
       await signupShelter({
-        name,
         email,
         password,
-        business_registration_file: businessFile,
+        name,
+        phone,
+        contact_email: contactEmail,
+        address,
+        shelter_registration_doc_url: photo_url,
       });
+
+      localStorage.setItem("pwa_welcome_pending", "1");
       router.replace(`/signup/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? getErrorMessage(err.code)
-          : getErrorMessage("UNKNOWN_ERROR"),
-      );
+      if (err instanceof Error && err.message === "S3_UPLOAD_FAILED") {
+        setError("파일 업로드에 실패했습니다. 다시 시도해 주세요.");
+      } else {
+        setError(
+          err instanceof ApiError
+            ? getErrorMessage(err.code)
+            : getErrorMessage("UNKNOWN_ERROR"),
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -227,7 +266,7 @@ export default function ShelterSignupPage() {
     );
   }
 
-  // ── 2단계: 증빙 서류 ──────────────────────────────────────────────────────────
+  // ── 2단계: 보호소 정보 및 증빙 서류 ─────────────────────────────────────────
 
   return (
     <main className="flex min-h-screen flex-col bg-white">
@@ -236,7 +275,47 @@ export default function ShelterSignupPage() {
       <StepIndicator current={2} />
 
       <div className="flex flex-1 flex-col px-6 pb-8">
+        <p className="mb-5 text-[13px] text-gray-400">보호소 상세 정보를 입력해 주세요.</p>
+
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4 animate-slide-up">
+
+          {/* 전화번호 */}
+          <div className="space-y-1.5">
+            <label htmlFor="phone" className="block text-[13px] font-semibold text-gray-500">전화번호</label>
+            <input
+              id="phone" name="phone" type="tel" autoComplete="tel"
+              value={phone} onChange={(e) => setPhone(e.target.value)}
+              placeholder="062-000-0000"
+              className={INPUT}
+            />
+          </div>
+
+          {/* 알림 수신 이메일 */}
+          <div className="space-y-1.5">
+            <label htmlFor="contactEmail" className="block text-[13px] font-semibold text-gray-500">
+              알림 수신 이메일
+              <span className="ml-1 font-normal text-gray-400">(로그인 이메일과 별도)</span>
+            </label>
+            <input
+              id="contactEmail" name="contactEmail" type="email" autoComplete="off"
+              value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="알림을 받을 이메일 주소"
+              className={INPUT}
+            />
+          </div>
+
+          {/* 주소 */}
+          <div className="space-y-1.5">
+            <label htmlFor="address" className="block text-[13px] font-semibold text-gray-500">주소</label>
+            <input
+              id="address" name="address" type="text" autoComplete="street-address"
+              value={address} onChange={(e) => setAddress(e.target.value)}
+              placeholder="보호소 주소를 입력해 주세요"
+              className={INPUT}
+            />
+          </div>
+
+          {/* 증빙 서류 PDF */}
           <div className="space-y-1.5">
             <label className="block text-[13px] font-semibold text-gray-500">
               보호소 진위 확인 증빙 서류 <span className="font-normal text-gray-400">(PDF)</span>
