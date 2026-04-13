@@ -31,6 +31,7 @@ _TYPES_WITH_VEHICLE = [WaypointType.REST_AREA, WaypointType.TRAIN, WaypointType.
 _TYPES_WITHOUT_VEHICLE = [WaypointType.TRAIN]
 
 # 타입별 최대 반환 건수 (합계 20건 이내, api-spec.md)
+_MAX_TOTAL = 20
 _MAX_PER_TYPE = 7
 
 
@@ -69,10 +70,15 @@ def recommend_waypoints(
     """
     types = _TYPES_WITH_VEHICLE if vehicle_available else _TYPES_WITHOUT_VEHICLE
     result: dict[str, list[WaypointResult]] = {}
+    remaining = _MAX_TOTAL
 
     for waypoint_type in types:
-        rows = _query_nearby(conn, latitude, longitude, waypoint_type, radius_km)
+        if remaining <= 0:
+            break
+        limit = min(_MAX_PER_TYPE, remaining)
+        rows = _query_nearby(conn, latitude, longitude, waypoint_type, radius_km, limit)
         result[waypoint_type.value] = rows
+        remaining -= len(rows)
 
     return result
 
@@ -83,6 +89,7 @@ def _query_nearby(
     longitude: float,
     waypoint_type: WaypointType,
     radius_km: float,
+    limit: int = _MAX_PER_TYPE,
 ) -> list[WaypointResult]:
     """PostGIS로 반경 내 특정 타입 waypoints 조회."""
     sql = """
@@ -115,7 +122,7 @@ def _query_nearby(
             waypoint_type.value,
             longitude, latitude,
             radius_meters,
-            _MAX_PER_TYPE,
+            limit,
         ))
         rows = cur.fetchall()
 
