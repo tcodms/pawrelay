@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
-from app.repositories import user_repo
-from app.schemas.shelter import ShelterProfileResponse
+from app.repositories import post_repo, user_repo
+from app.schemas.shelter import DashboardPostItem, ShelterDashboardResponse, ShelterProfileResponse
 
 router = APIRouter()
 
@@ -25,3 +25,25 @@ async def get_shelter_me(
         email=profile.email,
         verified_at=profile.verified_at,
     )
+
+
+@router.get("/dashboard", response_model=ShelterDashboardResponse)
+async def get_shelter_dashboard(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if current_user.role != "shelter":
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+    rows = await post_repo.get_dashboard_posts(db, current_user.id)
+    posts = [
+        DashboardPostItem(
+            id=post.id,
+            origin=post.origin,
+            destination=post.destination,
+            scheduled_date=post.scheduled_date,
+            status=post.status,
+            volunteer_count=count,
+        )
+        for post, count in rows
+    ]
+    return ShelterDashboardResponse(posts=posts)
