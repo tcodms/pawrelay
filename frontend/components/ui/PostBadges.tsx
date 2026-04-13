@@ -8,10 +8,18 @@ const STATUS_MAP: Record<PostStatus, { label: string; color: string }> = {
   completed:   { label: "봉사 종료", color: "bg-gray-100 text-gray-500" },
 };
 
+const SIZE_LABEL: Record<string, string> = {
+  소형: "소형", 중형: "중형", 대형: "대형",
+  small: "소형", medium: "중형", large: "대형",
+};
+
 const SIZE_COLOR: Record<string, string> = {
   소형: "bg-sky-50 text-sky-600",
   중형: "bg-indigo-50 text-indigo-600",
   대형: "bg-purple-50 text-purple-600",
+  small: "bg-sky-50 text-sky-600",
+  medium: "bg-indigo-50 text-indigo-600",
+  large: "bg-purple-50 text-purple-600",
 };
 
 /** variant="sm" — 목록 카드용, variant="md" — 상세 페이지용 */
@@ -39,7 +47,7 @@ export function SizeBadge({
   const sizeClass = variant === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-[12px]";
   return (
     <span className={`rounded-full font-medium ${sizeClass} ${SIZE_COLOR[size] ?? ""}`}>
-      {size}
+      {SIZE_LABEL[size] ?? size}
     </span>
   );
 }

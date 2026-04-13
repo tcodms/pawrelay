@@ -27,8 +27,7 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
       await deletePost(post.id);
       router.push("/dashboard");
     } catch {
-      // TODO: 백엔드 연동 후 실제 삭제 구현 (DELETE /posts/{id} 스펙 확정 필요)
-      alert("삭제 기능은 백엔드 연동 후 사용 가능합니다.");
+      alert("공고 삭제에 실패했습니다. 다시 시도해 주세요.");
     }
   }
 
