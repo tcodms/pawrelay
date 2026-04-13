@@ -59,7 +59,7 @@ class VolunteerProfile(Base):
     vehicle_available = Column(Boolean, nullable=False, default=False, server_default="false")
     max_animal_size = Column(
         Enum("small", "medium", "large", name="animal_size_enum"),
-        nullable=False,
+        nullable=True,
     )
     activity_regions = Column(ARRAY(String(50)), nullable=False)
 

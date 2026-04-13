@@ -34,12 +34,14 @@ Request:
 {
   "email": "test@gmail.com",
   "password": "abc123!",
-  "name": "홍길동"
+  "name": "홍길동",
+  "vehicle_available": true,
+  "max_animal_size": "small",
+  "activity_regions": ["서울특별시", "경기도"]
 }
 
 Response 200:
 {
-  "access_token": "eyJ...",
   "user": { "id": 1, "email": "test@gmail.com", "role": "volunteer" }
 }
 ```
@@ -60,7 +62,10 @@ Request:
   "email": "shelter@gmail.com",
   "password": "abc123!",
   "name": "행복보호소",
-  "business_registration_number": "1234567890"
+  "phone": "062-000-0000",
+  "contact_email": "contact@shelter.com",
+  "address": "광주광역시 서구 OO로 1",
+  "shelter_registration_doc_url": "https://s3.../doc.pdf"
 }
 
 Response 200:
@@ -69,12 +74,13 @@ Response 200:
 }
 ```
 
+> `contact_email`: 알림 수신용 이메일 (로그인 email과 별도).
+> `shelter_registration_doc_url`: nullable. 가입 시 미첨부 가능, 이후 별도 업로드.
 > 가입 후 관리자 승인 전까지 대시보드 접근 제한.
 
 | 에러 코드 | 조건 |
 |----------|------|
 | `EMAIL_ALREADY_EXISTS` | 이미 가입된 이메일 |
-| `INVALID_BUSINESS_NUMBER` | 사업자번호 10자리 형식 미충족 |
 
 ---
 
@@ -121,7 +127,7 @@ Response: { "ok": true }
 
 ---
 
-### POST `/auth/verify-email/{token}`
+### GET `/auth/verify-email/{token}`
 인증 불필요.
 
 > BE: 처리 완료 후 302 리다이렉트.
@@ -206,6 +212,21 @@ Response 200:
   "animal_info": { "name": "초코", "size": "small", "photo_url": "...", "notes": "..." }
 }
 ```
+
+---
+
+### DELETE `/posts/{id}`
+보호소 인증 필요. 본인 공고만 삭제 가능.
+
+```json
+Response 200: { "ok": true }
+```
+
+| 에러 코드 | 조건 |
+|----------|------|
+| `POST_NOT_FOUND` | 존재하지 않는 공고 |
+| `UNAUTHORIZED` | 본인 공고 아님 |
+| `POST_ALREADY_MATCHED` | 매칭 확정된 공고 (삭제 불가) |
 
 ---
 
@@ -323,6 +344,41 @@ Response 200:
 ---
 
 ## 4. 매칭
+
+### PATCH `/matching/relay-chains/{chain_id}/approve`
+보호소 인증 필요.
+
+```json
+Response 200: { "ok": true }
+```
+
+> 매칭 플로우: 보호소 승인 → 봉사자 수락(24시간) → 매칭 확정.
+
+| 에러 코드 | 조건 |
+|----------|------|
+| `CHAIN_NOT_FOUND` | 존재하지 않는 체인 |
+| `CHAIN_ALREADY_APPROVED` | 이미 승인된 체인 |
+| `CHAIN_EXPIRED` | 24시간 초과 |
+| `UNAUTHORIZED` | 본인 공고의 체인이 아님 |
+
+---
+
+### PATCH `/matching/relay-chains/{chain_id}/reject`
+보호소 인증 필요.
+
+```json
+Response 200: { "ok": true }
+```
+
+> 거절 시 해당 `transport_post`의 status가 `recruiting`으로 복귀 → 다음 자정 배치 재처리 대상.
+
+| 에러 코드 | 조건 |
+|----------|------|
+| `CHAIN_NOT_FOUND` | 존재하지 않는 체인 |
+| `CHAIN_ALREADY_APPROVED` | 이미 승인된 체인 |
+| `UNAUTHORIZED` | 본인 공고의 체인이 아님 |
+
+---
 
 ### POST `/matching/accept/{segment_id}`
 봉사자 인증 필요.
@@ -587,6 +643,21 @@ Response 200: { "ok": true }
 
 ## 7. 보호소 대시보드
 
+### GET `/shelter/me`
+보호소 인증 필요.
+
+```json
+Response 200:
+{
+  "id": 1,
+  "name": "행복 동물 보호소",
+  "email": "shelter@example.com",
+  "verified_at": "2026-04-01T00:00:00Z"
+}
+```
+
+---
+
 ### GET `/shelter/dashboard`
 보호소 인증 필요.
 
@@ -647,7 +718,7 @@ Response 200:
       "id": 1,
       "name": "행복보호소",
       "email": "shelter@gmail.com",
-      "business_registration_number": "1234567890",
+      "shelter_registration_doc_url": "https://s3.../doc.pdf",
       "created_at": "2026-04-01T09:00:00Z"
     }
   ]

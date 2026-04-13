@@ -14,6 +14,15 @@ class Settings(BaseSettings):
 
     secret_key: str
     algorithm: str = "HS256"
+    environment: str = "development"
+
+    resend_api_key: str = ""
+    email_from: str = "onboarding@resend.dev"
+    frontend_url: str = "http://localhost:3000"
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
 
     @property
     def database_url(self) -> str:
