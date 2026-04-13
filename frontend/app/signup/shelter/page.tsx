@@ -87,6 +87,7 @@ export default function ShelterSignupPage() {
         password,
         business_registration_file: businessFile,
       });
+      localStorage.setItem("pwa_welcome_pending", "1");
       router.replace(`/signup/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setError(

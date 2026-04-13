@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import "./globals.css";
 
 const SplashScreen = dynamic(() => import("@/components/SplashScreen"), { ssr: false });
+const PwaCapture   = dynamic(() => import("@/components/PwaCapture"),   { ssr: false });
 
 // 영문 로고용
 const fredoka = Fredoka({
@@ -54,6 +55,7 @@ export default function RootLayout({
       </head>
       <body className="bg-white text-gray-900 antialiased font-[family-name:var(--font-noto)]">
         <SplashScreen />
+        <PwaCapture />
         {children}
       </body>
     </html>

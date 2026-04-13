@@ -104,6 +104,7 @@ export default function VolunteerSignupPage() {
         max_animal_size: maxAnimalSize,
         activity_regions: activityRegions,
       });
+      localStorage.setItem("pwa_welcome_pending", "1");
       router.replace(`/signup/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setError(
