@@ -7,7 +7,7 @@ import { login, ApiError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import EyeIcon from "@/components/ui/EyeIcon";
 import Spinner from "@/components/ui/Spinner";
-import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import PwaInstallModal from "@/components/PwaInstallModal";
 
 const INPUT_BASE =
   "h-12 w-full rounded-xl border bg-gray-50 px-4 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:bg-white focus:outline-none";
@@ -33,7 +33,7 @@ function LoginForm() {
   const [emailNotVerified, setEmailNotVerified] = useState(false);
   const [toast, setToast]   = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPwa, setShowPwa] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const pendingRole = useRef<string | null>(null);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,7 +92,11 @@ function LoginForm() {
     try {
       const { user } = await login(email, password);
       pendingRole.current = user.role;
-      setShowPwa(true);
+      if (localStorage.getItem("pwa_welcome_pending") === "1") {
+        setShowModal(true);
+      } else {
+        router.replace(user.role === "volunteer" ? "/volunteer/posts" : "/dashboard");
+      }
     } catch (err) {
       // 보안: 로그인 실패 시 어떤 필드가 틀렸는지 노출하지 않음
       if (err instanceof ApiError && err.code === "INVALID_CREDENTIALS") {
@@ -111,12 +115,13 @@ function LoginForm() {
     }
   }
 
-  function handlePwaDismiss() {
+  function handleModalDismiss() {
+    localStorage.removeItem("pwa_welcome_pending");
     router.replace(pendingRole.current === "volunteer" ? "/volunteer/posts" : "/dashboard");
   }
 
-  if (showPwa) {
-    return <PwaInstallPrompt onDismiss={handlePwaDismiss} />;
+  if (showModal) {
+    return <PwaInstallModal onDismiss={handleModalDismiss} />;
   }
 
   return (
