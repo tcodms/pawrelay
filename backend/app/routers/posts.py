@@ -22,7 +22,7 @@ router = APIRouter()
 
 @router.get("/upload-url")
 async def get_upload_url(
-    filename: str = Query(...),
+    filename: str = Query(..., min_length=1, max_length=255),
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role != "shelter":

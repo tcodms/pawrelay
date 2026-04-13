@@ -20,9 +20,9 @@ class Settings(BaseSettings):
     email_from: str = "onboarding@resend.dev"
     frontend_url: str = "http://localhost:3000"
 
-    aws_access_key_id: str = ""
-    aws_secret_access_key: str = ""
-    aws_s3_bucket: str = ""
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_s3_bucket: str
     aws_region: str = "ap-northeast-2"
 
     @property
