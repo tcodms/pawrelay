@@ -20,9 +20,12 @@
 import argparse
 import csv
 import json
+import logging
 from typing import Optional
 
 from ai.models.waypoint import WaypointModel, WaypointType
+
+logger = logging.getLogger(__name__)
 
 _ENCODING = "cp949"
 
@@ -116,7 +119,7 @@ def parse_bus_terminals(filepath: str) -> list[WaypointModel]:
         except (ValueError, TypeError):
             skipped += 1
     if skipped:
-        print(f"[버스] 오류로 제외: {skipped}건")
+        logger.warning("[버스] 오류로 제외: %d건", skipped)
     return results
 
 
@@ -132,12 +135,14 @@ def parse_train_stations(filepath: str) -> list[WaypointModel]:
         except (ValueError, TypeError):
             skipped += 1
     if skipped:
-        print(f"[기차] 오류로 제외: {skipped}건")
+        logger.warning("[기차] 오류로 제외: %d건", skipped)
     return results
 
 
 def _main():
     """CLI 진입점: 버스터미널·기차역 CSV 파싱 후 저장."""
+    logging.basicConfig(level=logging.INFO)
+
     parser = argparse.ArgumentParser(description="버스터미널·기차역 CSV 파서")
     parser.add_argument("--bus", help="버스 CSV 파일 경로")
     parser.add_argument("--train", help="기차역 CSV 파일 경로")
@@ -151,18 +156,18 @@ def _main():
 
     if args.bus:
         buses = parse_bus_terminals(args.bus)
-        print(f"버스터미널: {len(buses)}건")
+        logger.info("버스터미널: %d건", len(buses))
         output_data["bus"] = [b.model_dump() for b in buses]
 
     if args.train:
         trains = parse_train_stations(args.train)
-        print(f"기차역: {len(trains)}건")
+        logger.info("기차역: %d건", len(trains))
         output_data["train"] = [t.model_dump() for t in trains]
 
     if args.output and output_data:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
-        print(f"저장 완료: {args.output}")
+        logger.info("저장 완료: %s", args.output)
 
 
 if __name__ == "__main__":

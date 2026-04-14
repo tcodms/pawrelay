@@ -9,12 +9,16 @@
 import argparse
 import asyncio
 import json
+import logging
 import os
 from typing import Optional
 
 import httpx
 
 from ai.models.waypoint import WaypointModel, WaypointType
+from ai.utils.phone import normalize_phone
+
+logger = logging.getLogger(__name__)
 
 _SHELTER_URL = "https://apis.data.go.kr/1543061/animalShelterSrvc_v2/shelterInfo_v2"
 
@@ -61,6 +65,9 @@ async def _fetch_all_pages(
         if isinstance(item_list, dict):
             item_list = [item_list]
 
+        if not item_list:
+            break
+
         results.extend(item_list)
 
         if len(results) >= total_count:
@@ -94,30 +101,11 @@ def _parse_shelter(item: dict) -> Optional[WaypointModel]:
             latitude=float(lat),
             longitude=float(lng),
             address=item.get("careAddr"),
-            phone=_normalize_phone(item.get("careTel")),
+            phone=normalize_phone(item.get("careTel")),
             source="공공데이터포털_APMS_보호소API",
         )
     except (KeyError, ValueError, TypeError):
         return None
-
-
-def _normalize_phone(raw: Optional[str]) -> Optional[str]:
-    """전화번호를 0XX-XXX(X)-XXXX 형식으로 정규화."""
-    if not raw:
-        return None
-
-    digits = "".join(c for c in raw if c.isdigit())
-
-    if len(digits) == 9:
-        return f"{digits[:2]}-{digits[2:5]}-{digits[5:]}"
-    if len(digits) == 10:
-        if digits.startswith("02"):
-            return f"{digits[:2]}-{digits[2:6]}-{digits[6:]}"
-        return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
-    if len(digits) == 11:
-        return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
-
-    return None
 
 
 async def collect_shelters(service_key: str) -> list[WaypointModel]:
@@ -130,29 +118,31 @@ async def collect_shelters(service_key: str) -> list[WaypointModel]:
     skipped = len(items) - len(valid)
 
     if skipped:
-        print(f"[경고] 파싱 실패 또는 좌표 없음으로 제외된 항목: {skipped}건")
+        logger.warning("파싱 실패 또는 좌표 없음으로 제외된 항목: %d건", skipped)
 
     return valid
 
 
 async def _main():
     """CLI 진입점: 보호소 수집 후 JSON 파일로 저장."""
-    parser = argparse.ArgumentParser(description="APMS 보호소 waypoints 수집")
-    parser.add_argument("--output", default=None, help="저장할 JSON 파일 경로")
-    args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO)
 
     service_key = os.environ.get("PUBLIC_DATA_API_KEY")
     if not service_key:
         raise ValueError("PUBLIC_DATA_API_KEY 환경변수를 설정해주세요.")
 
+    parser = argparse.ArgumentParser(description="APMS 보호소 waypoints 수집")
+    parser.add_argument("--output", default=None, help="저장할 JSON 파일 경로")
+    args = parser.parse_args()
+
     shelters = await collect_shelters(service_key)
-    print(f"보호소: {len(shelters)}건")
+    logger.info("보호소: %d건", len(shelters))
 
     if args.output:
         output_data = {"shelter": [s.model_dump() for s in shelters]}
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
-        print(f"저장 완료: {args.output}")
+        logger.info("저장 완료: %s", args.output)
 
 
 if __name__ == "__main__":
