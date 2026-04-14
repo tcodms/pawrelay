@@ -15,7 +15,6 @@ import logging
 import os
 
 import psycopg2
-import psycopg2.extras
 from pydantic import ValidationError
 
 from ai.models.waypoint import WAYPOINT_TABLE_SQL, WAYPOINT_UNIQUE_INDEX_SQL, WaypointModel
@@ -93,6 +92,9 @@ def _parse_json_to_waypoints(data: dict) -> list[WaypointModel]:
     """JSON 데이터를 WaypointModel 리스트로 변환."""
     waypoints = []
     for key, records in data.items():
+        if not isinstance(records, list):
+            logger.warning("리스트가 아닌 값 건너뜀 (%s): %s", key, type(records).__name__)
+            continue
         for record in records:
             try:
                 waypoints.append(WaypointModel(**record))
@@ -137,7 +139,10 @@ def _main() -> None:
     args = parser.parse_args()
 
     for filepath in args.file:
-        load_from_file(filepath, database_url)
+        try:
+            load_from_file(filepath, database_url)
+        except Exception as e:
+            logger.error("파일 처리 실패 (%s): %s", filepath, e)
 
 
 if __name__ == "__main__":
