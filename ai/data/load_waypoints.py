@@ -13,7 +13,6 @@ import argparse
 import json
 import logging
 import os
-from typing import Optional
 
 import psycopg2
 import psycopg2.extras
@@ -80,18 +79,22 @@ def _load_records(
     return inserted, skipped
 
 
-def load_from_file(filepath: str, database_url: str) -> None:
-    """JSON 파일을 읽어 waypoints 테이블에 적재."""
-    with open(filepath, encoding="utf-8") as f:
-        data = json.load(f)
-
-    waypoints: list[WaypointModel] = []
+def _parse_json_to_waypoints(data: dict) -> list[WaypointModel]:
+    """JSON 데이터를 WaypointModel 리스트로 변환."""
+    waypoints = []
     for key, records in data.items():
         for record in records:
             try:
                 waypoints.append(WaypointModel(**record))
             except (ValidationError, TypeError) as e:
                 logger.warning("모델 변환 실패 (%s): %s", key, e)
+    return waypoints
+
+
+def load_from_file(filepath: str, database_url: str) -> None:
+    """JSON 파일을 읽어 waypoints 테이블에 적재."""
+    with open(filepath, encoding="utf-8") as f:
+        waypoints = _parse_json_to_waypoints(json.load(f))
 
     if not waypoints:
         logger.warning("적재할 데이터 없음: %s", filepath)

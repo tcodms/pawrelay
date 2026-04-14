@@ -9,12 +9,15 @@
 import argparse
 import asyncio
 import json
+import logging
 import os
 from typing import Optional
 
 import httpx
 
 from ai.models.waypoint import WaypointModel, WaypointType
+
+logger = logging.getLogger(__name__)
 
 _SHELTER_URL = "https://apis.data.go.kr/1543061/animalShelterSrvc_v2/shelterInfo_v2"
 
@@ -33,6 +36,27 @@ async def _fetch_json(
     return response.json()
 
 
+def _build_params(service_key: str, page: int) -> dict:
+    """API 요청 파라미터 생성."""
+    return {
+        "serviceKey": service_key,
+        "numOfRows": _PAGE_SIZE,
+        "pageNo": page,
+        "_type": "json",
+    }
+
+
+def _extract_items(body: dict) -> list[dict]:
+    """응답 body에서 item 리스트 추출."""
+    items = body.get("items", {})
+    if not items:
+        return []
+    item_list = items.get("item", [])
+    if isinstance(item_list, dict):
+        item_list = [item_list]
+    return item_list
+
+
 async def _fetch_all_pages(
     client: httpx.AsyncClient,
     service_key: str,
@@ -42,33 +66,16 @@ async def _fetch_all_pages(
     page = 1
 
     while True:
-        params = {
-            "serviceKey": service_key,
-            "numOfRows": _PAGE_SIZE,
-            "pageNo": page,
-            "_type": "json",
-        }
+        params = _build_params(service_key, page)
         data = await _fetch_json(client, _SHELTER_URL, params)
-
         body = data.get("response", {}).get("body", {})
         total_count = int(body.get("totalCount", 0))
-        items = body.get("items", {})
-
-        if not items:
-            break
-
-        item_list = items.get("item", [])
-        if isinstance(item_list, dict):
-            item_list = [item_list]
-
+        item_list = _extract_items(body)
         if not item_list:
             break
-
         results.extend(item_list)
-
         if len(results) >= total_count:
             break
-
         page += 1
 
     return results
@@ -133,29 +140,31 @@ async def collect_shelters(service_key: str) -> list[WaypointModel]:
     skipped = len(items) - len(valid)
 
     if skipped:
-        print(f"[경고] 파싱 실패 또는 좌표 없음으로 제외된 항목: {skipped}건")
+        logger.warning("파싱 실패 또는 좌표 없음으로 제외된 항목: %d건", skipped)
 
     return valid
 
 
 async def _main():
     """CLI 진입점: 보호소 수집 후 JSON 파일로 저장."""
-    parser = argparse.ArgumentParser(description="APMS 보호소 waypoints 수집")
-    parser.add_argument("--output", default=None, help="저장할 JSON 파일 경로")
-    args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO)
 
     service_key = os.environ.get("PUBLIC_DATA_API_KEY")
     if not service_key:
         raise ValueError("PUBLIC_DATA_API_KEY 환경변수를 설정해주세요.")
 
+    parser = argparse.ArgumentParser(description="APMS 보호소 waypoints 수집")
+    parser.add_argument("--output", default=None, help="저장할 JSON 파일 경로")
+    args = parser.parse_args()
+
     shelters = await collect_shelters(service_key)
-    print(f"보호소: {len(shelters)}건")
+    logger.info("보호소: %d건", len(shelters))
 
     if args.output:
         output_data = {"shelter": [s.model_dump() for s in shelters]}
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
-        print(f"저장 완료: {args.output}")
+        logger.info("저장 완료: %s", args.output)
 
 
 if __name__ == "__main__":
