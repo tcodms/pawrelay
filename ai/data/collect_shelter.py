@@ -85,10 +85,10 @@ def _parse_shelter(item: dict) -> Optional[WaypointModel]:
         lng         — 경도
     """
     try:
-        lat = item.get("lat") or item.get("latitude")
-        lng = item.get("lng") or item.get("longitude")
+        lat = item.get("lat") if item.get("lat") is not None else item.get("latitude")
+        lng = item.get("lng") if item.get("lng") is not None else item.get("longitude")
 
-        if not lat or not lng:
+        if lat is None or lng is None:
             return None
 
         return WaypointModel(

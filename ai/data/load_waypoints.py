@@ -17,10 +17,18 @@ from typing import Optional
 
 import psycopg2
 import psycopg2.extras
+from pydantic import ValidationError
 
-from ai.models.waypoint import WAYPOINT_TABLE_SQL, WaypointModel
+from ai.models.waypoint import WAYPOINT_TABLE_SQL, WAYPOINT_UNIQUE_INDEX_SQL, WaypointModel
 
 logger = logging.getLogger(__name__)
+
+_INSERT_SQL = """
+    INSERT INTO waypoints (name, type, address, phone, geom, source)
+    VALUES (%(name)s, %(type)s, %(address)s, %(phone)s,
+            ST_GeomFromEWKT(%(geom)s), %(source)s)
+    ON CONFLICT (name, type) DO NOTHING
+"""
 
 
 def _get_connection(database_url: str) -> psycopg2.extensions.connection:
@@ -33,6 +41,18 @@ def _ensure_table(conn: psycopg2.extensions.connection) -> None:
     with conn.cursor() as cur:
         cur.execute(WAYPOINT_TABLE_SQL)
     conn.commit()
+    _ensure_unique_index(conn)
+
+
+def _ensure_unique_index(conn: psycopg2.extensions.connection) -> None:
+    """UNIQUE 인덱스 생성. 중복 데이터가 있으면 경고 후 skip."""
+    try:
+        with conn.cursor() as cur:
+            cur.execute(WAYPOINT_UNIQUE_INDEX_SQL)
+        conn.commit()
+    except psycopg2.Error as e:
+        conn.rollback()
+        logger.warning("UNIQUE 인덱스 생성 실패 (중복 데이터 확인 필요): %s", e)
 
 
 def _load_records(
@@ -43,21 +63,18 @@ def _load_records(
     inserted = 0
     skipped = 0
 
-    insert_sql = """
-        INSERT INTO waypoints (name, type, address, phone, geom, source)
-        VALUES (%(name)s, %(type)s, %(address)s, %(phone)s,
-                ST_GeomFromEWKT(%(geom)s), %(source)s)
-        ON CONFLICT (name, type) DO NOTHING
-    """
-
     with conn.cursor() as cur:
         for waypoint in waypoints:
             try:
-                cur.execute(insert_sql, waypoint.to_postgis_insert())
-                inserted += 1
+                cur.execute("SAVEPOINT sp")
+                cur.execute(_INSERT_SQL, waypoint.to_postgis_insert())
+                if cur.rowcount:
+                    inserted += 1
+                cur.execute("RELEASE SAVEPOINT sp")
             except psycopg2.Error as e:
                 skipped += 1
                 logger.warning("적재 실패 (%s): %s", waypoint.name, e)
+                cur.execute("ROLLBACK TO SAVEPOINT sp")
 
     conn.commit()
     return inserted, skipped
@@ -73,7 +90,7 @@ def load_from_file(filepath: str, database_url: str) -> None:
         for record in records:
             try:
                 waypoints.append(WaypointModel(**record))
-            except Exception as e:
+            except (ValidationError, TypeError) as e:
                 logger.warning("모델 변환 실패 (%s): %s", key, e)
 
     if not waypoints:
