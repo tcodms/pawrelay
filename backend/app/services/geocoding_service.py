@@ -8,10 +8,13 @@ async def geocode(address: str) -> tuple[float, float]:
     headers = {"Authorization": f"KakaoAK {settings.kakao_rest_api_key}"}
     params = {"query": address}
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        data = response.json()
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPError as err:
+        raise ValueError("GEOCODING_FAILED") from err
 
     documents = data.get("documents", [])
     if not documents:

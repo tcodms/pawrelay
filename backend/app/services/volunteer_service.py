@@ -14,8 +14,8 @@ async def create_schedule(
     try:
         origin_lat, origin_lng = await geocode(data.origin)
         dest_lat, dest_lng = await geocode(data.destination)
-    except ValueError:
-        raise HTTPException(status_code=400, detail={"error": "GEOCODING_FAILED"})
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail={"error": "GEOCODING_FAILED"}) from err
 
     route_wkt = (
         f"SRID=4326;LINESTRING({origin_lng} {origin_lat}, {dest_lng} {dest_lat})"
