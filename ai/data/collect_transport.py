@@ -50,6 +50,7 @@ def parse_rest_area_json(filepath: str) -> list[WaypointModel]:
         raise ValueError(f"fields 개수 부족: {len(field_keys)}개 (최소 7개 필요)")
 
     name_key = field_keys[0]
+    addr_key = field_keys[3]   # 소재지도로명주소
     lat_key = field_keys[5]
     lng_key = field_keys[6]
     phone_key = field_keys[25] if len(field_keys) > 25 else None
@@ -69,6 +70,7 @@ def parse_rest_area_json(filepath: str) -> list[WaypointModel]:
                 type=WaypointType.REST_AREA,
                 latitude=lat,
                 longitude=lng,
+                address=str(record.get(addr_key, "") or "").strip() or None,
                 phone=_normalize_phone(record.get(phone_key)),
                 source="공공데이터포털_전국휴게소정보표준데이터",
             ))

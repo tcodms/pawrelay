@@ -48,50 +48,75 @@ def _parse_float(value: str) -> Optional[float]:
         return None
 
 
+def _build_bus_waypoint(row: list[str]) -> Optional[WaypointModel]:
+    """버스 CSV 한 행을 WaypointModel로 변환. 유효하지 않으면 None 반환."""
+    if len(row) <= _BUS_COL_REGION:
+        return None
+    name = row[_BUS_COL_NAME].strip()
+    if "터미널" not in name:
+        return None
+    lat = _parse_float(row[_BUS_COL_LAT])
+    lng = _parse_float(row[_BUS_COL_LNG])
+    if lat is None or lng is None:
+        return None
+    region = row[_BUS_COL_REGION].strip() or None
+    return WaypointModel(
+        name=name,
+        type=WaypointType.BUS,
+        latitude=lat,
+        longitude=lng,
+        address=region,
+        source="버스정류소CSV_터미널필터",
+    )
+
+
+def _build_train_waypoint(row: list[str]) -> Optional[WaypointModel]:
+    """기차 CSV 한 행을 WaypointModel로 변환. 유효하지 않으면 None 반환."""
+    if len(row) <= _TRAIN_COL_LNG:
+        return None
+    if row[_TRAIN_COL_CLOSED].strip() == "0":
+        return None
+    name = row[_TRAIN_COL_NAME].strip()
+    if not name:
+        return None
+    lat = _parse_float(row[_TRAIN_COL_LAT])
+    lng = _parse_float(row[_TRAIN_COL_LNG])
+    if lat is None or lng is None:
+        return None
+    return WaypointModel(
+        name=name,
+        type=WaypointType.TRAIN,
+        latitude=lat,
+        longitude=lng,
+        address=row[_TRAIN_COL_ADDRESS].strip() or None,
+        source="철도역CSV_운행중필터",
+    )
+
+
+def _iter_csv_rows(filepath: str) -> csv.reader:
+    """CP949 CSV 파일을 열고 헤더를 스킵한 reader 반환."""
+    f = open(filepath, encoding=_ENCODING, errors="replace")
+    reader = csv.reader(f)
+    try:
+        next(reader)
+    except StopIteration:
+        pass
+    return reader
+
+
 def parse_bus_terminals(filepath: str) -> list[WaypointModel]:
     """버스 CSV에서 터미널만 추출해 WaypointModel 리스트 반환."""
     results = []
     skipped = 0
-
-    with open(filepath, encoding=_ENCODING, errors="replace") as f:
-        reader = csv.reader(f)
+    for row in _iter_csv_rows(filepath):
         try:
-            next(reader)  # 헤더 스킵
-        except StopIteration:
-            return results
-
-        for row in reader:
-            if len(row) <= _BUS_COL_REGION:
-                continue
-
-            name = row[_BUS_COL_NAME].strip()
-            if "터미널" not in name:
-                continue
-
-            lat = _parse_float(row[_BUS_COL_LAT])
-            lng = _parse_float(row[_BUS_COL_LNG])
-
-            if lat is None or lng is None:
-                skipped += 1
-                continue
-
-            region = row[_BUS_COL_REGION].strip()
-
-            try:
-                results.append(WaypointModel(
-                    name=name,
-                    type=WaypointType.BUS,
-                    latitude=lat,
-                    longitude=lng,
-                    address=region or None,
-                    source="버스정류소CSV_터미널필터",
-                ))
-            except (ValueError, TypeError):
-                skipped += 1
-
+            waypoint = _build_bus_waypoint(row)
+            if waypoint:
+                results.append(waypoint)
+        except (ValueError, TypeError):
+            skipped += 1
     if skipped:
-        print(f"[버스] 좌표 오류로 제외: {skipped}건")
-
+        print(f"[버스] 오류로 제외: {skipped}건")
     return results
 
 
@@ -99,49 +124,15 @@ def parse_train_stations(filepath: str) -> list[WaypointModel]:
     """기차역 CSV에서 운행 중인 역만 추출해 WaypointModel 리스트 반환."""
     results = []
     skipped = 0
-
-    with open(filepath, encoding=_ENCODING, errors="replace") as f:
-        reader = csv.reader(f)
+    for row in _iter_csv_rows(filepath):
         try:
-            next(reader)  # 헤더 스킵
-        except StopIteration:
-            return results
-
-        for row in reader:
-            if len(row) <= _TRAIN_COL_LNG:
-                continue
-
-            if row[_TRAIN_COL_CLOSED].strip() == "0":  # 폐역 제외
-                continue
-
-            name = row[_TRAIN_COL_NAME].strip()
-            if not name:
-                continue
-
-            lat = _parse_float(row[_TRAIN_COL_LAT])
-            lng = _parse_float(row[_TRAIN_COL_LNG])
-
-            if lat is None or lng is None:
-                skipped += 1
-                continue
-
-            address = row[_TRAIN_COL_ADDRESS].strip() or None
-
-            try:
-                results.append(WaypointModel(
-                    name=name,
-                    type=WaypointType.TRAIN,
-                    latitude=lat,
-                    longitude=lng,
-                    address=address,
-                    source="철도역CSV_운행중필터",
-                ))
-            except (ValueError, TypeError):
-                skipped += 1
-
+            waypoint = _build_train_waypoint(row)
+            if waypoint:
+                results.append(waypoint)
+        except (ValueError, TypeError):
+            skipped += 1
     if skipped:
-        print(f"[기차] 좌표 오류로 제외: {skipped}건")
-
+        print(f"[기차] 오류로 제외: {skipped}건")
     return results
 
 
