@@ -51,15 +51,19 @@ def _ensure_unique_index(conn: psycopg2.extensions.connection) -> None:
         conn.commit()
     except psycopg2.Error as e:
         conn.rollback()
-        logger.warning("UNIQUE 인덱스 생성 실패 (중복 데이터 확인 필요): %s", e)
+        logger.error("UNIQUE 인덱스 생성 실패: %s", e)
+        raise RuntimeError(
+            "waypoints(name, type) UNIQUE 인덱스를 생성하지 못해 적재를 중단합니다."
+        ) from e
 
 
 def _load_records(
     conn: psycopg2.extensions.connection,
     waypoints: list[WaypointModel],
-) -> tuple[int, int]:
-    """waypoints 리스트를 DB에 적재하고 (성공, 실패) 건수를 반환."""
+) -> tuple[int, int, int]:
+    """waypoints 리스트를 DB에 적재하고 (성공, 중복, 실패) 건수를 반환."""
     inserted = 0
+    duplicated = 0
     skipped = 0
 
     with conn.cursor() as cur:
@@ -69,6 +73,8 @@ def _load_records(
                 cur.execute(_INSERT_SQL, waypoint.to_postgis_insert())
                 if cur.rowcount:
                     inserted += 1
+                else:
+                    duplicated += 1
                 cur.execute("RELEASE SAVEPOINT sp")
             except psycopg2.Error as e:
                 skipped += 1
@@ -76,7 +82,7 @@ def _load_records(
                 cur.execute("ROLLBACK TO SAVEPOINT sp")
 
     conn.commit()
-    return inserted, skipped
+    return inserted, duplicated, skipped
 
 
 def _parse_json_to_waypoints(data: dict) -> list[WaypointModel]:
@@ -103,8 +109,8 @@ def load_from_file(filepath: str, database_url: str) -> None:
     conn = _get_connection(database_url)
     try:
         _ensure_table(conn)
-        inserted, skipped = _load_records(conn, waypoints)
-        logger.info("%s: 적재 %d건, 실패 %d건", filepath, inserted, skipped)
+        inserted, duplicated, skipped = _load_records(conn, waypoints)
+        logger.info("%s: 적재 %d건, 중복 %d건, 실패 %d건", filepath, inserted, duplicated, skipped)
     finally:
         conn.close()
 

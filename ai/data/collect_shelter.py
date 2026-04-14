@@ -69,7 +69,7 @@ async def _fetch_all_pages(
         params = _build_params(service_key, page)
         data = await _fetch_json(client, _SHELTER_URL, params)
         body = data.get("response", {}).get("body", {})
-        total_count = int(body.get("totalCount", 0))
+        total_count = int(body.get("totalCount") or 0)
         item_list = _extract_items(body)
         if not item_list:
             break
