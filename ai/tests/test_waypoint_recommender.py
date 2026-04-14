@@ -10,6 +10,7 @@ import pytest
 
 from ai.matching.waypoint_recommender import (
     WaypointResult,
+    _MAX_TOTAL,
     _TYPES_WITH_VEHICLE,
     _TYPES_WITHOUT_VEHICLE,
     recommend_waypoints,
@@ -78,6 +79,19 @@ def test_recommend_without_vehicle_returns_only_train():
     assert "train" in result
     assert "bus" not in result
     assert "rest_area" not in result
+
+
+def test_recommend_total_max_20():
+    """차량 있음 시 전체 반환 건수가 20건을 초과하면 안 된다."""
+    mock_conn = _make_mock_conn([
+        {"name": f"역{i}", "type": "train", "distance_km": float(i)}
+        for i in range(30)
+    ])
+
+    result = recommend_waypoints(mock_conn, 36.8, 127.1, vehicle_available=True)
+
+    total = sum(len(v) for v in result.values())
+    assert total <= _MAX_TOTAL
 
 
 def test_recommend_result_type():

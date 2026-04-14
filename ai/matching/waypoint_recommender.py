@@ -34,6 +34,29 @@ _TYPES_WITHOUT_VEHICLE = [WaypointType.TRAIN]
 _MAX_TOTAL = 20
 _MAX_PER_TYPE = 7
 
+_NEARBY_SQL = """
+    SELECT
+        name,
+        type,
+        ST_Y(geom) AS latitude,
+        ST_X(geom) AS longitude,
+        address,
+        phone,
+        ST_Distance(
+            geom::geography,
+            ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography
+        ) / 1000.0 AS distance_km
+    FROM waypoints
+    WHERE type = %s
+      AND ST_DWithin(
+          geom::geography,
+          ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
+          %s
+      )
+    ORDER BY distance_km
+    LIMIT %s
+"""
+
 
 @dataclass
 class WaypointResult:
@@ -92,39 +115,17 @@ def _query_nearby(
     limit: int = _MAX_PER_TYPE,
 ) -> list[WaypointResult]:
     """PostGIS로 반경 내 특정 타입 waypoints 조회."""
-    sql = """
-        SELECT
-            name,
-            type,
-            ST_Y(geom) AS latitude,
-            ST_X(geom) AS longitude,
-            address,
-            phone,
-            ST_Distance(
-                geom::geography,
-                ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography
-            ) / 1000.0 AS distance_km
-        FROM waypoints
-        WHERE type = %s
-          AND ST_DWithin(
-              geom::geography,
-              ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
-              %s
-          )
-        ORDER BY distance_km
-        LIMIT %s
-    """
     radius_meters = radius_km * 1000
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-        cur.execute(sql, (
+        cur.execute(_NEARBY_SQL, (
             longitude, latitude,
             waypoint_type.value,
             longitude, latitude,
             radius_meters,
             limit,
         ))
-        rows = cur.fetchall()
+        rows = cur.fetchall()[:limit]
 
     return [
         WaypointResult(
