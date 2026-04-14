@@ -80,6 +80,10 @@ def _load_records(
                 skipped += 1
                 logger.warning("적재 실패 (%s): %s", waypoint.name, e)
                 cur.execute("ROLLBACK TO SAVEPOINT sp")
+                try:
+                    cur.execute("RELEASE SAVEPOINT sp")
+                except psycopg2.Error as release_err:
+                    logger.warning("SAVEPOINT 해제 실패: %s", release_err)
 
     conn.commit()
     return inserted, duplicated, skipped

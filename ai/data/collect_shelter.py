@@ -74,7 +74,7 @@ async def _fetch_all_pages(
         if not item_list:
             break
         results.extend(item_list)
-        if len(results) >= total_count:
+        if total_count > 0 and len(results) >= total_count:
             break
         page += 1
 
