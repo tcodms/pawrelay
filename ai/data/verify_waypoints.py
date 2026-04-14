@@ -7,10 +7,13 @@ waypoints PostGIS 적재 검증 스크립트
     python -m ai.data.verify_waypoints
 """
 
+import logging
 import os
 
 import psycopg2
 import psycopg2.extras
+
+logger = logging.getLogger(__name__)
 
 
 def _get_connection(database_url: str) -> psycopg2.extensions.connection:
@@ -34,7 +37,7 @@ def _print_total(conn: psycopg2.extensions.connection) -> None:
     with conn.cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM waypoints")
         total = cur.fetchone()[0]
-    print(f"전체: {total}건")
+    logger.info("전체: %d건", total)
 
 
 def _print_by_type(conn: psycopg2.extensions.connection) -> None:
@@ -44,9 +47,9 @@ def _print_by_type(conn: psycopg2.extensions.connection) -> None:
             "SELECT type, COUNT(*) FROM waypoints GROUP BY type ORDER BY type"
         )
         rows = cur.fetchall()
-    print("\n타입별 분포:")
+    logger.info("타입별 분포:")
     for type_name, count in rows:
-        print(f"  {type_name}: {count}건")
+        logger.info("  %s: %d건", type_name, count)
 
 
 def _print_invalid_geom(conn: psycopg2.extensions.connection) -> None:
@@ -61,13 +64,15 @@ def _print_invalid_geom(conn: psycopg2.extensions.connection) -> None:
         invalid = cur.fetchone()[0]
 
     if invalid:
-        print(f"\n[경고] 좌표 이상 항목: {invalid}건")
+        logger.warning("좌표 이상 항목: %d건", invalid)
     else:
-        print("\n좌표 검증: 이상 없음")
+        logger.info("좌표 검증: 이상 없음")
 
 
 def _main() -> None:
     """CLI 진입점: waypoints 적재 결과 검증."""
+    logging.basicConfig(level=logging.INFO)
+
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
         raise ValueError("DATABASE_URL 환경변수를 설정해주세요.")

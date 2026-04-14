@@ -11,6 +11,7 @@ waypoints 데이터 PostGIS 적재 스크립트
 
 import argparse
 import json
+import logging
 import os
 from typing import Optional
 
@@ -18,6 +19,8 @@ import psycopg2
 import psycopg2.extras
 
 from ai.models.waypoint import WAYPOINT_TABLE_SQL, WaypointModel
+
+logger = logging.getLogger(__name__)
 
 
 def _get_connection(database_url: str) -> psycopg2.extensions.connection:
@@ -52,9 +55,9 @@ def _load_records(
             try:
                 cur.execute(insert_sql, waypoint.to_postgis_insert())
                 inserted += 1
-            except Exception as e:
+            except psycopg2.Error as e:
                 skipped += 1
-                print(f"[경고] 적재 실패 ({waypoint.name}): {e}")
+                logger.warning("적재 실패 (%s): %s", waypoint.name, e)
 
     conn.commit()
     return inserted, skipped
@@ -71,23 +74,29 @@ def load_from_file(filepath: str, database_url: str) -> None:
             try:
                 waypoints.append(WaypointModel(**record))
             except Exception as e:
-                print(f"[경고] 모델 변환 실패 ({key}): {e}")
+                logger.warning("모델 변환 실패 (%s): %s", key, e)
 
     if not waypoints:
-        print(f"[경고] 적재할 데이터 없음: {filepath}")
+        logger.warning("적재할 데이터 없음: %s", filepath)
         return
 
     conn = _get_connection(database_url)
     try:
         _ensure_table(conn)
         inserted, skipped = _load_records(conn, waypoints)
-        print(f"{filepath}: 적재 {inserted}건, 실패 {skipped}건")
+        logger.info("%s: 적재 %d건, 실패 %d건", filepath, inserted, skipped)
     finally:
         conn.close()
 
 
 def _main() -> None:
     """CLI 진입점: JSON 파일을 읽어 PostGIS에 적재."""
+    logging.basicConfig(level=logging.INFO)
+
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise ValueError("DATABASE_URL 환경변수를 설정해주세요.")
+
     parser = argparse.ArgumentParser(description="waypoints PostGIS 적재")
     parser.add_argument(
         "--file",
@@ -96,10 +105,6 @@ def _main() -> None:
         help="적재할 JSON 파일 경로 (여러 번 지정 가능)",
     )
     args = parser.parse_args()
-
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        raise ValueError("DATABASE_URL 환경변수를 설정해주세요.")
 
     for filepath in args.file:
         load_from_file(filepath, database_url)
