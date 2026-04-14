@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     aws_s3_bucket: str
     aws_region: str = "ap-northeast-2"
 
+    kakao_rest_api_key: str
+
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
