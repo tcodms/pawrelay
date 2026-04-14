@@ -141,7 +141,7 @@ def _main() -> None:
     for filepath in args.file:
         try:
             load_from_file(filepath, database_url)
-        except Exception as e:
+        except (OSError, json.JSONDecodeError, psycopg2.Error, RuntimeError) as e:
             logger.error("파일 처리 실패 (%s): %s", filepath, e)
 
 
