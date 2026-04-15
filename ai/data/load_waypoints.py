@@ -43,7 +43,7 @@ def _ensure_table(conn: psycopg2.extensions.connection) -> None:
 
 
 def _ensure_unique_index(conn: psycopg2.extensions.connection) -> None:
-    """UNIQUE 인덱스 생성. 중복 데이터가 있으면 경고 후 skip."""
+    """UNIQUE 인덱스 생성. 실패 시 RuntimeError를 발생시켜 적재를 즉시 중단한다."""
     try:
         with conn.cursor() as cur:
             cur.execute(WAYPOINT_UNIQUE_INDEX_SQL)
@@ -90,6 +90,9 @@ def _load_records(
 
 def _parse_json_to_waypoints(data: dict) -> list[WaypointModel]:
     """JSON 데이터를 WaypointModel 리스트로 변환."""
+    if not isinstance(data, dict):
+        logger.warning("JSON 최상위 타입이 dict가 아님: %s", type(data).__name__)
+        return []
     waypoints = []
     for key, records in data.items():
         if not isinstance(records, list):
