@@ -146,11 +146,18 @@ def _main() -> None:
     if not database_url:
         raise ValueError("DATABASE_URL 환경변수를 설정해주세요.")
 
+    failed = 0
     for filepath in args.file:
         try:
             load_from_file(filepath, database_url)
-        except (OSError, json.JSONDecodeError, psycopg2.Error, WaypointIndexError) as e:
+        except WaypointIndexError as e:
             logger.error("파일 처리 실패 (%s): %s", filepath, e)
+            raise SystemExit(1) from e
+        except (OSError, json.JSONDecodeError, psycopg2.Error) as e:
+            failed += 1
+            logger.error("파일 처리 실패 (%s): %s", filepath, e)
+    if failed:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
