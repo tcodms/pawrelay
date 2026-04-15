@@ -34,7 +34,7 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
       </main>
     );
   }
@@ -145,8 +145,8 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
             <div className="flex flex-col gap-2.5">
               {post.volunteers.map((v) => (
                 <div key={v.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100">
-                    <span className="text-[12px] font-bold text-orange-600">{v.name[0]}</span>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
+                    <span className="text-[12px] font-bold text-[#7A4A28]">{v.name[0]}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold text-gray-800">{v.name}</p>

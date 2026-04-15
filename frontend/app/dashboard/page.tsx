@@ -18,7 +18,7 @@ const TABS: { key: TabKey; label: string; dot: string }[] = [
   { key: "all",         label: "전체",    dot: "bg-gray-400" },
   { key: "recruiting",  label: "모집 중", dot: "bg-green-500" },
   { key: "waiting",     label: "대기 중", dot: "bg-yellow-400" },
-  { key: "in_progress", label: "봉사 중", dot: "bg-blue-400" },
+  { key: "in_progress", label: "봉사 중", dot: "bg-[#EEA968]" },
   { key: "completed",   label: "종료",    dot: "bg-gray-300" },
 ];
 
@@ -166,8 +166,13 @@ export default function DashboardPage() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    getPosts().then(setPosts).finally(() => setLoading(false));
-    getShelterProfile().then((p) => setShelterName(p.name));
+    getPosts()
+      .then(setPosts)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    getShelterProfile()
+      .then((p) => setShelterName(p.name))
+      .catch(() => {});
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
   }, []);
 
@@ -184,19 +189,27 @@ export default function DashboardPage() {
 
   async function handleApprove() {
     if (!selectedPost) return;
-    await approveShelterMatching(selectedPost.id);
-    setPosts((prev) =>
-      prev.map((p) => p.id === selectedPost.id ? { ...p, status: "in_progress" } : p)
-    );
-    closeSheet();
-    showToast("릴레이 매칭이 확정되었습니다! 모든 봉사자에게 안내 이메일이 발송됩니다.");
+    try {
+      await approveShelterMatching(selectedPost.id);
+      setPosts((prev) =>
+        prev.map((p) => p.id === selectedPost.id ? { ...p, status: "in_progress" } : p)
+      );
+      closeSheet();
+      showToast("릴레이 매칭이 확정되었습니다! 모든 봉사자에게 안내 이메일이 발송됩니다.");
+    } catch {
+      showToast("처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
+    }
   }
 
   async function handleReject() {
     if (!selectedPost) return;
-    await rejectShelterMatching(selectedPost.id);
-    closeSheet();
-    showToast("재매칭 요청이 접수되었습니다. 다음 배치 시 재처리됩니다.");
+    try {
+      await rejectShelterMatching(selectedPost.id);
+      closeSheet();
+      showToast("재매칭 요청이 접수되었습니다. 다음 배치 시 재처리됩니다.");
+    } catch {
+      showToast("처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
+    }
   }
 
   const filtered = posts.filter((p) => {
@@ -221,7 +234,7 @@ export default function DashboardPage() {
         <header className="sticky top-0 z-40 bg-gray-50 pt-6 pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <span className="font-[family-name:var(--font-fredoka)] text-[24px] font-bold text-orange-500">
+              <span className="font-[family-name:var(--font-fredoka)] text-[24px] font-bold text-[#EEA968]">
                 PawRelay
               </span>
               <p className="text-[13px] text-gray-400 mt-0.5">{shelterName}</p>
@@ -240,7 +253,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="rounded-2xl bg-white border border-gray-100 px-4 py-3 flex flex-col gap-1">
             <p className="text-[12px] text-gray-400">모집중 공고</p>
-            <p className="text-[28px] font-bold text-orange-500 leading-none">{recruitingCount}
+            <p className="text-[28px] font-bold text-[#EEA968] leading-none">{recruitingCount}
               <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
             </p>
           </div>
@@ -270,7 +283,7 @@ export default function DashboardPage() {
                 <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
                 {label}
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-orange-500" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#EEA968]" />
                 )}
               </button>
             );
@@ -281,7 +294,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-3">
           {loading ? (
             <div className="flex justify-center py-20">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -303,7 +316,7 @@ export default function DashboardPage() {
       {/* ── FAB ──────────────────────────────────────────────────── */}
       <Link
         href="/dashboard/posts/new"
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 transition-colors active:scale-95"
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#EEA968] text-white shadow-lg shadow-[#EEA968]/25 hover:bg-[#D99A55] transition-colors active:scale-95"
         aria-label="새 공고 등록"
       >
         <Plus size={24} />
@@ -330,8 +343,8 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2.5 mt-4">
               {selectedPost.volunteers.map((v) => (
                 <div key={v.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3.5">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100">
-                    <span className="text-[13px] font-bold text-orange-600">{v.name[0]}</span>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
+                    <span className="text-[13px] font-bold text-[#7A4A28]">{v.name[0]}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-gray-800">{v.name}</p>
@@ -373,20 +386,20 @@ export default function DashboardPage() {
                 {selectedPost.relayChain.map((seg, i) => (
                   <div key={i} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className="h-3 w-3 rounded-full bg-orange-400 ring-2 ring-orange-100 mt-1 shrink-0" />
+                      <div className="h-3 w-3 rounded-full bg-[#EEA968] ring-2 ring-[#FDF3EC] mt-1 shrink-0" />
                       {i < selectedPost.relayChain!.length - 1 && (
-                        <div className="w-0.5 flex-1 bg-orange-100 my-1" />
+                        <div className="w-0.5 flex-1 bg-[#FDF3EC] my-1" />
                       )}
                     </div>
                     <div className="pb-5">
-                      <div className="rounded-xl bg-orange-50 border border-orange-100 px-4 py-3">
+                      <div className="rounded-xl bg-[#FDF3EC] border border-[#EEA968]/20 px-4 py-3">
                         <div className="flex items-center justify-between gap-3 mb-1">
                           <p className="text-[14px] font-bold text-gray-800">{seg.volunteer}</p>
                           <span className="text-[11px] text-gray-400">{seg.time}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[12px] text-gray-500">
                           <span>{seg.from}</span>
-                          <ArrowRight size={11} className="text-orange-300 shrink-0" />
+                          <ArrowRight size={11} className="text-[#EEA968]/60 shrink-0" />
                           <span>{seg.to}</span>
                         </div>
                       </div>
@@ -415,7 +428,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2.5">
               <button
                 onClick={handleApprove}
-                className="h-14 w-full rounded-2xl bg-orange-500 text-[15px] font-bold text-white shadow-md shadow-orange-100 transition-all active:scale-[0.97] hover:bg-orange-600"
+                className="h-14 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/15 transition-all active:scale-[0.97] hover:bg-[#D99A55]"
               >
                 이 릴레이 팀으로 최종 승인
               </button>
