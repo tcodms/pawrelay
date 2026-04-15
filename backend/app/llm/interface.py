@@ -29,12 +29,19 @@ async def chat(user_id: int, message: str) -> str:
     return result["message"]
 
 
-async def run_matching(post_id: int, candidates: list) -> dict:
+async def run_matching(post_id: int, candidates: list, post: dict | None = None) -> dict:
     """릴레이 팀 매칭 실행.
 
-    TODO: ai/matching/ 구현 후 연동 필요
+    Args:
+        post_id: 이동봉사 공고 ID
+        candidates: 후보 체인 리스트 (각 체인은 봉사 구간 dict 리스트)
+        post: 공고 정보 dict (animal_info, origin, destination, scheduled_date)
+
+    Returns:
+        {"selected_chain_index": int, "matching_reason": str}
     """
-    raise NotImplementedError("run_matching은 아직 구현되지 않았습니다.")
+    from ai.matching.chain_selector import select_chain
+    return await select_chain(chains=candidates, post=post or {"id": post_id})
 
 
 async def detect_anomaly(segment_id: int) -> dict:
