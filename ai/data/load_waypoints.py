@@ -21,6 +21,11 @@ from ai.models.waypoint import WAYPOINT_TABLE_SQL, WAYPOINT_UNIQUE_INDEX_SQL, Wa
 
 logger = logging.getLogger(__name__)
 
+
+class WaypointIndexError(Exception):
+    """waypoints UNIQUE 인덱스 생성 실패."""
+
+
 _INSERT_SQL = """
     INSERT INTO waypoints (name, type, address, phone, geom, source)
     VALUES (%(name)s, %(type)s, %(address)s, %(phone)s,
@@ -43,7 +48,7 @@ def _ensure_table(conn: psycopg2.extensions.connection) -> None:
 
 
 def _ensure_unique_index(conn: psycopg2.extensions.connection) -> None:
-    """UNIQUE 인덱스 생성. 실패 시 RuntimeError를 발생시켜 적재를 즉시 중단한다."""
+    """UNIQUE 인덱스 생성. 실패 시 WaypointIndexError를 발생시켜 적재를 즉시 중단한다."""
     try:
         with conn.cursor() as cur:
             cur.execute(WAYPOINT_UNIQUE_INDEX_SQL)
@@ -51,7 +56,7 @@ def _ensure_unique_index(conn: psycopg2.extensions.connection) -> None:
     except psycopg2.Error as e:
         conn.rollback()
         logger.error("UNIQUE 인덱스 생성 실패: %s", e)
-        raise RuntimeError(
+        raise WaypointIndexError(
             "waypoints(name, type) UNIQUE 인덱스를 생성하지 못해 적재를 중단합니다."
         ) from e
 
@@ -128,10 +133,6 @@ def _main() -> None:
     """CLI 진입점: JSON 파일을 읽어 PostGIS에 적재."""
     logging.basicConfig(level=logging.INFO)
 
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        raise ValueError("DATABASE_URL 환경변수를 설정해주세요.")
-
     parser = argparse.ArgumentParser(description="waypoints PostGIS 적재")
     parser.add_argument(
         "--file",
@@ -141,10 +142,14 @@ def _main() -> None:
     )
     args = parser.parse_args()
 
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise ValueError("DATABASE_URL 환경변수를 설정해주세요.")
+
     for filepath in args.file:
         try:
             load_from_file(filepath, database_url)
-        except (OSError, json.JSONDecodeError, psycopg2.Error, RuntimeError) as e:
+        except (OSError, json.JSONDecodeError, psycopg2.Error, WaypointIndexError) as e:
             logger.error("파일 처리 실패 (%s): %s", filepath, e)
 
 
