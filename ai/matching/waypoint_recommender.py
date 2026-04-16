@@ -106,6 +106,19 @@ def recommend_waypoints(
     return result
 
 
+def _row_to_result(row: dict) -> WaypointResult:
+    """DB 행을 WaypointResult로 변환한다."""
+    return WaypointResult(
+        name=row["name"],
+        type=row["type"],
+        latitude=row["latitude"],
+        longitude=row["longitude"],
+        address=row["address"],
+        phone=row["phone"],
+        distance_km=round(row["distance_km"], 2),
+    )
+
+
 def _query_nearby(
     conn: psycopg2.extensions.connection,
     latitude: float,
@@ -115,27 +128,13 @@ def _query_nearby(
     limit: int = _MAX_PER_TYPE,
 ) -> list[WaypointResult]:
     """PostGIS로 반경 내 특정 타입 waypoints 조회."""
-    radius_meters = radius_km * 1000
-
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
         cur.execute(_NEARBY_SQL, (
             longitude, latitude,
             waypoint_type.value,
             longitude, latitude,
-            radius_meters,
+            radius_km * 1000,
             limit,
         ))
-        rows = cur.fetchall()[:limit]
-
-    return [
-        WaypointResult(
-            name=row["name"],
-            type=row["type"],
-            latitude=row["latitude"],
-            longitude=row["longitude"],
-            address=row["address"],
-            phone=row["phone"],
-            distance_km=round(row["distance_km"], 2),
-        )
-        for row in rows
-    ]
+        rows = cur.fetchall()
+    return [_row_to_result(row) for row in rows]
