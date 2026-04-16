@@ -61,36 +61,35 @@ def _ensure_unique_index(conn: psycopg2.extensions.connection) -> None:
         ) from e
 
 
+def _insert_one(cur, waypoint: WaypointModel) -> str:
+    """단건 waypoint를 INSERT하고 결과('inserted'|'duplicated'|'skipped')를 반환."""
+    try:
+        cur.execute("SAVEPOINT sp")
+        cur.execute(_INSERT_SQL, waypoint.to_postgis_insert())
+        result = "inserted" if cur.rowcount else "duplicated"
+        cur.execute("RELEASE SAVEPOINT sp")
+        return result
+    except psycopg2.Error as e:
+        logger.warning("적재 실패 (%s): %s", waypoint.name, e)
+        cur.execute("ROLLBACK TO SAVEPOINT sp")
+        try:
+            cur.execute("RELEASE SAVEPOINT sp")
+        except psycopg2.Error as release_err:
+            logger.warning("SAVEPOINT 해제 실패: %s", release_err)
+        return "skipped"
+
+
 def _load_records(
     conn: psycopg2.extensions.connection,
     waypoints: list[WaypointModel],
 ) -> tuple[int, int, int]:
     """waypoints 리스트를 DB에 적재하고 (성공, 중복, 실패) 건수를 반환."""
-    inserted = 0
-    duplicated = 0
-    skipped = 0
-
+    counts: dict[str, int] = {"inserted": 0, "duplicated": 0, "skipped": 0}
     with conn.cursor() as cur:
         for waypoint in waypoints:
-            try:
-                cur.execute("SAVEPOINT sp")
-                cur.execute(_INSERT_SQL, waypoint.to_postgis_insert())
-                if cur.rowcount:
-                    inserted += 1
-                else:
-                    duplicated += 1
-                cur.execute("RELEASE SAVEPOINT sp")
-            except psycopg2.Error as e:
-                skipped += 1
-                logger.warning("적재 실패 (%s): %s", waypoint.name, e)
-                cur.execute("ROLLBACK TO SAVEPOINT sp")
-                try:
-                    cur.execute("RELEASE SAVEPOINT sp")
-                except psycopg2.Error as release_err:
-                    logger.warning("SAVEPOINT 해제 실패: %s", release_err)
-
+            counts[_insert_one(cur, waypoint)] += 1
     conn.commit()
-    return inserted, duplicated, skipped
+    return counts["inserted"], counts["duplicated"], counts["skipped"]
 
 
 def _parse_json_to_waypoints(data: dict) -> list[WaypointModel]:
