@@ -14,6 +14,32 @@ from app.schemas.chatbot import ChatMessageResponse, ChatSessionResponse
 _SESSION_TTL = 3600  # 1시간
 _engine = LLMChatbotEngine()
 
+_STATE_WELCOME = {
+    "ASK_ORIGIN": ("address_search", None, "어느 지역에서 출발하실 수 있나요?"),
+    "ASK_DESTINATION": ("address_search", None, "목적지는 어디인가요?"),
+    "ASK_DATE": ("date_picker", None, "봉사 가능한 날짜를 선택해주세요."),
+    "ASK_VEHICLE": ("buttons", ["있어요", "없어요"], "차량이 있으신가요?"),
+    "ASK_ANIMAL_SIZE": (
+        "buttons",
+        ["소형 (5kg 이하)", "중형 (5~15kg)", "대형 (15kg 이상)"],
+        "이동 가능한 동물 크기를 선택해주세요.",
+    ),
+}
+
+
+def _build_welcome_response(session_id: str, session: dict) -> ChatMessageResponse:
+    """message=null 첫 진입 시 현재 state에 맞는 안내 메시지를 반환한다."""
+    state = session.get("state", "ASK_ORIGIN")
+    input_type, options, msg = _STATE_WELCOME.get(state, (None, None, "동선을 입력해주세요."))
+    if state == "ASK_ORIGIN":
+        msg = "안녕하세요! 이동봉사 동선을 등록할게요.\n" + msg
+    return ChatMessageResponse(
+        session_id=session_id, state=state, message=msg,
+        input_type=input_type, options=options,
+        auto_filled=session.get("auto_filled") or None,
+        completed=False, schedule_id=None,
+    )
+
 
 def _session_key(session_id: str) -> str:
     return f"chatbot:session:{session_id}"
@@ -55,6 +81,14 @@ def _build_route_wkt(coords: dict) -> str | None:
     )
 
 
+def _validate_available_time(value: str | None) -> str | None:
+    """HH:MM 형식(5자)만 허용. 그 외는 None 반환."""
+    import re
+    if value and re.fullmatch(r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$", value):
+        return value
+    return None
+
+
 async def _save_schedule(
     db: AsyncSession, volunteer_id: int, session: dict
 ) -> int:
@@ -69,7 +103,7 @@ async def _save_schedule(
         origin_area=data["origin"],
         destination_area=data["destination"],
         available_date=date.fromisoformat(data["available_date"]),
-        available_time=data.get("available_time"),
+        available_time=_validate_available_time(data.get("available_time")),
         vehicle_available=data["vehicle_available"],
         max_animal_size=data["max_animal_size"],
         route_wkt=route_wkt,
@@ -125,6 +159,10 @@ async def send_message(
     else:
         session_id = str(uuid.uuid4())
         session = _new_session(volunteer_id, post_id)
+
+    if not message:
+        await _save_session(redis, session_id, session)
+        return _build_welcome_response(session_id, session)
 
     result = await _engine.process_input(
         message=message,
