@@ -76,9 +76,12 @@ function LoginForm() {
     try {
       const { user } = await login(email, password);
       pendingRole.current = user.role;
-      if (localStorage.getItem("pwa_welcome_pending") === "1") {
+      const hasPwaFlag = localStorage.getItem("pwa_welcome_pending") === "1";
+      const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+      if (hasPwaFlag && isMobile) {
         setShowModal(true);
       } else {
+        localStorage.removeItem("pwa_welcome_pending");
         router.replace(user.role === "volunteer" ? "/volunteer/posts" : "/dashboard");
       }
     } catch (err) {

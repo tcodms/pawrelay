@@ -52,7 +52,7 @@ export interface PhotoUploadUrl {
 
 export async function getPosts(_query?: PostsQuery): Promise<Post[]> {
   // TODO: const params = new URLSearchParams({ ...(_query ?? {}) } as Record<string, string>);
-  //       const res = await request<{ posts: Post[] }>(`/posts?${params}`);
+  //       const res = await request<{ posts: Post[] }>(`/shelter/dashboard?${params}`);
   //       return res.posts;
   return DUMMY_POSTS;
 }

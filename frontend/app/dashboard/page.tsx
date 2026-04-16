@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { User, Plus, X, ChevronRight, ArrowRight, Users } from "lucide-react";
+import Image from "next/image";
+import { User, Users, Plus, X, ChevronRight, ArrowRight, MapPin, ExternalLink } from "lucide-react";
 import { getPosts, Post } from "@/lib/api/posts";
 import { approveShelterMatching, rejectShelterMatching } from "@/lib/api/matching";
 import { getShelterProfile } from "@/lib/api/shelter";
@@ -18,7 +19,7 @@ const TABS: { key: TabKey; label: string; dot: string }[] = [
   { key: "all",         label: "전체",    dot: "bg-gray-400" },
   { key: "recruiting",  label: "모집 중", dot: "bg-green-500" },
   { key: "waiting",     label: "대기 중", dot: "bg-yellow-400" },
-  { key: "in_progress", label: "봉사 중", dot: "bg-blue-400" },
+  { key: "in_progress", label: "봉사 중", dot: "bg-sky-400" },
   { key: "completed",   label: "종료",    dot: "bg-gray-300" },
 ];
 
@@ -89,10 +90,9 @@ function PostCard({
   onShowApplicants: (post: Post) => void;
   onShowMatching: (post: Post) => void;
 }) {
-  const isUrgent = post.status === "urgent";
   const isWaiting = post.status === "waiting";
   const isRecruiting = post.status === "recruiting";
-  const hasAction = isWaiting || isRecruiting || isUrgent;
+  const hasAction = isWaiting || isRecruiting;
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 transition-shadow hover:shadow-md">
@@ -106,10 +106,17 @@ function PostCard({
             <StatusBadge status={post.status} variant="sm" />
             <SizeBadge size={post.animal.size} variant="sm" />
           </div>
-          <span className="text-[12px] text-gray-400 shrink-0">{post.scheduledDate}</span>
+          <span className="text-[12px] text-gray-400 shrink-0">{post.scheduled_date}</span>
         </div>
 
-        <p className="text-[16px] font-bold text-gray-900 mb-1">{post.animal.name}</p>
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <p className="text-[16px] font-bold text-gray-900">{post.animal.name}</p>
+          {post.animal.photo_url && (
+            <div className="relative h-10 w-10 shrink-0 rounded-xl overflow-hidden bg-[#FDF3EC]">
+              <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-4">
           <span>{post.origin}</span>
           <ArrowRight size={13} className="text-gray-300 shrink-0" />
@@ -134,21 +141,90 @@ function PostCard({
               <ChevronRight size={15} className="text-yellow-400" />
             </button>
           )}
-          {(isRecruiting || isUrgent) && (
+          {isRecruiting && (
             <button
               onClick={() => onShowApplicants(post)}
-              className={`w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold transition-colors active:scale-[0.98] ${
-                isUrgent
-                  ? "bg-red-50 text-red-600 hover:bg-red-100"
-                  : "bg-green-50 text-green-700 hover:bg-green-100"
-              }`}
+              className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold transition-colors active:scale-[0.98] bg-green-50 text-green-700 hover:bg-green-100"
             >
               <span className="flex-1 text-center">지원자 목록</span>
-              <ChevronRight size={15} className={isUrgent ? "text-red-400" : "text-green-400"} />
+              <ChevronRight size={15} className="text-green-400" />
             </button>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── In-Progress Card ───────────────────────────────────────────────────────────
+
+function InProgressCard({ post }: { post: Post }) {
+  return (
+    <div className="rounded-2xl bg-white border border-gray-100 transition-shadow hover:shadow-md">
+      <Link href={`/dashboard/posts/${post.id}`} className="block p-5 pb-3">
+
+        {/* 배지 + 날짜 */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatusBadge status={post.status} variant="sm" />
+            <SizeBadge size={post.animal.size} variant="sm" />
+          </div>
+          <span className="text-[12px] text-gray-400 shrink-0">{post.scheduled_date}</span>
+        </div>
+
+        {/* 동물 이름 + 사진 썸네일 */}
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <p className="text-[16px] font-bold text-gray-900">{post.animal.name}</p>
+          {post.animal.photo_url && (
+            <div className="relative h-10 w-10 shrink-0 rounded-xl overflow-hidden bg-[#FDF3EC]">
+              <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
+            </div>
+          )}
+        </div>
+
+        {/* 경로 */}
+        <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-4">
+          <span>{post.origin}</span>
+          <ArrowRight size={13} className="text-gray-300 shrink-0" />
+          <span>{post.destination}</span>
+        </div>
+
+        {/* 릴레이 봉사자 */}
+        {post.relayChain && post.relayChain.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {post.relayChain.map((seg, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
+                  <span className="text-[9px] font-bold text-[#7A4A28]">{i + 1}</span>
+                </div>
+                <p className="text-[12px] font-semibold text-gray-700 w-16 shrink-0 truncate">{seg.volunteer}</p>
+                <div className="flex items-center gap-1 text-[11px] text-gray-400 min-w-0">
+                  <span className="truncate">{seg.from}</span>
+                  <ArrowRight size={9} className="text-gray-300 shrink-0" />
+                  <span className="truncate">{seg.to}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Link>
+
+      {/* 봉사 현황 버튼 */}
+      <div className="px-5 pb-5">
+        {post.share_token ? (
+          <Link
+            href={`/track/${post.share_token}`}
+            className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-sky-50 text-sky-500 hover:bg-sky-100 transition-colors active:scale-[0.98]"
+          >
+            <span className="flex-1 text-center">봉사 현황 보기</span>
+            <ChevronRight size={15} className="text-sky-400" />
+          </Link>
+        ) : (
+          <div className="w-full flex items-center justify-center px-4 rounded-xl py-2.5 text-[13px] text-gray-400 bg-gray-50">
+            현황 링크 준비 중
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -214,14 +290,14 @@ export default function DashboardPage() {
 
   const filtered = posts.filter((p) => {
     if (activeTab === "all")         return true;
-    if (activeTab === "recruiting")  return p.status === "recruiting" || p.status === "urgent";
+    if (activeTab === "recruiting")  return p.status === "recruiting";
     if (activeTab === "waiting")     return p.status === "waiting";
     if (activeTab === "in_progress") return p.status === "in_progress";
     if (activeTab === "completed")   return p.status === "completed";
     return true;
   });
 
-  const recruitingCount = posts.filter((p) => p.status === "recruiting" || p.status === "urgent").length;
+  const recruitingCount = posts.filter((p) => p.status === "recruiting").length;
   const waitingCount    = posts.filter((p) => p.status === "waiting").length;
 
   return (
@@ -329,14 +405,18 @@ export default function DashboardPage() {
             <p className="text-[14px]">해당 상태의 공고가 없습니다.</p>
           </div>
         ) : (
-          filtered.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onShowApplicants={(p) => { setSelectedPost(p); setSheetType("applicants"); }}
-              onShowMatching={(p)   => { setSelectedPost(p); setSheetType("matching"); }}
-            />
-          ))
+          filtered.map((post) =>
+            post.status === "in_progress" ? (
+              <InProgressCard key={post.id} post={post} />
+            ) : (
+              <PostCard
+                key={post.id}
+                post={post}
+                onShowApplicants={(p) => { setSelectedPost(p); setSheetType("applicants"); }}
+                onShowMatching={(p)   => { setSelectedPost(p); setSheetType("matching"); }}
+              />
+            )
+          )
         )}
       </div>
 
