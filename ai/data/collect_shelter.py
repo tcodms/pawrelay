@@ -37,6 +37,17 @@ async def _fetch_json(
     return response.json()
 
 
+def _extract_items(body: dict) -> list[dict]:
+    """API 응답 body에서 항목 리스트를 추출한다. 없으면 빈 리스트 반환."""
+    items = body.get("items", {})
+    if not items:
+        return []
+    item_list = items.get("item", [])
+    if isinstance(item_list, dict):
+        item_list = [item_list]
+    return item_list or []
+
+
 async def _fetch_all_pages(
     client: httpx.AsyncClient,
     service_key: str,
@@ -44,37 +55,19 @@ async def _fetch_all_pages(
     """페이지네이션을 처리해 전체 보호소 목록 반환."""
     results = []
     page = 1
-
     while True:
-        params = {
-            "serviceKey": service_key,
-            "numOfRows": _PAGE_SIZE,
-            "pageNo": page,
-            "_type": "json",
-        }
+        params = {"serviceKey": service_key, "numOfRows": _PAGE_SIZE,
+                  "pageNo": page, "_type": "json"}
         data = await _fetch_json(client, _SHELTER_URL, params)
-
         body = data.get("response", {}).get("body", {})
         total_count = int(body.get("totalCount", 0))
-        items = body.get("items", {})
-
-        if not items:
-            break
-
-        item_list = items.get("item", [])
-        if isinstance(item_list, dict):
-            item_list = [item_list]
-
+        item_list = _extract_items(body)
         if not item_list:
             break
-
         results.extend(item_list)
-
         if len(results) >= total_count:
             break
-
         page += 1
-
     return results
 
 
