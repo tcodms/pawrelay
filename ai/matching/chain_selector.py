@@ -58,7 +58,7 @@ def _build_prompt(chains: list[list[dict]], post: dict) -> str:
 
 
 def _parse_response(text: str) -> dict | None:
-    """LLM 응답 JSON을 파싱한다. 형식 오류 시 None 반환."""
+    """LLM 응답 JSON을 파싱한다. 형식·타입 오류 시 None 반환."""
     try:
         cleaned = (
             text.strip()
@@ -68,8 +68,17 @@ def _parse_response(text: str) -> dict | None:
             .strip()
         )
         data = json.loads(cleaned)
+        if not isinstance(data, dict):
+            logger.warning("응답 타입 오류: dict 아님")
+            return None
         if not _REQUIRED_KEYS.issubset(data.keys()):
             logger.warning("응답에 필수 키 누락: %s", data.keys())
+            return None
+        if not isinstance(data["selected_chain_index"], int):
+            logger.warning("selected_chain_index 타입 오류: %r", data["selected_chain_index"])
+            return None
+        if not isinstance(data["matching_reason"], str) or not data["matching_reason"].strip():
+            logger.warning("matching_reason 타입/내용 오류")
             return None
         return data
     except (json.JSONDecodeError, AttributeError) as e:
@@ -91,13 +100,31 @@ async def select_chain(chains: list[list[dict]], post: dict) -> dict:
     Raises:
         ValueError: 최대 재시도 횟수(_MAX_RETRIES=2) 초과 시.
     """
+    if not chains or not any(chains):
+        raise ValueError("후보 체인이 비어 있습니다.")
+
     provider = get_llm_provider()
     prompt = _build_prompt(chains, post)
+    last_error: Exception | None = None
 
     for attempt in range(_MAX_RETRIES + 1):
-        response = await provider.complete(prompt)
+        try:
+            response = await provider.complete(prompt)
+        except Exception as e:
+            last_error = e
+            logger.warning(
+                "체인 선택 LLM 호출 실패 (시도 %d/%d): %s",
+                attempt + 1, _MAX_RETRIES + 1, e,
+            )
+            continue
         result = _parse_response(response)
         if result is not None:
+            if not (0 <= result["selected_chain_index"] < len(chains)):
+                logger.warning(
+                    "selected_chain_index 범위 오류: %s (chains=%d)",
+                    result["selected_chain_index"], len(chains),
+                )
+                continue
             return result
         logger.warning(
             "체인 선택 파싱 실패 (시도 %d/%d)", attempt + 1, _MAX_RETRIES + 1
@@ -105,4 +132,6 @@ async def select_chain(chains: list[list[dict]], post: dict) -> dict:
 
     error_msg = f"LLM 체인 선택 실패: {_MAX_RETRIES + 1}회 시도 후 유효한 응답 없음 (post_id={post.get('id')})"
     notify_admin(error_msg)
+    if last_error is not None:
+        raise ValueError(f"{error_msg} | last_error={last_error}") from last_error
     raise ValueError(error_msg)
