@@ -1,5 +1,6 @@
 """챗봇 서비스 - LLMChatbotEngine + Redis 세션 연동."""
 import json
+import re
 import uuid
 from datetime import date
 
@@ -73,7 +74,8 @@ def _build_route_wkt(coords: dict) -> str | None:
     """저장된 좌표로 EWKT LineString을 생성한다. 좌표 없으면 None 반환."""
     origin = coords.get("origin", {})
     dest = coords.get("destination", {})
-    if not (origin.get("lat") and dest.get("lat")):
+    if (origin.get("lat") is None or origin.get("lng") is None
+            or dest.get("lat") is None or dest.get("lng") is None):
         return None
     return (
         f"SRID=4326;LINESTRING"
@@ -83,8 +85,7 @@ def _build_route_wkt(coords: dict) -> str | None:
 
 def _validate_available_time(value: str | None) -> str | None:
     """HH:MM 형식(5자)만 허용. 그 외는 None 반환."""
-    import re
-    if value and re.fullmatch(r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$", value):
+    if value and re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", value):
         return value
     return None
 

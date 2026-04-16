@@ -149,7 +149,7 @@ class ChatbotEngine:
                 "schedule_data": self._get_schedule_data(),
             }
 
-        if user_message in ["수정하기", "다시"]:
+        if user_message in ["수정하기", "다시", "처음부터 다시"]:
             self.state = "COLLECTING"
             self.collected_data = {}
             if self.auto_filled:
