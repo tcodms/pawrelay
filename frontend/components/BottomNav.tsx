@@ -45,11 +45,11 @@ export default function BottomNav() {
                 <Icon
                   size={22}
                   strokeWidth={active ? 2.5 : 1.8}
-                  className={active ? "text-orange-500" : "text-gray-400"}
+                  className={active ? "text-[#EEA968]" : "text-gray-400"}
                 />
                 <span
                   className={`text-[9px] font-semibold ${
-                    active ? "text-orange-500" : "text-gray-400"
+                    active ? "text-[#EEA968]" : "text-gray-400"
                   }`}
                 >
                   {label}

@@ -26,7 +26,7 @@ function isStandalone(): boolean {
 
 function StepRow({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-orange-50 px-4 py-3.5">
+    <div className="flex items-center gap-4 rounded-2xl bg-[#FDF3EC] px-4 py-3.5">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
         {icon}
       </div>
@@ -86,7 +86,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
     <main className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-12">
       {/* 앱 아이콘 */}
       <div className="mb-6 flex flex-col items-center gap-3 animate-scale-in">
-        <div className="flex h-24 w-24 items-center justify-center rounded-[32px] bg-orange-500 shadow-xl shadow-orange-200">
+        <div className="flex h-24 w-24 items-center justify-center rounded-[32px] bg-[#EEA968] shadow-xl shadow-[#EEA968]/30">
           <svg
             width="52"
             height="52"
@@ -104,7 +104,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
             <ellipse cx="15" cy="8.5" rx="1.3" ry="1.8" />
           </svg>
         </div>
-        <p className="text-[13px] font-bold text-orange-500">PawRelay</p>
+        <p className="text-[13px] font-bold text-[#EEA968]">PawRelay</p>
       </div>
 
       <div
@@ -127,7 +127,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
             <div className="flex flex-col gap-2.5 mb-7">
               <StepRow
                 icon={
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EEA968" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                     <polyline points="16 6 12 2 8 6" />
                     <line x1="12" y1="2" x2="12" y2="15" />
@@ -137,7 +137,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
               />
               <StepRow
                 icon={
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EEA968" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="3" />
                     <line x1="12" y1="8" x2="12" y2="16" />
                     <line x1="8" y1="12" x2="16" y2="12" />
@@ -147,7 +147,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
               />
               <StepRow
                 icon={
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EEA968" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 }
@@ -163,7 +163,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
             type="button"
             onClick={handleInstall}
             disabled={installing}
-            className="h-14 w-full rounded-2xl bg-orange-500 text-[15px] font-bold text-white shadow-md shadow-orange-100 transition-all duration-150 active:scale-[0.97] disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none mb-5"
+            className="h-14 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all duration-150 active:scale-[0.97] disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none mb-5"
           >
             {installing ? "설치 중..." : "홈 화면에 설치하기"}
           </button>
@@ -171,7 +171,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
           <div className="flex flex-col gap-2.5 mb-7">
             <StepRow
               icon={
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#F97316">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#EEA968">
                   <circle cx="12" cy="5" r="1.8" />
                   <circle cx="12" cy="12" r="1.8" />
                   <circle cx="12" cy="19" r="1.8" />
@@ -181,7 +181,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
             />
             <StepRow
               icon={
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EEA968" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="3" />
                   <line x1="12" y1="8" x2="12" y2="16" />
                   <line x1="8" y1="12" x2="16" y2="12" />

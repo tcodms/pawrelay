@@ -138,7 +138,7 @@ function AndroidGuide({ onDismiss }: { onDismiss: () => void }) {
 
         <div className="mb-7">
           <button type="button" onClick={handleInstall} disabled={installing}
-            className="h-14 w-full rounded-2xl bg-orange-500 text-[15px] font-bold text-white shadow-md shadow-orange-100 transition-all duration-150 active:scale-[0.97] disabled:bg-gray-100 disabled:text-gray-400">
+            className="h-14 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all duration-150 active:scale-[0.97] disabled:bg-gray-100 disabled:text-gray-400">
             {installing ? "설치 중..." : "홈 화면에 설치하기"}
           </button>
         </div>
@@ -223,7 +223,7 @@ export default function PwaInstallPrompt({ onDismiss }: Props) {
     <main className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-12">
       {/* 상단 아이콘 */}
       <div className="mb-8 flex flex-col items-center gap-3 animate-scale-in">
-        <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-orange-500 shadow-lg shadow-orange-200">
+        <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-[#EEA968] shadow-lg shadow-[#EEA968]/25">
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             {/* 발바닥 아이콘 */}
             <ellipse cx="12" cy="17" rx="4" ry="3" />
@@ -233,7 +233,7 @@ export default function PwaInstallPrompt({ onDismiss }: Props) {
             <ellipse cx="15" cy="8.5" rx="1.3" ry="1.8" />
           </svg>
         </div>
-        <p className="text-[13px] font-semibold text-orange-500">PawRelay</p>
+        <p className="text-[13px] font-semibold text-[#EEA968]">PawRelay</p>
       </div>
 
       {/* OS별 안내 */}
