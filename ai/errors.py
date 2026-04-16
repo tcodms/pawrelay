@@ -1,3 +1,17 @@
+import logging
+
+_admin_logger = logging.getLogger("admin.alert")
+
+
+def notify_admin(message: str) -> None:
+    """관리자에게 긴급 알림을 보낸다.
+
+    현재는 ERROR 레벨 로깅으로 구현한다.
+    TODO: 알림 시스템 구축 후 notifications 테이블 또는 이메일 연동으로 교체.
+    """
+    _admin_logger.error("[ADMIN ALERT] %s", message)
+
+
 class ChatbotError(Exception):
     """챗봇 에러 베이스 클래스."""
 

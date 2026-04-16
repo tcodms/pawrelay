@@ -9,6 +9,7 @@ LLM에게 수학 계산을 시키지 않는다. 체인 시간 검증은 2단계 
 import json
 import logging
 
+from ai.errors import notify_admin
 from ai.providers import get_llm_provider
 
 logger = logging.getLogger(__name__)
@@ -102,6 +103,6 @@ async def select_chain(chains: list[list[dict]], post: dict) -> dict:
             "체인 선택 파싱 실패 (시도 %d/%d)", attempt + 1, _MAX_RETRIES + 1
         )
 
-    raise ValueError(
-        f"LLM 체인 선택 실패: {_MAX_RETRIES + 1}회 시도 후 유효한 응답 없음"
-    )
+    error_msg = f"LLM 체인 선택 실패: {_MAX_RETRIES + 1}회 시도 후 유효한 응답 없음 (post_id={post.get('id')})"
+    notify_admin(error_msg)
+    raise ValueError(error_msg)
