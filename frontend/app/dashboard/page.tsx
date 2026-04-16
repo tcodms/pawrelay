@@ -99,55 +99,60 @@ function PostCard({
       {/* 상세 페이지 링크 — 카드 정보 영역 전체 */}
       <Link
         href={`/dashboard/posts/${post.id}`}
-        className={`block p-5 ${hasAction ? "pb-3" : ""}`}
+        className={`block px-5 pt-4 ${hasAction ? "pb-3" : "pb-5"}`}
       >
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* [부차] 배지 + 날짜 — 작고 조용하게 */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-1.5">
             <StatusBadge status={post.status} variant="sm" />
             <SizeBadge size={post.animal.size} variant="sm" />
           </div>
-          <span className="text-[12px] text-gray-400 shrink-0">{post.scheduled_date}</span>
+          <span className="text-[11px] text-gray-300 shrink-0">{post.scheduled_date}</span>
         </div>
 
-        <div className="flex items-center justify-between gap-3 mb-1">
-          <p className="text-[16px] font-bold text-gray-900">{post.animal.name}</p>
+        {/* [최상위] 동물 이름 + 사진 */}
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <p className="text-[22px] font-bold text-gray-900 leading-tight">{post.animal.name}</p>
           {post.animal.photo_url && (
-            <div className="relative h-10 w-10 shrink-0 rounded-xl overflow-hidden bg-[#FDF3EC]">
+            <div className="relative h-12 w-12 shrink-0 rounded-xl overflow-hidden bg-[#FDF3EC]">
               <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-4">
-          <span>{post.origin}</span>
-          <ArrowRight size={13} className="text-gray-300 shrink-0" />
-          <span>{post.destination}</span>
+
+        {/* [차상위] 이동 경로 */}
+        <div className="flex items-center gap-1.5 mb-4">
+          <span className="text-[14px] font-semibold text-gray-600">{post.origin}</span>
+          <ArrowRight size={14} className="text-[#EEA968] shrink-0" />
+          <span className="text-[14px] font-semibold text-gray-600">{post.destination}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[13px] text-gray-500">
-          <Users size={14} className="text-gray-400" />
-          <span>현재 지원: <span className="font-semibold text-gray-700">{post.volunteers.length}명</span></span>
+        {/* [부차] 지원자 수 */}
+        <div className="flex items-center gap-1.5 text-[12px] text-gray-400">
+          <Users size={13} className="text-gray-300" />
+          <span>지원 <span className="font-semibold text-gray-600">{post.volunteers.length}명</span></span>
         </div>
       </Link>
 
-      {/* 액션 버튼 — Link 바깥에 배치하여 중첩 방지 */}
+      {/* 액션 버튼 */}
       {hasAction && (
-        <div className="px-5 pb-5">
+        <div className="px-5 pb-4 mt-1">
           {isWaiting && (
             <button
               onClick={() => onShowMatching(post)}
-              className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors active:scale-[0.98]"
+              className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors active:scale-[0.98]"
             >
               <span className="flex-1 text-center">매칭 결과</span>
-              <ChevronRight size={15} className="text-yellow-400" />
+              <ChevronRight size={15} className="text-gray-400" />
             </button>
           )}
           {isRecruiting && (
             <button
               onClick={() => onShowApplicants(post)}
-              className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold transition-colors active:scale-[0.98] bg-green-50 text-green-700 hover:bg-green-100"
+              className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors active:scale-[0.98]"
             >
               <span className="flex-1 text-center">지원자 목록</span>
-              <ChevronRight size={15} className="text-green-400" />
+              <ChevronRight size={15} className="text-gray-400" />
             </button>
           )}
         </div>
@@ -214,10 +219,10 @@ function InProgressCard({ post }: { post: Post }) {
         {post.share_token ? (
           <Link
             href={`/track/${post.share_token}`}
-            className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-sky-50 text-sky-500 hover:bg-sky-100 transition-colors active:scale-[0.98]"
+            className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors active:scale-[0.98]"
           >
             <span className="flex-1 text-center">봉사 현황 보기</span>
-            <ChevronRight size={15} className="text-sky-400" />
+            <ChevronRight size={15} className="text-gray-400" />
           </Link>
         ) : (
           <div className="w-full flex items-center justify-center px-4 rounded-xl py-2.5 text-[13px] text-gray-400 bg-gray-50">
@@ -297,8 +302,9 @@ export default function DashboardPage() {
     return true;
   });
 
-  const recruitingCount = posts.filter((p) => p.status === "recruiting").length;
-  const waitingCount    = posts.filter((p) => p.status === "waiting").length;
+  const recruitingCount  = posts.filter((p) => p.status === "recruiting").length;
+  const waitingCount     = posts.filter((p) => p.status === "waiting").length;
+  const inProgressCount  = posts.filter((p) => p.status === "in_progress").length;
 
   return (
     <>
@@ -312,8 +318,8 @@ export default function DashboardPage() {
           viewBox="0 0 390 230"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path d="M0 0 L390 0 L390 195 C315 228 210 186 110 206 C55 220 0 218 0 200 Z" fill="#EEA968" opacity="0.55"/>
-          <path d="M265 0 L390 0 L390 160 C372 190 338 168 305 132 C275 100 260 48 265 0 Z" fill="#7A4A28" opacity="0.18"/>
+          <path d="M0 0 L390 0 L390 195 C315 228 210 186 110 206 C55 220 0 218 0 200 Z" fill="#EEA968" opacity="0.30"/>
+          <path d="M265 0 L390 0 L390 160 C372 190 338 168 305 132 C275 100 260 48 265 0 Z" fill="#7A4A28" opacity="0.10"/>
         </svg>
         {/* 데스크탑 물결 배경 */}
         <svg
@@ -322,44 +328,51 @@ export default function DashboardPage() {
           preserveAspectRatio="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path d="M0 0 L1440 0 L1440 150 C1100 178 750 138 450 155 C200 170 80 168 0 155 Z" fill="#EEA968" opacity="0.55"/>
-          <path d="M1150 0 L1440 0 L1440 115 C1420 138 1378 124 1338 104 C1300 86 1272 40 1265 0 Z" fill="#7A4A28" opacity="0.18"/>
+          <path d="M0 0 L1440 0 L1440 150 C1100 178 750 138 450 155 C200 170 80 168 0 155 Z" fill="#EEA968" opacity="0.30"/>
+          <path d="M1150 0 L1440 0 L1440 115 C1420 138 1378 124 1338 104 C1300 86 1272 40 1265 0 Z" fill="#7A4A28" opacity="0.10"/>
         </svg>
 
         {/* 콘텐츠 오버레이 */}
         <div className="absolute inset-0 flex flex-col">
           <div className="flex-1 max-w-3xl mx-auto w-full px-4 flex flex-col justify-between pt-5 pb-5">
-            {/* 프로필 버튼 + 인사 문구 */}
-            <div className="flex flex-col gap-2">
+            {/* 보호소 이름 + 인사 문구 / 프로필 버튼 */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-[22px] font-bold text-[#5C3317] leading-tight">{shelterName}</p>
+                <p className="text-[13px] text-[#5C3317]/70 leading-snug">오늘의 봉사 현황을 확인해보세요.</p>
+              </div>
               <Link
                 href="/dashboard/profile"
                 aria-label="프로필"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/40 text-[#7A4A28] hover:bg-white/60 transition-colors backdrop-blur-sm border border-white/40"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/50 text-[#7A4A28] hover:bg-white/70 transition-colors backdrop-blur-sm border border-white/50 shadow-sm"
               >
-                <User size={16} />
+                <User size={24} />
               </Link>
-              <p className="text-[11px] text-[#5C3317]/80 leading-snug">
-                <span className="font-bold text-[#5C3317]">{shelterName}</span>의<br />
-                오늘자 봉사 현황을 확인해보세요.
-              </p>
             </div>
 
             {/* 통계 카드 */}
-            <div className="grid grid-cols-2 gap-3 items-end">
-                <div className="rounded-2xl bg-white/90 backdrop-blur-sm px-4 py-3.5 flex flex-col gap-1 shadow-sm">
-                  <p className="text-[12px] text-gray-400">모집중 공고</p>
-                  <p className="text-[28px] font-bold text-green-500 leading-none">
-                    {recruitingCount}
-                    <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/90 backdrop-blur-sm px-4 py-3.5 flex flex-col gap-1 shadow-sm">
-                  <p className="text-[12px] text-gray-400">매칭 대기 공고</p>
-                  <p className="text-[28px] font-bold text-yellow-500 leading-none">
-                    {waitingCount}
-                    <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
-                  </p>
-                </div>
+            <div className="grid grid-cols-3 gap-4 items-end">
+              <div className="rounded-2xl bg-white/90 backdrop-blur-sm px-3 py-3 flex flex-col gap-1 shadow-sm">
+                <p className="text-[11px] text-gray-400">모집 중</p>
+                <p className="text-[24px] font-bold text-green-500 leading-none">
+                  {recruitingCount}
+                  <span className="text-[12px] font-semibold text-gray-400 ml-1">건</span>
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/90 backdrop-blur-sm px-3 py-3 flex flex-col gap-1 shadow-sm">
+                <p className="text-[11px] text-gray-400">대기 중</p>
+                <p className="text-[24px] font-bold text-yellow-500 leading-none">
+                  {waitingCount}
+                  <span className="text-[12px] font-semibold text-gray-400 ml-1">건</span>
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/90 backdrop-blur-sm px-3 py-3 flex flex-col gap-1 shadow-sm">
+                <p className="text-[11px] text-gray-400">봉사 중</p>
+                <p className="text-[24px] font-bold text-sky-500 leading-none">
+                  {inProgressCount}
+                  <span className="text-[12px] font-semibold text-gray-400 ml-1">건</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
