@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Camera, X } from "lucide-react";
@@ -59,25 +59,33 @@ export default function NewPostPage() {
 
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const [photoFile, setPhotoFile]       = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef    = useRef<HTMLInputElement>(null);
+  const photoPreviewRef = useRef<string>("");   // cleanup용 — 항상 최신 URL 추적
 
   const [errors, setErrors]   = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    return () => { if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current); };
+  }, []);
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current);
+    const url = URL.createObjectURL(file);
+    photoPreviewRef.current = url;
     setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoPreview(url);
   }
 
-  async function uploadPhoto(file: File): Promise<string> {
+  async function uploadPhoto(file: File): Promise<string | null> {
     // TODO: 실제 S3 업로드 플로우
     // const { upload_url, photo_url } = await getPhotoUploadUrl(file.name);
     // await fetch(upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
     // return photo_url;
     void getPhotoUploadUrl;
-    return URL.createObjectURL(file); // Mock
+    return null; // S3 미구현 — blob URL을 API payload에 사용하지 않음
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -90,7 +98,7 @@ export default function NewPostPage() {
     setLoading(true);
     try {
       let photoUrl: string | undefined;
-      if (photoFile) photoUrl = await uploadPhoto(photoFile);
+      if (photoFile) photoUrl = await uploadPhoto(photoFile) ?? undefined;
 
       await createPost({
         origin,
@@ -115,7 +123,7 @@ export default function NewPostPage() {
     <main className="min-h-screen bg-gray-50">
 
       {/* 헤더 */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white/90 px-4 py-4 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 flex items-center gap-3 bg-white shadow-sm px-4 py-4">
         <Link
           href="/dashboard"
           aria-label="뒤로 가기"
@@ -149,7 +157,13 @@ export default function NewPostPage() {
             {photoPreview && (
               <button
                 type="button"
-                onClick={() => { setPhotoPreview(""); setPhotoFile(null); }}
+                onClick={() => {
+                  if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current);
+                  photoPreviewRef.current = "";
+                  setPhotoPreview("");
+                  setPhotoFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
                 className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-400 transition-colors"
               >
                 <X size={11} />

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { User, Users, Plus, X, ChevronRight, ArrowRight, MapPin, ExternalLink } from "lucide-react";
+import { User, Users, Plus, X, ChevronRight, ArrowRight } from "lucide-react";
 import { getPosts, Post } from "@/lib/api/posts";
 import { approveShelterMatching, rejectShelterMatching } from "@/lib/api/matching";
 import { getShelterProfile } from "@/lib/api/shelter";
@@ -112,7 +112,7 @@ function PostCard({
 
         {/* [최상위] 동물 이름 + 사진 */}
         <div className="flex items-center justify-between gap-3 mb-2">
-          <p className="text-[22px] font-bold text-gray-900 leading-tight">{post.animal.name}</p>
+          <p className="text-[22px] font-bold text-[#5C3317] leading-tight">{post.animal.name}</p>
           {post.animal.photo_url && (
             <div className="relative h-12 w-12 shrink-0 rounded-xl overflow-hidden bg-[#FDF3EC]">
               <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
@@ -122,9 +122,9 @@ function PostCard({
 
         {/* [차상위] 이동 경로 */}
         <div className="flex items-center gap-1.5 mb-4">
-          <span className="text-[14px] font-semibold text-gray-600">{post.origin}</span>
-          <ArrowRight size={14} className="text-[#EEA968] shrink-0" />
-          <span className="text-[14px] font-semibold text-gray-600">{post.destination}</span>
+          <span className="text-[12px] font-semibold text-gray-600">{post.origin}</span>
+          <ArrowRight size={12} className="text-gray-400 shrink-0" />
+          <span className="text-[12px] font-semibold text-gray-600">{post.destination}</span>
         </div>
 
         {/* [부차] 지원자 수 */}
@@ -179,7 +179,7 @@ function InProgressCard({ post }: { post: Post }) {
 
         {/* 동물 이름 + 사진 썸네일 */}
         <div className="flex items-center justify-between gap-3 mb-1">
-          <p className="text-[16px] font-bold text-gray-900">{post.animal.name}</p>
+          <p className="text-[16px] font-bold text-[#5C3317]">{post.animal.name}</p>
           {post.animal.photo_url && (
             <div className="relative h-10 w-10 shrink-0 rounded-xl overflow-hidden bg-[#FDF3EC]">
               <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
@@ -188,9 +188,9 @@ function InProgressCard({ post }: { post: Post }) {
         </div>
 
         {/* 경로 */}
-        <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-4">
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-4">
           <span>{post.origin}</span>
-          <ArrowRight size={13} className="text-gray-300 shrink-0" />
+          <ArrowRight size={11} className="text-gray-300 shrink-0" />
           <span>{post.destination}</span>
         </div>
 
@@ -286,6 +286,9 @@ export default function DashboardPage() {
     if (!selectedPost?.chain_id) return;
     try {
       await rejectShelterMatching(selectedPost.chain_id);
+      setPosts((prev) =>
+        prev.map((p) => p.id === selectedPost.id ? { ...p, status: "recruiting" } : p)
+      );
       closeSheet();
       showToast("재매칭 요청이 접수되었습니다. 다음 배치 시 재처리됩니다.");
     } catch {
@@ -337,7 +340,7 @@ export default function DashboardPage() {
           <div className="flex-1 max-w-3xl mx-auto w-full px-4 flex flex-col justify-between pt-5 pb-5">
             {/* 보호소 이름 + 인사 문구 / 프로필 버튼 */}
             <div className="flex items-center justify-between gap-4">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 pl-2">
                 <p className="text-[22px] font-bold text-[#5C3317] leading-tight">{shelterName}</p>
                 <p className="text-[13px] text-[#5C3317]/70 leading-snug">오늘의 봉사 현황을 확인해보세요.</p>
               </div>
@@ -351,7 +354,7 @@ export default function DashboardPage() {
             </div>
 
             {/* 통계 카드 */}
-            <div className="grid grid-cols-3 gap-4 items-end">
+            <div className="grid grid-cols-3 gap-4 items-end pl-2">
               <div className="rounded-2xl bg-white/90 backdrop-blur-sm px-3 py-3 flex flex-col gap-1 shadow-sm">
                 <p className="text-[11px] text-gray-400">모집 중</p>
                 <p className="text-[24px] font-bold text-green-500 leading-none">
