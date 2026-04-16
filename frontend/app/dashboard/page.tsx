@@ -269,7 +269,10 @@ export default function DashboardPage() {
   }
 
   async function handleApprove() {
-    if (!selectedPost?.chain_id) return;
+    if (!selectedPost?.chain_id) {
+      showToast("매칭 정보를 불러올 수 없습니다. 페이지를 새로고침 해주세요.");
+      return;
+    }
     try {
       await approveShelterMatching(selectedPost.chain_id);
       setPosts((prev) =>
@@ -283,7 +286,10 @@ export default function DashboardPage() {
   }
 
   async function handleReject() {
-    if (!selectedPost?.chain_id) return;
+    if (!selectedPost?.chain_id) {
+      showToast("매칭 정보를 불러올 수 없습니다. 페이지를 새로고침 해주세요.");
+      return;
+    }
     try {
       await rejectShelterMatching(selectedPost.chain_id);
       setPosts((prev) =>
@@ -551,13 +557,15 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2.5">
               <button
                 onClick={handleApprove}
-                className="h-14 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/15 transition-all active:scale-[0.97] hover:bg-[#D99A55]"
+                disabled={!selectedPost?.chain_id}
+                className="h-14 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/15 transition-all active:scale-[0.97] hover:bg-[#D99A55] disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
               >
                 이 릴레이 팀으로 최종 승인
               </button>
               <button
                 onClick={handleReject}
-                className="h-12 w-full rounded-2xl border border-gray-200 text-[14px] font-semibold text-gray-500 transition-colors hover:bg-gray-50"
+                disabled={!selectedPost?.chain_id}
+                className="h-12 w-full rounded-2xl border border-gray-200 text-[14px] font-semibold text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 거절 / 재매칭 요청
               </button>
