@@ -133,6 +133,7 @@ async def _finalize_session(
     session["collected_data"] = result.collected_data
     if result.next_state == "ASK_ORIGIN":
         session["coordinates"] = {}
+        session.pop("schedule_id", None)
     if result.coordinates:
         session.setdefault("coordinates", {}).update(result.coordinates)
     if result.completed:
@@ -176,7 +177,7 @@ async def send_message(
         session_id = str(uuid.uuid4())
         session = _new_session(volunteer_id, post_id)
 
-    if not message:
+    if message is None:
         await _save_session(redis, session_id, session)
         return _build_welcome_response(session_id, session)
 
