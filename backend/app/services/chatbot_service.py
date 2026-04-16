@@ -54,6 +54,12 @@ async def _load_session(redis: Redis, session_id: str) -> dict:
     return json.loads(raw)
 
 
+def _check_owner(session: dict, volunteer_id: int) -> None:
+    """세션 소유자 검증. 불일치 시 403 반환."""
+    if session.get("volunteer_id") != volunteer_id:
+        raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
+
+
 async def _save_session(redis: Redis, session_id: str, session: dict) -> None:
     await redis.setex(_session_key(session_id), _SESSION_TTL, json.dumps(session))
 
@@ -71,16 +77,18 @@ def _new_session(volunteer_id: int, post_id: int | None) -> dict:
 
 
 def _build_route_wkt(coords: dict) -> str | None:
-    """저장된 좌표로 EWKT LineString을 생성한다. 좌표 없으면 None 반환."""
+    """저장된 좌표로 EWKT LineString을 생성한다. 좌표 없거나 범위 초과 시 None 반환."""
     origin = coords.get("origin", {})
     dest = coords.get("destination", {})
-    if (origin.get("lat") is None or origin.get("lng") is None
-            or dest.get("lat") is None or dest.get("lng") is None):
+    try:
+        o_lat, o_lng = float(origin["lat"]), float(origin["lng"])
+        d_lat, d_lng = float(dest["lat"]), float(dest["lng"])
+    except (KeyError, TypeError, ValueError):
         return None
-    return (
-        f"SRID=4326;LINESTRING"
-        f"({origin['lng']} {origin['lat']}, {dest['lng']} {dest['lat']})"
-    )
+    if not (-90 <= o_lat <= 90 and -180 <= o_lng <= 180
+            and -90 <= d_lat <= 90 and -180 <= d_lng <= 180):
+        return None
+    return f"SRID=4326;LINESTRING({o_lng} {o_lat}, {d_lng} {d_lat})"
 
 
 def _validate_available_time(value: str | None) -> str | None:
@@ -123,9 +131,15 @@ async def _finalize_session(
     """세션 상태를 업데이트하고 저장(또는 삭제)한다. 완료 시 schedule_id 반환."""
     session["state"] = result.next_state
     session["collected_data"] = result.collected_data
-    session.setdefault("coordinates", {}).update(result.coordinates)
+    if result.next_state == "ASK_ORIGIN":
+        session["coordinates"] = {}
+    if result.coordinates:
+        session.setdefault("coordinates", {}).update(result.coordinates)
     if result.completed:
-        schedule_id = await _save_schedule(db, volunteer_id, session)
+        # 멱등성: 이미 저장된 schedule_id가 있으면 재사용
+        schedule_id = session.get("schedule_id") or await _save_schedule(db, volunteer_id, session)
+        session["schedule_id"] = schedule_id
+        await _save_session(redis, session_id, session)
         await redis.delete(_session_key(session_id))
         return schedule_id
     await _save_session(redis, session_id, session)
@@ -157,6 +171,7 @@ async def send_message(
 ) -> ChatMessageResponse:
     if session_id:
         session = await _load_session(redis, session_id)
+        _check_owner(session, volunteer_id)
     else:
         session_id = str(uuid.uuid4())
         session = _new_session(volunteer_id, post_id)
@@ -178,9 +193,10 @@ async def send_message(
     return _build_response(session_id, result, session, schedule_id)
 
 
-async def get_session(redis: Redis, session_id: str) -> ChatSessionResponse:
+async def get_session(redis: Redis, session_id: str, volunteer_id: int) -> ChatSessionResponse:
     """FE 새로고침 시 마지막 state 복원."""
     session = await _load_session(redis, session_id)
+    _check_owner(session, volunteer_id)
     return ChatSessionResponse(
         session_id=session_id,
         state=session["state"],
@@ -189,7 +205,7 @@ async def get_session(redis: Redis, session_id: str) -> ChatSessionResponse:
     )
 
 
-async def delete_session(redis: Redis, session_id: str) -> None:
-    deleted = await redis.delete(_session_key(session_id))
-    if not deleted:
-        raise HTTPException(status_code=404, detail={"error": "SESSION_EXPIRED"})
+async def delete_session(redis: Redis, session_id: str, volunteer_id: int) -> None:
+    session = await _load_session(redis, session_id)
+    _check_owner(session, volunteer_id)
+    await redis.delete(_session_key(session_id))
