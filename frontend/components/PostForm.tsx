@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { ArrowRight, Camera } from "lucide-react";
+import { Camera } from "lucide-react";
 import Spinner from "@/components/ui/Spinner";
 import { getPhotoUploadUrl } from "@/lib/api/posts";
 
@@ -134,10 +134,6 @@ export default function PostForm({ initialValues, onSubmit, submitLabel }: PostF
           {errors.origin && (
             <p role="alert" className="text-[11px] text-red-500">{errors.origin.message}</p>
           )}
-        </div>
-
-        <div className="flex justify-center">
-          <ArrowRight size={16} className="text-gray-300" />
         </div>
 
         <div className="flex flex-col gap-1.5">

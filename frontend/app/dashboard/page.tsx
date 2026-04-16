@@ -269,9 +269,9 @@ export default function DashboardPage() {
   }
 
   async function handleApprove() {
-    if (!selectedPost) return;
+    if (!selectedPost?.chain_id) return;
     try {
-      await approveShelterMatching(selectedPost.id);
+      await approveShelterMatching(selectedPost.chain_id);
       setPosts((prev) =>
         prev.map((p) => p.id === selectedPost.id ? { ...p, status: "in_progress" } : p)
       );
@@ -283,9 +283,9 @@ export default function DashboardPage() {
   }
 
   async function handleReject() {
-    if (!selectedPost) return;
+    if (!selectedPost?.chain_id) return;
     try {
-      await rejectShelterMatching(selectedPost.id);
+      await rejectShelterMatching(selectedPost.chain_id);
       closeSheet();
       showToast("재매칭 요청이 접수되었습니다. 다음 배치 시 재처리됩니다.");
     } catch {

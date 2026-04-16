@@ -12,9 +12,9 @@ const SIZE_LABEL: Record<string, string> = {
 };
 
 const SIZE_COLOR: Record<string, string> = {
-  small: "bg-sky-50 text-sky-600",
-  medium: "bg-indigo-50 text-indigo-600",
-  large: "bg-purple-50 text-purple-600",
+  small: "bg-gray-100 text-gray-500",
+  medium: "bg-gray-100 text-gray-500",
+  large: "bg-gray-100 text-gray-500",
 };
 
 /** variant="sm" — 목록 카드용, variant="md" — 상세 페이지용 */
