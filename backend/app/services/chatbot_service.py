@@ -120,6 +120,17 @@ async def _save_schedule(
     return schedule.id
 
 
+def _update_session_fields(session: dict, result: EngineResult) -> None:
+    """엔진 결과를 세션 dict에 반영한다."""
+    session["state"] = result.next_state
+    session["collected_data"] = result.collected_data
+    if result.next_state == "ASK_ORIGIN":
+        session["coordinates"] = {}
+        session.pop("schedule_id", None)
+    if result.coordinates:
+        session.setdefault("coordinates", {}).update(result.coordinates)
+
+
 async def _finalize_session(
     redis: Redis,
     db: AsyncSession,
@@ -129,15 +140,8 @@ async def _finalize_session(
     volunteer_id: int,
 ) -> int | None:
     """세션 상태를 업데이트하고 저장(또는 삭제)한다. 완료 시 schedule_id 반환."""
-    session["state"] = result.next_state
-    session["collected_data"] = result.collected_data
-    if result.next_state == "ASK_ORIGIN":
-        session["coordinates"] = {}
-        session.pop("schedule_id", None)
-    if result.coordinates:
-        session.setdefault("coordinates", {}).update(result.coordinates)
+    _update_session_fields(session, result)
     if result.completed:
-        # 멱등성: 이미 저장된 schedule_id가 있으면 재사용
         schedule_id = session.get("schedule_id") or await _save_schedule(db, volunteer_id, session)
         session["schedule_id"] = schedule_id
         await _save_session(redis, session_id, session)
@@ -162,6 +166,17 @@ def _build_response(
     )
 
 
+async def _resolve_session(
+    redis: Redis, volunteer_id: int, session_id: str | None, post_id: int | None
+) -> tuple[str, dict]:
+    """기존 세션 조회 또는 신규 세션 생성 후 (session_id, session) 반환."""
+    if session_id:
+        session = await _load_session(redis, session_id)
+        _check_owner(session, volunteer_id)
+        return session_id, session
+    return str(uuid.uuid4()), _new_session(volunteer_id, post_id)
+
+
 async def send_message(
     redis: Redis,
     db: AsyncSession,
@@ -170,27 +185,16 @@ async def send_message(
     post_id: int | None,
     message: str | None,
 ) -> ChatMessageResponse:
-    if session_id:
-        session = await _load_session(redis, session_id)
-        _check_owner(session, volunteer_id)
-    else:
-        session_id = str(uuid.uuid4())
-        session = _new_session(volunteer_id, post_id)
-
+    session_id, session = await _resolve_session(redis, volunteer_id, session_id, post_id)
     if message is None:
         await _save_session(redis, session_id, session)
         return _build_welcome_response(session_id, session)
-
     result = await _engine.process_input(
-        message=message,
-        state=session["state"],
+        message=message, state=session["state"],
         collected_data=session["collected_data"],
-        post_id=session.get("post_id"),
-        auto_filled=session.get("auto_filled", {}),
+        post_id=session.get("post_id"), auto_filled=session.get("auto_filled", {}),
     )
-    schedule_id = await _finalize_session(
-        redis, db, session_id, session, result, volunteer_id
-    )
+    schedule_id = await _finalize_session(redis, db, session_id, session, result, volunteer_id)
     return _build_response(session_id, result, session, schedule_id)
 
 
