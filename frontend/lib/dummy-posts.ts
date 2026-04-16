@@ -16,6 +16,7 @@ export interface RelaySegment {
 
 export interface Post {
   id: number;
+  chain_id?: number;   // relay_chains.id — waiting 상태에서 승인/거절 시 필요
   share_token?: string;
   animal: {
     name: string;
@@ -35,6 +36,7 @@ export interface Post {
 export const DUMMY_POSTS: Post[] = [
   {
     id: 1,
+    chain_id: 101,
     animal: {
       name: "초코",
       size: "small",
@@ -109,6 +111,7 @@ export const DUMMY_POSTS: Post[] = [
   },
   {
     id: 5,
+    chain_id: 102,
     animal: {
       name: "흰둥이",
       size: "small",
