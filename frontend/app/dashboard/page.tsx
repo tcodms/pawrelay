@@ -18,7 +18,7 @@ const TABS: { key: TabKey; label: string; dot: string }[] = [
   { key: "all",         label: "전체",    dot: "bg-gray-400" },
   { key: "recruiting",  label: "모집 중", dot: "bg-green-500" },
   { key: "waiting",     label: "대기 중", dot: "bg-yellow-400" },
-  { key: "in_progress", label: "봉사 중", dot: "bg-[#EEA968]" },
+  { key: "in_progress", label: "봉사 중", dot: "bg-blue-400" },
   { key: "completed",   label: "종료",    dot: "bg-gray-300" },
 ];
 
@@ -158,7 +158,7 @@ function PostCard({
 export default function DashboardPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shelterName, setShelterName] = useState("보호소");
+  const [shelterName, setShelterName] = useState("행복동물 보호소");
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [sheetType, setSheetType] = useState<"applicants" | "matching" | null>(null);
@@ -228,89 +228,116 @@ export default function DashboardPage() {
     <>
       <Toast message={toast} />
 
-      <div className="mx-auto max-w-3xl px-4 pb-24">
+      {/* ── 히어로 배너 ──────────────────────────────────────────── */}
+      <section className="relative overflow-hidden w-full">
+        {/* 모바일 물결 배경 */}
+        <svg
+          className="w-full block md:hidden"
+          viewBox="0 0 390 230"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M0 0 L390 0 L390 195 C315 228 210 186 110 206 C55 220 0 218 0 200 Z" fill="#EEA968" opacity="0.55"/>
+          <path d="M265 0 L390 0 L390 160 C372 190 338 168 305 132 C275 100 260 48 265 0 Z" fill="#7A4A28" opacity="0.18"/>
+        </svg>
+        {/* 데스크탑 물결 배경 */}
+        <svg
+          className="w-full hidden md:block h-[220px]"
+          viewBox="0 0 1440 180"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M0 0 L1440 0 L1440 150 C1100 178 750 138 450 155 C200 170 80 168 0 155 Z" fill="#EEA968" opacity="0.55"/>
+          <path d="M1150 0 L1440 0 L1440 115 C1420 138 1378 124 1338 104 C1300 86 1272 40 1265 0 Z" fill="#7A4A28" opacity="0.18"/>
+        </svg>
 
-        {/* ── 헤더 ─────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 bg-gray-50 pt-6 pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="font-[family-name:var(--font-fredoka)] text-[24px] font-bold text-[#EEA968]">
-                PawRelay
-              </span>
-              <p className="text-[13px] text-gray-400 mt-0.5">{shelterName}</p>
-            </div>
-            <Link
-              href="/dashboard/profile"
-              aria-label="프로필"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
-            >
-              <User size={18} />
-            </Link>
-          </div>
-        </header>
-
-        {/* ── 통계 카드 ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="rounded-2xl bg-white border border-gray-100 px-4 py-3 flex flex-col gap-1">
-            <p className="text-[12px] text-gray-400">모집중 공고</p>
-            <p className="text-[28px] font-bold text-[#EEA968] leading-none">{recruitingCount}
-              <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
-            </p>
-          </div>
-          <div className="rounded-2xl bg-white border border-gray-100 px-4 py-3 flex flex-col gap-1">
-            <p className="text-[12px] text-gray-400">매칭 대기 공고</p>
-            <p className="text-[28px] font-bold text-yellow-500 leading-none">{waitingCount}
-              <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
-            </p>
-          </div>
-        </div>
-
-        {/* ── 탭 필터 ────────────────────────────────────────────── */}
-        <div className="flex border-b border-gray-100 mb-5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-          {TABS.map(({ key, label, dot }) => {
-            const isActive = activeTab === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                aria-current={isActive ? "true" : undefined}
-                className={`flex shrink-0 items-center gap-1.5 px-3 pb-2.5 pt-1 text-[12px] transition-all relative ${
-                  isActive
-                    ? "font-bold text-gray-900"
-                    : "font-medium text-gray-400 hover:text-gray-600"
-                }`}
+        {/* 콘텐츠 오버레이 */}
+        <div className="absolute inset-0 flex flex-col">
+          <div className="flex-1 max-w-3xl mx-auto w-full px-4 flex flex-col justify-between pt-5 pb-5">
+            {/* 프로필 버튼 + 인사 문구 */}
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/dashboard/profile"
+                aria-label="프로필"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/40 text-[#7A4A28] hover:bg-white/60 transition-colors backdrop-blur-sm border border-white/40"
               >
-                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
-                {label}
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#EEA968]" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+                <User size={16} />
+              </Link>
+              <p className="text-[11px] text-[#5C3317]/80 leading-snug">
+                <span className="font-bold text-[#5C3317]">{shelterName}</span>의<br />
+                오늘자 봉사 현황을 확인해보세요.
+              </p>
+            </div>
 
-        {/* ── 공고 리스트 ─────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3">
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
+            {/* 통계 카드 */}
+            <div className="grid grid-cols-2 gap-3 items-end">
+                <div className="rounded-2xl bg-white/90 backdrop-blur-sm px-4 py-3.5 flex flex-col gap-1 shadow-sm">
+                  <p className="text-[12px] text-gray-400">모집중 공고</p>
+                  <p className="text-[28px] font-bold text-green-500 leading-none">
+                    {recruitingCount}
+                    <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/90 backdrop-blur-sm px-4 py-3.5 flex flex-col gap-1 shadow-sm">
+                  <p className="text-[12px] text-gray-400">매칭 대기 공고</p>
+                  <p className="text-[28px] font-bold text-yellow-500 leading-none">
+                    {waitingCount}
+                    <span className="text-[14px] font-semibold text-gray-400 ml-1">건</span>
+                  </p>
+                </div>
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-              <p className="text-[14px]">해당 상태의 공고가 없습니다.</p>
-            </div>
-          ) : (
-            filtered.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                onShowApplicants={(p) => { setSelectedPost(p); setSheetType("applicants"); }}
-                onShowMatching={(p)   => { setSelectedPost(p); setSheetType("matching"); }}
-              />
-            ))
-          )}
+          </div>
         </div>
+      </section>
+
+      {/* ── 탭 필터 (독립 sticky) ─────────────────────────────────── */}
+      <div className="sticky top-0 z-40 bg-gray-50">
+        <div className="max-w-3xl mx-auto px-4">
+          <div className="flex border-b border-gray-100 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            {TABS.map(({ key, label, dot }) => {
+              const isActive = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`flex shrink-0 items-center gap-1.5 px-3 pb-2.5 pt-3 text-[12px] transition-all relative ${
+                    isActive
+                      ? "font-bold text-gray-900"
+                      : "font-medium text-gray-400 hover:text-gray-600"
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
+                  {label}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#EEA968]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 공고 리스트 ──────────────────────────────────────────── */}
+      <div className="max-w-3xl mx-auto px-4 pb-24 mt-5 flex flex-col gap-3">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <p className="text-[14px]">해당 상태의 공고가 없습니다.</p>
+          </div>
+        ) : (
+          filtered.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              onShowApplicants={(p) => { setSelectedPost(p); setSheetType("applicants"); }}
+              onShowMatching={(p)   => { setSelectedPost(p); setSheetType("matching"); }}
+            />
+          ))
+        )}
       </div>
 
       {/* ── FAB ──────────────────────────────────────────────────── */}
