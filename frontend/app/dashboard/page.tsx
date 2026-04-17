@@ -105,17 +105,17 @@ function PostCard({
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-1.5">
             <StatusBadge status={post.status} variant="sm" />
-            <SizeBadge size={post.animal.size} variant="sm" />
+            <SizeBadge size={post.animal_info.size} variant="sm" />
           </div>
           <span className="text-[11px] text-gray-300 shrink-0">{post.scheduled_date}</span>
         </div>
 
         {/* [최상위] 동물 이름 + 사진 */}
         <div className="flex items-center justify-between gap-3 mb-2">
-          <p className="text-[22px] font-bold text-[#5C3317] leading-tight">{post.animal.name}</p>
-          {post.animal.photo_url && (
+          <p className="text-[22px] font-bold text-[#5C3317] leading-tight">{post.animal_info.name}</p>
+          {post.animal_info.photo_url && (
             <div className="relative h-12 w-12 shrink-0 rounded-xl overflow-hidden bg-[#FDF3EC]">
-              <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
+              <Image src={post.animal_info.photo_url} alt={post.animal_info.name} fill className="object-cover" />
             </div>
           )}
         </div>
@@ -172,17 +172,17 @@ function InProgressCard({ post }: { post: Post }) {
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={post.status} variant="sm" />
-            <SizeBadge size={post.animal.size} variant="sm" />
+            <SizeBadge size={post.animal_info.size} variant="sm" />
           </div>
           <span className="text-[12px] text-gray-400 shrink-0">{post.scheduled_date}</span>
         </div>
 
         {/* 동물 이름 + 사진 썸네일 */}
         <div className="flex items-center justify-between gap-3 mb-1">
-          <p className="text-[16px] font-bold text-[#5C3317]">{post.animal.name}</p>
-          {post.animal.photo_url && (
+          <p className="text-[16px] font-bold text-[#5C3317]">{post.animal_info.name}</p>
+          {post.animal_info.photo_url && (
             <div className="relative h-10 w-10 shrink-0 rounded-xl overflow-hidden bg-[#FDF3EC]">
-              <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
+              <Image src={post.animal_info.photo_url} alt={post.animal_info.name} fill className="object-cover" />
             </div>
           )}
         </div>
@@ -458,7 +458,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between pt-2 pb-4 border-b border-gray-100">
               <div>
                 <h3 className="text-[16px] font-bold text-gray-900">
-                  {selectedPost.animal.name} 공고 지원자
+                  {selectedPost.animal_info.name} 공고 지원자
                 </h3>
                 <p className="text-[12px] text-gray-400 mt-0.5">
                   총 {selectedPost.volunteers.length}명 지원
@@ -498,7 +498,7 @@ export default function DashboardPage() {
               <div>
                 <h3 className="text-[16px] font-bold text-gray-900">최종 매칭 결과</h3>
                 <p className="text-[12px] text-gray-400 mt-0.5">
-                  {selectedPost.animal.name} · {selectedPost.origin} → {selectedPost.destination}
+                  {selectedPost.animal_info.name} · {selectedPost.origin} → {selectedPost.destination}
                 </p>
               </div>
               <button onClick={closeSheet} aria-label="닫기" className="text-gray-400 hover:text-gray-600">

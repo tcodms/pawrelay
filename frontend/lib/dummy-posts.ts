@@ -18,7 +18,7 @@ export interface Post {
   id: number;
   chain_id?: number;   // relay_chains.id — waiting 상태에서 승인/거절 시 필요
   share_token?: string;
-  animal: {
+  animal_info: {
     name: string;
     size: "small" | "medium" | "large";
     photo_url?: string;
@@ -37,7 +37,7 @@ export const DUMMY_POSTS: Post[] = [
   {
     id: 1,
     chain_id: 101,
-    animal: {
+    animal_info: {
       name: "초코",
       size: "small",
       photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400",
@@ -61,7 +61,7 @@ export const DUMMY_POSTS: Post[] = [
   },
   {
     id: 2,
-    animal: {
+    animal_info: {
       name: "뽀삐",
       size: "medium",
       photo_url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400",
@@ -78,7 +78,7 @@ export const DUMMY_POSTS: Post[] = [
   },
   {
     id: 3,
-    animal: {
+    animal_info: {
       name: "나비",
       size: "small",
       photo_url: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400",
@@ -94,7 +94,7 @@ export const DUMMY_POSTS: Post[] = [
   },
   {
     id: 4,
-    animal: {
+    animal_info: {
       name: "까미",
       size: "large",
       photo_url: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=400",
@@ -112,7 +112,7 @@ export const DUMMY_POSTS: Post[] = [
   {
     id: 5,
     chain_id: 102,
-    animal: {
+    animal_info: {
       name: "흰둥이",
       size: "small",
       photo_url: "https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=400",
@@ -135,7 +135,7 @@ export const DUMMY_POSTS: Post[] = [
   {
     id: 7,
     share_token: "abc123-dummy-token",
-    animal: {
+    animal_info: {
       name: "몽이",
       size: "medium",
       photo_url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400",
@@ -159,7 +159,7 @@ export const DUMMY_POSTS: Post[] = [
   },
   {
     id: 6,
-    animal: {
+    animal_info: {
       name: "루시",
       size: "medium",
       photo_url: "https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=400",

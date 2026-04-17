@@ -22,7 +22,7 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
 
   async function handleDelete() {
     if (!post) return;
-    if (!confirm(`"${post.animal.name}" 공고를 삭제할까요?`)) return;
+    if (!confirm(`"${post.animal_info.name}" 공고를 삭제할까요?`)) return;
     try {
       await deletePost(post.id);
       router.push("/dashboard");
@@ -82,10 +82,10 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* 사진 or 플레이스홀더 */}
-          {post.animal.photo_url ? (
+          {post.animal_info.photo_url ? (
             <Image
-              src={post.animal.photo_url}
-              alt={post.animal.name}
+              src={post.animal_info.photo_url}
+              alt={post.animal_info.name}
               fill
               className="object-cover"
             />
@@ -107,11 +107,11 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
           {/* 상태 배지 */}
           <div className="flex items-center gap-2 mb-3">
             <StatusBadge status={post.status} />
-            <SizeBadge size={post.animal.size} />
+            <SizeBadge size={post.animal_info.size} />
           </div>
 
           {/* 동물 이름 */}
-          <h1 className="text-[24px] font-bold text-gray-900 mb-5">{post.animal.name}</h1>
+          <h1 className="text-[24px] font-bold text-gray-900 mb-5">{post.animal_info.name}</h1>
 
           {/* 이동 경로 */}
           <div className="flex items-center gap-2 mb-3">
@@ -142,10 +142,10 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
           <div className="h-px bg-gray-100 mb-5" />
 
           {/* 기타 참고 사항 */}
-          {post.animal.notes && (
+          {post.animal_info.notes && (
             <div className="mb-5">
               <p className="text-[12px] font-semibold text-gray-400 mb-2">기타 참고 사항</p>
-              <p className="text-[14px] text-gray-700 leading-relaxed">{post.animal.notes}</p>
+              <p className="text-[14px] text-gray-700 leading-relaxed">{post.animal_info.notes}</p>
             </div>
           )}
 

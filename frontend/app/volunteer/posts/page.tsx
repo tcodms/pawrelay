@@ -140,7 +140,7 @@ function PostsPage() {
     if (search && !p.origin.includes(search) && !p.destination.includes(search)) return false;
     if (region && !p.origin.includes(region) && !p.destination.includes(region)) return false;
     if (date   && p.scheduled_date !== date) return false;
-    if (size   && p.animal.size !== size)    return false;
+    if (size   && p.animal_info.size !== size)    return false;
     return true;
   });
 
@@ -214,7 +214,7 @@ function PostsPage() {
         >
           <div className="shrink-0 w-4" />
           {URGENT_POSTS.map((post) => {
-            const { label, cls } = sizeBadge(post.animal.size);
+            const { label, cls } = sizeBadge(post.animal_info.size);
             return (
               <Link
                 key={post.id}
@@ -222,7 +222,7 @@ function PostsPage() {
                 className="snap-start shrink-0 w-52 rounded-2xl bg-white border border-red-100 shadow-sm overflow-hidden active:scale-[0.97] transition-transform"
               >
                 <div className="relative h-32 w-full bg-[#FDF3EC]">
-                  <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
+                  <Image src={post.animal_info.photo_url} alt={post.animal_info.name} fill className="object-cover" />
                   <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 shadow">
                     <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                     <span className="text-[10px] font-bold text-white">긴급</span>
@@ -232,7 +232,7 @@ function PostsPage() {
                   </div>
                 </div>
                 <div className="px-4 py-3.5">
-                  <p className="text-[14px] font-bold text-[#5C3317] mb-2">{post.animal.name}</p>
+                  <p className="text-[14px] font-bold text-[#5C3317] mb-2">{post.animal_info.name}</p>
                   <div className="flex items-center gap-1">
                     <span className="text-[12px] font-semibold text-gray-700">{post.origin}</span>
                     <ArrowRight size={11} className="text-gray-400 shrink-0" />
@@ -408,7 +408,7 @@ function PostsPage() {
         {/* 공고 카드 목록 */}
         <div className="flex flex-col gap-3">
           {pagedPosts.map((post) => {
-            const { label, cls } = sizeBadge(post.animal.size);
+            const { label, cls } = sizeBadge(post.animal_info.size);
             return (
               <Link
                 key={post.id}
@@ -417,8 +417,8 @@ function PostsPage() {
               >
                 <div className="flex gap-4 p-4">
                   <div className="relative shrink-0 w-28 h-28 rounded-2xl overflow-hidden bg-[#FDF3EC]">
-                    {post.animal.photo_url ? (
-                      <Image src={post.animal.photo_url} alt={post.animal.name} fill className="object-cover" />
+                    {post.animal_info.photo_url ? (
+                      <Image src={post.animal_info.photo_url} alt={post.animal_info.name} fill className="object-cover" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-3xl">🐾</div>
                     )}
@@ -426,7 +426,7 @@ function PostsPage() {
 
                   <div className="flex flex-col justify-between flex-1 min-w-0 py-0.5">
                     <div>
-                      <p className="text-[15px] font-bold text-[#7A4A28] mb-1.5">{post.animal.name}</p>
+                      <p className="text-[15px] font-bold text-[#7A4A28] mb-1.5">{post.animal_info.name}</p>
                       <div className="flex flex-col min-w-0 mb-2.5">
                         <span className="text-[13px] font-bold text-gray-900 leading-snug">{post.origin}</span>
                         <div className="flex items-center gap-1 mt-1">
