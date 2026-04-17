@@ -37,20 +37,25 @@ async def _fetch_json(
     return response.json()
 
 
+def _build_params(service_key: str, page: int) -> dict:
+    """API 요청 파라미터 생성."""
+    return {
+        "serviceKey": service_key,
+        "numOfRows": _PAGE_SIZE,
+        "pageNo": page,
+        "_type": "json",
+    }
+
+
 def _extract_items(body: dict) -> list[dict]:
-    """API 응답 body에서 항목 리스트를 추출한다. 없으면 빈 리스트 반환."""
+    """응답 body에서 item 리스트 추출."""
     items = body.get("items", {})
     if not items:
         return []
     item_list = items.get("item", [])
     if isinstance(item_list, dict):
         item_list = [item_list]
-    return item_list or []
-
-
-def _build_params(service_key: str, page: int) -> dict:
-    """API 요청 파라미터를 생성한다."""
-    return {"serviceKey": service_key, "numOfRows": _PAGE_SIZE, "pageNo": page, "_type": "json"}
+    return item_list
 
 
 async def _fetch_all_pages(
@@ -60,27 +65,30 @@ async def _fetch_all_pages(
     """페이지네이션을 처리해 전체 보호소 목록 반환."""
     results = []
     page = 1
+
     while True:
-        data = await _fetch_json(client, _SHELTER_URL, _build_params(service_key, page))
+        params = _build_params(service_key, page)
+        data = await _fetch_json(client, _SHELTER_URL, params)
         body = data.get("response", {}).get("body", {})
-        total_count = int(body.get("totalCount", 0))
+        total_count = int(body.get("totalCount") or 0)
         item_list = _extract_items(body)
         if not item_list:
             break
         results.extend(item_list)
-        if len(results) >= total_count:
+        if total_count > 0 and len(results) >= total_count:
             break
         page += 1
+
     return results
 
 
 def _parse_shelter(item: dict) -> Optional[WaypointModel]:
     """APMS 보호소 항목을 WaypointModel로 변환. 좌표 없거나 오류 시 None 반환."""
     try:
-        lat = item.get("lat") or item.get("latitude")
-        lng = item.get("lng") or item.get("longitude")
+        lat = item.get("lat") if item.get("lat") is not None else item.get("latitude")
+        lng = item.get("lng") if item.get("lng") is not None else item.get("longitude")
 
-        if not lat or not lng:
+        if lat is None or lng is None:
             return None
 
         return WaypointModel(
