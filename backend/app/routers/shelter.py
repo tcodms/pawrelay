@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.repositories import post_repo, user_repo
-from app.schemas.shelter import DashboardPostItem, ShelterDashboardResponse, ShelterProfileResponse
+from app.schemas.shelter import AnimalInfo, DashboardPostItem, ShelterDashboardResponse, ShelterProfileResponse
 
 router = APIRouter()
 
@@ -43,7 +43,14 @@ async def get_shelter_dashboard(
             scheduled_date=post.scheduled_date,
             status=post.status,
             volunteer_count=count,
+            animal_info=AnimalInfo(
+                name=post.animal_name,
+                size=post.animal_size,
+                photo_url=post.animal_photo_url,
+            ),
+            chain_id=chain_id,
+            share_token=post.share_token,
         )
-        for post, count in rows
+        for post, count, chain_id in rows
     ]
     return ShelterDashboardResponse(posts=posts)
