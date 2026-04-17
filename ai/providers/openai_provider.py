@@ -30,6 +30,7 @@ class OpenAIProvider(LLMProvider):
                         messages=messages,
                         temperature=0.3,
                         max_tokens=self._max_tokens,
+                        response_format={"type": "json_object"},
                     )
                 if not response.choices or not response.choices[0].message.content:
                     raise ValueError("OpenAI API 응답이 비어있습니다.")
