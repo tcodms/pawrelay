@@ -19,12 +19,11 @@ _REQUIRED_KEYS = {"selected_chain_index", "matching_reason"}
 
 
 def _format_segment(seg: dict) -> str:
-    """단일 봉사 구간을 읽기 좋은 텍스트로 포맷한다."""
+    """단일 봉사 구간을 포맷한다. 봉사자 이름은 PII 보호를 위해 제외."""
     vehicle = "차량 있음" if seg.get("vehicle_available") else "차량 없음"
     return (
-        f"  • {seg.get('volunteer_name', '봉사자')} "
-        f"({seg.get('origin_area', '?')} → {seg.get('destination_area', '?')}, "
-        f"{seg.get('available_date', '?')}, {vehicle})"
+        f"  • {seg.get('origin_area', '?')} → {seg.get('destination_area', '?')}, "
+        f"{seg.get('available_date', '?')}, {vehicle}"
     )
 
 
@@ -34,15 +33,23 @@ def _format_chain(index: int, chain: list[dict]) -> str:
     return f"체인 {index}:\n{segments_text}"
 
 
+def _build_post_section(post: dict) -> str:
+    """프롬프트용 공고 정보 섹션을 생성한다."""
+    return (
+        f"- 동물: {post.get('animal_info', '정보 없음')}\n"
+        f"- 경로: {post.get('origin', '?')} → {post.get('destination', '?')}\n"
+        f"- 이동 날짜: {post.get('scheduled_date', '?')}"
+    )
+
+
 def _build_prompt(chains: list[list[dict]], post: dict) -> str:
     """LLM 체인 선택 프롬프트를 생성한다."""
     chains_text = "\n\n".join(_format_chain(i, c) for i, c in enumerate(chains))
+    post_info = _build_post_section(post)
     return f"""유기동물 이동봉사 공고에 대한 릴레이 체인 후보 {len(chains)}개를 검토해주세요.
 
 공고 정보:
-- 동물: {post.get("animal_info", "정보 없음")}
-- 경로: {post.get("origin", "?")} → {post.get("destination", "?")}
-- 이동 날짜: {post.get("scheduled_date", "?")}
+{post_info}
 
 체인 후보:
 {chains_text}
@@ -57,87 +64,92 @@ def _build_prompt(chains: list[list[dict]], post: dict) -> str:
 }}"""
 
 
+def _validate_fields(data: dict) -> bool:
+    """파싱된 dict의 필드 타입·값을 검증한다. 실패 시 False 반환."""
+    if not _REQUIRED_KEYS.issubset(data.keys()):
+        logger.warning("응답에 필수 키 누락: %s", data.keys())
+        return False
+    if type(data["selected_chain_index"]) is not int:
+        logger.warning("selected_chain_index 타입 오류: %r", data["selected_chain_index"])
+        return False
+    if not isinstance(data["matching_reason"], str) or not data["matching_reason"].strip():
+        logger.warning("matching_reason 타입/내용 오류")
+        return False
+    sentence_count = len(
+        [s for s in data["matching_reason"].replace("。", ".").split(".") if s.strip()]
+    )
+    if not (2 <= sentence_count <= 3):
+        logger.warning("matching_reason 문장 수 오류: %d문장", sentence_count)
+        return False
+    return True
+
+
 def _parse_response(text: str) -> dict | None:
     """LLM 응답 JSON을 파싱한다. 형식·타입 오류 시 None 반환."""
     try:
         cleaned = (
             text.strip()
-            .removeprefix("```json")
-            .removeprefix("```")
-            .removesuffix("```")
-            .strip()
+            .removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         )
         data = json.loads(cleaned)
         if not isinstance(data, dict):
             logger.warning("응답 타입 오류: dict 아님")
             return None
-        if not _REQUIRED_KEYS.issubset(data.keys()):
-            logger.warning("응답에 필수 키 누락: %s", data.keys())
-            return None
-        if type(data["selected_chain_index"]) is not int:
-            logger.warning("selected_chain_index 타입 오류: %r", data["selected_chain_index"])
-            return None
-        if not isinstance(data["matching_reason"], str) or not data["matching_reason"].strip():
-            logger.warning("matching_reason 타입/내용 오류")
-            return None
-        sentence_count = len(
-            [s for s in data["matching_reason"].replace("。", ".").split(".") if s.strip()]
-        )
-        if not (2 <= sentence_count <= 3):
-            logger.warning("matching_reason 문장 수 오류: %d문장", sentence_count)
-            return None
-        return data
+        return data if _validate_fields(data) else None
     except (json.JSONDecodeError, AttributeError) as e:
         logger.warning("JSON 파싱 실패: %s", e)
         return None
 
 
-async def select_chain(chains: list[list[dict]], post: dict) -> dict:
-    """후보 체인 중 최적 체인을 LLM으로 선택한다.
+def _init_provider(post: dict):
+    """LLM provider를 초기화한다. 실패 시 관리자 알림 후 ValueError."""
+    try:
+        return get_llm_provider()
+    except Exception as e:
+        error_msg = f"LLM provider 초기화 실패 (post_id={post.get('id')}): {e}"
+        notify_admin(error_msg)
+        raise ValueError(error_msg) from e
 
-    Args:
-        chains: 릴레이 체인 후보 리스트. 각 체인은 봉사 구간 dict 리스트.
-        post: 이동봉사 공고 정보 dict.
-              필드: animal_info, origin, destination, scheduled_date
 
-    Returns:
-        {"selected_chain_index": int, "matching_reason": str}
+async def _attempt_once(provider, prompt: str, chains: list) -> dict | None:
+    """LLM 단일 호출 시도. 파싱 실패 또는 범위 오류 시 None 반환."""
+    response = await provider.complete(prompt)
+    result = _parse_response(response)
+    if result is None:
+        return None
+    if not (0 <= result["selected_chain_index"] < len(chains)):
+        logger.warning("selected_chain_index 범위 오류: %s", result["selected_chain_index"])
+        return None
+    return result
 
-    Raises:
-        ValueError: 최대 재시도 횟수(_MAX_RETRIES=2) 초과 시.
-    """
-    if not chains or not any(chains):
-        raise ValueError("후보 체인이 비어 있습니다.")
 
-    provider = get_llm_provider()
-    prompt = _build_prompt(chains, post)
-    last_error: Exception | None = None
-
-    for attempt in range(_MAX_RETRIES + 1):
-        try:
-            response = await provider.complete(prompt)
-        except Exception as e:
-            last_error = e
-            logger.warning(
-                "체인 선택 LLM 호출 실패 (시도 %d/%d): %s",
-                attempt + 1, _MAX_RETRIES + 1, e,
-            )
-            continue
-        result = _parse_response(response)
-        if result is not None:
-            if not (0 <= result["selected_chain_index"] < len(chains)):
-                logger.warning(
-                    "selected_chain_index 범위 오류: %s (chains=%d)",
-                    result["selected_chain_index"], len(chains),
-                )
-                continue
-            return result
-        logger.warning(
-            "체인 선택 파싱 실패 (시도 %d/%d)", attempt + 1, _MAX_RETRIES + 1
-        )
-
-    error_msg = f"LLM 체인 선택 실패: {_MAX_RETRIES + 1}회 시도 후 유효한 응답 없음 (post_id={post.get('id')})"
+def _handle_all_failed(post: dict, last_error: Exception | None) -> None:
+    """모든 재시도 실패 후 관리자 알림 + ValueError 발생."""
+    error_msg = (
+        f"LLM 체인 선택 실패: {_MAX_RETRIES + 1}회 시도 후 유효한 응답 없음"
+        f" (post_id={post.get('id')})"
+    )
     notify_admin(error_msg)
     if last_error is not None:
         raise ValueError(f"{error_msg} | last_error={last_error}") from last_error
     raise ValueError(error_msg)
+
+
+async def select_chain(chains: list[list[dict]], post: dict) -> dict:
+    """후보 체인 중 최적 체인을 LLM으로 선택한다."""
+    if not chains or not any(chains):
+        raise ValueError("후보 체인이 비어 있습니다.")
+    provider = _init_provider(post)
+    prompt = _build_prompt(chains, post)
+    last_error: Exception | None = None
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            result = await _attempt_once(provider, prompt, chains)
+        except Exception as e:
+            last_error = e
+            logger.warning("LLM 호출 실패 (시도 %d/%d): %s", attempt + 1, _MAX_RETRIES + 1, e)
+            continue
+        if result is not None:
+            return result
+        logger.warning("파싱 실패 (시도 %d/%d)", attempt + 1, _MAX_RETRIES + 1)
+    _handle_all_failed(post, last_error)
