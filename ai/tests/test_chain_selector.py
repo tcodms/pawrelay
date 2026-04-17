@@ -4,13 +4,14 @@
 2. 파싱 실패 재시도: 잘못된 응답 시 최대 2회 재시도
 3. 재시도 소진 + notify_admin: 3회 모두 실패 시 관리자 알림 후 ValueError
 """
-import os
-
 import pytest
 
-os.environ["LLM_PROVIDER"] = "mock"
-
 from unittest.mock import AsyncMock, patch
+
+
+@pytest.fixture(autouse=True)
+def _set_mock_provider_env(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "mock")
 
 from ai.matching.chain_selector import _parse_response, select_chain
 

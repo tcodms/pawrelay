@@ -137,8 +137,10 @@ def _handle_all_failed(post: dict, last_error: Exception | None) -> None:
 
 async def select_chain(chains: list[list[dict]], post: dict) -> dict:
     """후보 체인 중 최적 체인을 LLM으로 선택한다."""
-    if not chains or not any(chains):
+    if not chains:
         raise ValueError("후보 체인이 비어 있습니다.")
+    if any(not chain for chain in chains):
+        raise ValueError("빈 체인이 포함되어 있습니다.")
     provider = _init_provider(post)
     prompt = _build_prompt(chains, post)
     last_error: Exception | None = None
