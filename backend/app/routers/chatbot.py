@@ -12,6 +12,7 @@ router = APIRouter()
 
 
 def _require_volunteer(current_user: User) -> User:
+    """봉사자 역할 여부를 확인한다. 아니면 403 반환."""
     if current_user.role != "volunteer":
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
     return current_user
@@ -23,6 +24,7 @@ async def send_message(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """챗봇 메시지 전송 엔드포인트."""
     _require_volunteer(current_user)
     return await chatbot_service.send_message(
         redis=redis_client,
@@ -39,6 +41,7 @@ async def get_session(
     session_id: str,
     current_user: User = Depends(get_current_user),
 ):
+    """챗봇 세션 상태 조회 엔드포인트."""
     _require_volunteer(current_user)
     return await chatbot_service.get_session(redis=redis_client, session_id=session_id, volunteer_id=current_user.id)
 
@@ -48,5 +51,6 @@ async def delete_session(
     session_id: str,
     current_user: User = Depends(get_current_user),
 ):
+    """챗봇 세션 삭제 엔드포인트."""
     _require_volunteer(current_user)
     await chatbot_service.delete_session(redis=redis_client, session_id=session_id, volunteer_id=current_user.id)

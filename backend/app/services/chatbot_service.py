@@ -43,6 +43,7 @@ def _build_welcome_response(session_id: str, session: dict) -> ChatMessageRespon
 
 
 def _session_key(session_id: str) -> str:
+    """Redis 저장 키를 생성한다."""
     return f"chatbot:session:{session_id}"
 
 
@@ -61,6 +62,7 @@ def _check_owner(session: dict, volunteer_id: int) -> None:
 
 
 async def _save_session(redis: Redis, session_id: str, session: dict) -> None:
+    """세션 데이터를 Redis에 저장한다."""
     await redis.setex(_session_key(session_id), _SESSION_TTL, json.dumps(session))
 
 
@@ -176,6 +178,7 @@ async def _finalize_session(
 def _build_response(
     session_id: str, result: EngineResult, session: dict, schedule_id: int | None
 ) -> ChatMessageResponse:
+    """엔진 결과를 ChatMessageResponse로 변환한다."""
     return ChatMessageResponse(
         session_id=session_id,
         state=result.next_state,
@@ -207,6 +210,7 @@ async def send_message(
     post_id: int | None,
     message: str | None,
 ) -> ChatMessageResponse:
+    """봉사자 메시지를 처리하고 챗봇 응답을 반환한다."""
     session_id, session = await _resolve_session(redis, volunteer_id, session_id, post_id)
     if message is None:
         await _save_session(redis, session_id, session)
@@ -233,6 +237,7 @@ async def get_session(redis: Redis, session_id: str, volunteer_id: int) -> ChatS
 
 
 async def delete_session(redis: Redis, session_id: str, volunteer_id: int) -> None:
+    """세션 소유자 확인 후 Redis에서 세션을 삭제한다."""
     session = await _load_session(redis, session_id)
     _check_owner(session, volunteer_id)
     await redis.delete(_session_key(session_id))

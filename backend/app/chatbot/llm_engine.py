@@ -108,6 +108,7 @@ class LLMChatbotEngine:
         post_id: int | None = None,
         auto_filled: dict | None = None,
     ) -> EngineResult:
+        """세션 상태와 사용자 메시지를 받아 EngineResult를 반환한다."""
         actual_message, coords = _extract_address_coords(message, state)
         engine = _restore_engine(state, collected_data, post_id, auto_filled or {})
         result = await engine.process_input(actual_message or "")

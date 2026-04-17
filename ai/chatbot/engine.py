@@ -17,6 +17,7 @@ _MAX_INPUT_LENGTH = 500
 
 class ChatbotEngine:
     def __init__(self, post_id=None, auto_filled=None):
+        """챗봇 엔진 초기화. post_id 있으면 공고 컨텍스트 적용."""
         self.post_id = post_id
         self.auto_filled = auto_filled or {}
         self.collected_data = {}
@@ -29,6 +30,7 @@ class ChatbotEngine:
             )
 
     def get_initial_message(self) -> dict:
+        """첫 진입 안내 메시지를 반환한다."""
         if self.post_id and self.auto_filled:
             filled_info = []
             if "available_date" in self.auto_filled:
@@ -59,6 +61,7 @@ class ChatbotEngine:
         }
 
     async def process_input(self, user_message: str) -> dict:
+        """사용자 입력을 처리하고 다음 상태·메시지를 반환한다."""
         if not user_message or not user_message.strip():
             return {
                 "state": self.state,
@@ -140,6 +143,7 @@ class ChatbotEngine:
             }
 
     def _handle_confirm(self, user_message: str) -> dict:
+        """CONFIRMING 상태에서 사용자 응답을 처리한다."""
         if user_message in ["등록하기", "네", "확인"]:
             self.state = "COMPLETED"
             return {
@@ -164,6 +168,7 @@ class ChatbotEngine:
         }
 
     def _build_prompt(self, user_message: str) -> str:
+        """LLM 호출용 프롬프트를 생성한다."""
         today = datetime.now(tz=_KST).date().isoformat()
         system = CHATBOT_SYSTEM_PROMPT.replace("{today}", today)
 
@@ -176,6 +181,7 @@ class ChatbotEngine:
         return system + "\n\n" + user
 
     def _fallback_question(self, missing: list) -> str:
+        """누락 필드에 대한 기본 질문을 반환한다."""
         fallback = {
             "origin": "어느 지역에서 출발하시나요?",
             "destination": "어디까지 이동하실 수 있나요?",
@@ -186,6 +192,7 @@ class ChatbotEngine:
         return fallback.get(missing[0], "추가 정보를 알려주세요.")
 
     def _get_schedule_data(self) -> dict:
+        """수집된 데이터를 스케줄 저장 형식으로 반환한다."""
         data = {**self.collected_data}
         if self.post_id:
             data["post_id"] = self.post_id
