@@ -143,7 +143,7 @@ def _main() -> None:
 
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
-        raise ValueError("DATABASE_URL 환경변수를 설정해주세요.")
+        parser.error("DATABASE_URL 환경변수를 설정해주세요.")
 
     failed = 0
     for filepath in args.file:
