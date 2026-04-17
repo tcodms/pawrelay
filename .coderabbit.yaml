@@ -16,3 +16,7 @@ reviews:
 
 chat:
   auto_reply: true
+
+code_generation:
+  docstrings:
+    enabled: false
