@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.chatbot.llm_engine import EngineResult, LLMChatbotEngine
 from app.repositories import volunteer_repo
 from app.schemas.chatbot import ChatMessageResponse, ChatSessionResponse
+from app.services import geocoding_service
 
 _SESSION_TTL = 3600  # 1시간
 _engine = LLMChatbotEngine()
@@ -72,23 +73,17 @@ def _new_session(volunteer_id: int, post_id: int | None) -> dict:
         "state": "ASK_ORIGIN",
         "collected_data": {},
         "auto_filled": {},
-        "coordinates": {},
     }
 
 
-def _build_route_wkt(coords: dict) -> str | None:
-    """저장된 좌표로 EWKT LineString을 생성한다. 좌표 없거나 범위 초과 시 None 반환."""
-    origin = coords.get("origin", {})
-    dest = coords.get("destination", {})
+async def _build_route_wkt(origin: str, destination: str) -> str | None:
+    """출발지/목적지 텍스트를 Geocoding해 EWKT LineString을 생성한다. 실패 시 None 반환."""
     try:
-        o_lat, o_lng = float(origin["lat"]), float(origin["lng"])
-        d_lat, d_lng = float(dest["lat"]), float(dest["lng"])
-    except (KeyError, TypeError, ValueError):
+        o_lat, o_lng = await geocoding_service.geocode(origin)
+        d_lat, d_lng = await geocoding_service.geocode(destination)
+        return f"SRID=4326;LINESTRING({o_lng} {o_lat}, {d_lng} {d_lat})"
+    except ValueError:
         return None
-    if not (-90 <= o_lat <= 90 and -180 <= o_lng <= 180
-            and -90 <= d_lat <= 90 and -180 <= d_lng <= 180):
-        return None
-    return f"SRID=4326;LINESTRING({o_lng} {o_lat}, {d_lng} {d_lat})"
 
 
 def _validate_available_time(value: str | None) -> str | None:
@@ -136,7 +131,7 @@ async def _save_schedule(
     """completed 시 volunteer_schedules에 저장하고 id를 반환한다."""
     data = session["collected_data"]
     avail_date = _validate_schedule_data(data)
-    route_wkt = _build_route_wkt(session.get("coordinates", {}))
+    route_wkt = await _build_route_wkt(data["origin"], data["destination"])
     kwargs = _build_schedule_kwargs(data, volunteer_id, session.get("post_id"), avail_date, route_wkt)
     schedule = await volunteer_repo.create_schedule(db=db, **kwargs)
     return schedule.id
@@ -147,10 +142,7 @@ def _update_session_fields(session: dict, result: EngineResult) -> None:
     session["state"] = result.next_state
     session["collected_data"] = result.collected_data
     if result.next_state == "ASK_ORIGIN":
-        session["coordinates"] = {}
         session.pop("schedule_id", None)
-    if result.coordinates:
-        session.setdefault("coordinates", {}).update(result.coordinates)
 
 
 async def _finalize_session(

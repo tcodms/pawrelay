@@ -67,6 +67,9 @@ def _restore_engine(
 
 def _map_collecting(result: dict, coordinates: dict) -> EngineResult:
     """COLLECTING 결과를 API 스펙 state로 변환한다."""
+    if result.get("error"):
+        api_state = result.get("state", "COLLECTING")
+        return EngineResult(api_state, result["message"], None, None, {}, False, coordinates)
     missing = result.get("missing_fields", [])
     if not missing:
         return EngineResult(
