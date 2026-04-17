@@ -79,6 +79,8 @@ def recommend_waypoints(
     radius_km: float = _DEFAULT_RADIUS_KM,
 ) -> dict[str, list[WaypointResult]]:
     """차량 유무에 따라 근처 waypoints를 타입별로 추천한다."""
+    if radius_km <= 0:
+        raise ValueError(f"radius_km은 0보다 커야 합니다: {radius_km}")
     types = _TYPES_WITH_VEHICLE if vehicle_available else _TYPES_WITHOUT_VEHICLE
     result: dict[str, list[WaypointResult]] = {}
     remaining = _MAX_TOTAL
