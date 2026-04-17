@@ -7,6 +7,7 @@ class MockProvider(LLMProvider):
     """테스트용 Mock Provider. API 키 없이 동작한다."""
 
     async def complete(self, prompt: str, system_prompt: str = "") -> str:
+        """고정된 Mock 응답을 반환한다."""
         return json.dumps({
             "extracted": {
                 "origin": "광주광역시",

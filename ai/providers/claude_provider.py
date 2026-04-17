@@ -5,7 +5,10 @@ from .base import LLMProvider
 
 
 class ClaudeProvider(LLMProvider):
+    """Anthropic Claude API 기반 LLM 프로바이더."""
+
     def __init__(self):
+        """Claude 클라이언트를 초기화한다. API 키 없으면 ValueError 발생."""
         import anthropic
 
         self.api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -17,6 +20,7 @@ class ClaudeProvider(LLMProvider):
         self.client = anthropic.AsyncAnthropic(api_key=self.api_key)
 
     async def complete(self, prompt: str, system_prompt: str = "") -> str:
+        """Claude API로 텍스트 완성을 요청한다. 최대 3회 재시도."""
         kwargs = dict(
             model=self.model,
             max_tokens=self._max_tokens,

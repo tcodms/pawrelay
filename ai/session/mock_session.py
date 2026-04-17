@@ -20,10 +20,12 @@ class MockSessionManager(SessionManager):
     """
 
     def __init__(self):
+        """인메모리 세션 저장소와 Lock을 초기화한다."""
         self._sessions: dict = {}
         self._lock = asyncio.Lock()
 
     async def create(self, post_id=None, auto_filled=None) -> str:
+        """새 세션을 생성하고 session_id를 반환한다."""
         async with self._lock:
             session_id = str(uuid.uuid4())
             self._sessions[session_id] = {
@@ -36,6 +38,7 @@ class MockSessionManager(SessionManager):
             return session_id
 
     async def get(self, session_id: str) -> Optional[dict]:
+        """세션을 조회한다. 만료 시 SessionExpiredError 발생."""
         async with self._lock:
             session = self._sessions.get(session_id)
             if session is None:
@@ -46,6 +49,7 @@ class MockSessionManager(SessionManager):
             return copy.deepcopy(session)
 
     async def update(self, session_id: str, data: dict) -> bool:
+        """세션 데이터를 갱신한다. 만료 시 SessionExpiredError 발생."""
         async with self._lock:
             session = self._sessions.get(session_id)
             if session is None:
@@ -57,6 +61,7 @@ class MockSessionManager(SessionManager):
             return True
 
     async def delete(self, session_id: str) -> bool:
+        """세션을 삭제한다. 삭제 성공 시 True 반환."""
         async with self._lock:
             if session_id in self._sessions:
                 del self._sessions[session_id]

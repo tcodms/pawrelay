@@ -5,7 +5,10 @@ from .base import LLMProvider
 
 
 class OpenAIProvider(LLMProvider):
+    """OpenAI GPT API 기반 LLM 프로바이더."""
+
     def __init__(self):
+        """OpenAI 클라이언트를 초기화한다. API 키 없으면 ValueError 발생."""
         from openai import AsyncOpenAI
 
         self.api_key = os.getenv("OPENAI_API_KEY")
@@ -17,6 +20,7 @@ class OpenAIProvider(LLMProvider):
         self.client = AsyncOpenAI(api_key=self.api_key)
 
     async def complete(self, prompt: str, system_prompt: str = "") -> str:
+        """OpenAI API로 텍스트 완성을 요청한다. 최대 3회 재시도."""
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})

@@ -20,13 +20,16 @@ class RedisSessionManager(SessionManager):
     """
 
     def __init__(self, redis_url: Optional[str] = None):
+        """Redis 클라이언트를 초기화한다. redis_url 없으면 환경변수 REDIS_URL 사용."""
         url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self._redis = aioredis.from_url(url, decode_responses=True)
 
     def _key(self, session_id: str) -> str:
+        """Redis 저장 키를 생성한다."""
         return f"session:{session_id}"
 
     async def create(self, post_id=None, auto_filled=None) -> str:
+        """새 세션을 Redis에 저장하고 session_id를 반환한다."""
         session_id = str(uuid.uuid4())
         data = {
             "state": "COLLECTING",
@@ -42,12 +45,14 @@ class RedisSessionManager(SessionManager):
         return session_id
 
     async def get(self, session_id: str) -> Optional[dict]:
+        """세션을 조회한다. 키 없으면 SessionExpiredError 발생."""
         raw = await self._redis.get(self._key(session_id))
         if raw is None:
             raise SessionExpiredError()
         return json.loads(raw)
 
     async def update(self, session_id: str, data: dict) -> bool:
+        """세션 데이터를 갱신하고 TTL을 갱신한다. 키 없으면 SessionExpiredError 발생."""
         key = self._key(session_id)
         raw = await self._redis.get(key)
         if raw is None:
@@ -60,6 +65,7 @@ class RedisSessionManager(SessionManager):
         return True
 
     async def delete(self, session_id: str) -> bool:
+        """세션을 삭제한다. 삭제 성공 시 True 반환."""
         result = await self._redis.delete(self._key(session_id))
         return result > 0
 
