@@ -98,25 +98,47 @@ def _validate_available_time(value: str | None) -> str | None:
     return None
 
 
+_SCHEDULE_REQUIRED_KEYS = ("origin", "destination", "available_date", "vehicle_available", "max_animal_size")
+
+
+def _validate_schedule_data(data: dict) -> date:
+    """collected_data 필수 키 및 날짜 형식 검증. 유효하면 available_date 반환."""
+    missing = [k for k in _SCHEDULE_REQUIRED_KEYS if k not in data]
+    if missing:
+        raise ValueError(f"collected_data 필수 키 누락: {missing}")
+    try:
+        return date.fromisoformat(data["available_date"])
+    except ValueError as e:
+        raise ValueError(f"available_date 형식 오류: {data['available_date']}") from e
+
+
+def _build_schedule_kwargs(
+    data: dict, volunteer_id: int, post_id: int | None, avail_date: date, route_wkt: str | None
+) -> dict:
+    """create_schedule 호출 인자 dict를 생성한다."""
+    return {
+        "volunteer_id": volunteer_id,
+        "post_id": post_id,
+        "route_description": f"{data['origin']} → {data['destination']}",
+        "origin_area": data["origin"],
+        "destination_area": data["destination"],
+        "available_date": avail_date,
+        "available_time": _validate_available_time(data.get("available_time")),
+        "vehicle_available": data["vehicle_available"],
+        "max_animal_size": data["max_animal_size"],
+        "route_wkt": route_wkt,
+    }
+
+
 async def _save_schedule(
     db: AsyncSession, volunteer_id: int, session: dict
 ) -> int:
     """completed 시 volunteer_schedules에 저장하고 id를 반환한다."""
     data = session["collected_data"]
+    avail_date = _validate_schedule_data(data)
     route_wkt = _build_route_wkt(session.get("coordinates", {}))
-    schedule = await volunteer_repo.create_schedule(
-        db=db,
-        volunteer_id=volunteer_id,
-        post_id=session.get("post_id"),
-        route_description=f"{data['origin']} → {data['destination']}",
-        origin_area=data["origin"],
-        destination_area=data["destination"],
-        available_date=date.fromisoformat(data["available_date"]),
-        available_time=_validate_available_time(data.get("available_time")),
-        vehicle_available=data["vehicle_available"],
-        max_animal_size=data["max_animal_size"],
-        route_wkt=route_wkt,
-    )
+    kwargs = _build_schedule_kwargs(data, volunteer_id, session.get("post_id"), avail_date, route_wkt)
+    schedule = await volunteer_repo.create_schedule(db=db, **kwargs)
     return schedule.id
 
 
