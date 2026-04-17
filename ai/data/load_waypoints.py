@@ -1,14 +1,3 @@
-"""
-waypoints 데이터 PostGIS 적재 스크립트
-
-수집된 JSON 파일을 읽어 waypoints 테이블에 적재한다.
-테이블이 없으면 자동 생성한다.
-
-실행:
-    python -m ai.data.load_waypoints --file data/waypoints.json
-    python -m ai.data.load_waypoints --file data/shelter.json --file data/rest_area.json
-"""
-
 import argparse
 import json
 import logging
@@ -23,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class WaypointIndexError(Exception):
-    """waypoints UNIQUE 인덱스 생성 실패."""
+    pass
 
 
 _INSERT_SQL = """
@@ -35,12 +24,10 @@ _INSERT_SQL = """
 
 
 def _get_connection(database_url: str) -> psycopg2.extensions.connection:
-    """DATABASE_URL로 psycopg2 연결 반환."""
     return psycopg2.connect(database_url)
 
 
 def _ensure_table(conn: psycopg2.extensions.connection) -> None:
-    """waypoints 테이블 및 인덱스 생성 (없을 경우에만)."""
     with conn.cursor() as cur:
         cur.execute(WAYPOINT_TABLE_SQL)
     conn.commit()
@@ -48,7 +35,6 @@ def _ensure_table(conn: psycopg2.extensions.connection) -> None:
 
 
 def _ensure_unique_index(conn: psycopg2.extensions.connection) -> None:
-    """UNIQUE 인덱스 생성. 실패 시 WaypointIndexError를 발생시켜 적재를 즉시 중단한다."""
     try:
         with conn.cursor() as cur:
             cur.execute(WAYPOINT_UNIQUE_INDEX_SQL)
@@ -62,7 +48,6 @@ def _ensure_unique_index(conn: psycopg2.extensions.connection) -> None:
 
 
 def _insert_one(cur, waypoint: WaypointModel) -> str:
-    """단건 waypoint를 INSERT하고 결과('inserted'|'duplicated'|'skipped')를 반환."""
     try:
         cur.execute("SAVEPOINT sp")
         cur.execute(_INSERT_SQL, waypoint.to_postgis_insert())
@@ -83,7 +68,6 @@ def _load_records(
     conn: psycopg2.extensions.connection,
     waypoints: list[WaypointModel],
 ) -> tuple[int, int, int]:
-    """waypoints 리스트를 DB에 적재하고 (성공, 중복, 실패) 건수를 반환."""
     counts: dict[str, int] = {"inserted": 0, "duplicated": 0, "skipped": 0}
     with conn.cursor() as cur:
         for waypoint in waypoints:
@@ -93,7 +77,6 @@ def _load_records(
 
 
 def _parse_json_to_waypoints(data: dict) -> list[WaypointModel]:
-    """JSON 데이터를 WaypointModel 리스트로 변환."""
     if not isinstance(data, dict):
         logger.warning("JSON 최상위 타입이 dict가 아님: %s", type(data).__name__)
         return []
@@ -111,7 +94,6 @@ def _parse_json_to_waypoints(data: dict) -> list[WaypointModel]:
 
 
 def load_from_file(filepath: str, database_url: str) -> None:
-    """JSON 파일을 읽어 waypoints 테이블에 적재."""
     with open(filepath, encoding="utf-8") as f:
         waypoints = _parse_json_to_waypoints(json.load(f))
 
@@ -129,7 +111,6 @@ def load_from_file(filepath: str, database_url: str) -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """CLI 인자 파서를 생성한다."""
     parser = argparse.ArgumentParser(description="waypoints PostGIS 적재")
     parser.add_argument(
         "--file",
@@ -141,7 +122,6 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _load_all_files(files: list[str], database_url: str) -> int:
-    """파일 목록을 순서대로 적재하고 실패 건수를 반환한다."""
     failed = 0
     for filepath in files:
         try:
@@ -156,7 +136,6 @@ def _load_all_files(files: list[str], database_url: str) -> int:
 
 
 def _main() -> None:
-    """CLI 진입점: JSON 파일을 읽어 PostGIS에 적재."""
     logging.basicConfig(level=logging.INFO)
     parser = _build_parser()
     args = parser.parse_args()

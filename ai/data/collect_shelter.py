@@ -1,11 +1,3 @@
-"""
-공공데이터포털 APMS API 수집 스크립트
-- 전국 지자체 동물보호소 위치·연락처 수집
-
-실행:
-    python -m ai.data.collect_shelter --output data/shelter.json
-"""
-
 import argparse
 import asyncio
 import json
@@ -31,14 +23,12 @@ async def _fetch_json(
     url: str,
     params: dict,
 ) -> dict:
-    """단일 HTTP GET 요청을 보내고 JSON 응답을 반환."""
     response = await client.get(url, params=params, timeout=_TIMEOUT_SECONDS)
     response.raise_for_status()
     return response.json()
 
 
 def _build_params(service_key: str, page: int) -> dict:
-    """API 요청 파라미터 생성."""
     return {
         "serviceKey": service_key,
         "numOfRows": _PAGE_SIZE,
@@ -48,7 +38,6 @@ def _build_params(service_key: str, page: int) -> dict:
 
 
 def _extract_items(body: dict) -> list[dict]:
-    """응답 body에서 item 리스트 추출."""
     items = body.get("items", {})
     if not items:
         return []
@@ -62,7 +51,6 @@ async def _fetch_all_pages(
     client: httpx.AsyncClient,
     service_key: str,
 ) -> list[dict]:
-    """페이지네이션을 처리해 전체 보호소 목록 반환."""
     results = []
     page = 1
 
@@ -83,7 +71,6 @@ async def _fetch_all_pages(
 
 
 def _parse_shelter(item: dict) -> Optional[WaypointModel]:
-    """APMS 보호소 항목을 WaypointModel로 변환. 좌표 없거나 오류 시 None 반환."""
     try:
         lat = item.get("lat") if item.get("lat") is not None else item.get("latitude")
         lng = item.get("lng") if item.get("lng") is not None else item.get("longitude")
@@ -105,7 +92,6 @@ def _parse_shelter(item: dict) -> Optional[WaypointModel]:
 
 
 async def collect_shelters(service_key: str) -> list[WaypointModel]:
-    """전국 동물보호소 전체 수집."""
     async with httpx.AsyncClient() as client:
         items = await _fetch_all_pages(client, service_key)
 
@@ -120,7 +106,6 @@ async def collect_shelters(service_key: str) -> list[WaypointModel]:
 
 
 async def _main():
-    """CLI 진입점: 보호소 수집 후 JSON 파일로 저장."""
     logging.basicConfig(level=logging.INFO)
 
     service_key = os.environ.get("PUBLIC_DATA_API_KEY")
