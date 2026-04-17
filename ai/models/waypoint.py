@@ -49,7 +49,6 @@ class WaypointModel(BaseModel):
     @field_validator("latitude")
     @classmethod
     def validate_latitude(cls, v: float) -> float:
-        """위도 범위(-90~90)를 검증한다."""
         if not (-90 <= v <= 90):
             raise ValueError(f"위도 범위 초과: {v} (허용: -90 ~ 90)")
         return v
@@ -57,7 +56,6 @@ class WaypointModel(BaseModel):
     @field_validator("longitude")
     @classmethod
     def validate_longitude(cls, v: float) -> float:
-        """경도 범위(-180~180)를 검증한다."""
         if not (-180 <= v <= 180):
             raise ValueError(f"경도 범위 초과: {v} (허용: -180 ~ 180)")
         return v
@@ -65,7 +63,6 @@ class WaypointModel(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v: Optional[str]) -> Optional[str]:
-        """한국 전화번호 형식을 검증한다."""
         if v is None:
             return v
         # 한국 전화번호: 02-XXXX-XXXX, 0XX-XXX-XXXX, 0XX-XXXX-XXXX
