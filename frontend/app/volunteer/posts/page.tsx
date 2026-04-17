@@ -12,22 +12,22 @@ import { DUMMY_POSTS } from "@/lib/dummy-posts";
 const URGENT_POSTS = [
   {
     id: 301,
-    animal: { name: "콩이",  photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=600", size: "small"  },
+    animal_info: { name: "콩이",  photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=600", size: "small"  },
     origin: "광주", destination: "서울", scheduled_date: "2026-04-18",
   },
   {
     id: 302,
-    animal: { name: "복실이", photo_url: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600", size: "small"  },
+    animal_info: { name: "복실이", photo_url: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600", size: "small"  },
     origin: "부산", destination: "인천", scheduled_date: "2026-04-18",
   },
   {
     id: 303,
-    animal: { name: "두부",  photo_url: "https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=600", size: "small"  },
+    animal_info: { name: "두부",  photo_url: "https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=600", size: "small"  },
     origin: "전주", destination: "수원", scheduled_date: "2026-04-19",
   },
   {
     id: 304,
-    animal: { name: "몽실",  photo_url: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=600", size: "large"  },
+    animal_info: { name: "몽실",  photo_url: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=600", size: "large"  },
     origin: "대전", destination: "서울", scheduled_date: "2026-04-19",
   },
 ];
@@ -37,21 +37,21 @@ const URGENT_POSTS = [
 const EXTRA_POSTS = [
   {
     id: 401,
-    animal: { name: "해피",  photo_url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400", size: "medium" as const },
+    animal_info: { name: "해피",  photo_url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400", size: "medium" as const },
     origin: "대구광역시", destination: "경기도 용인시",
     scheduled_date: "2026-04-21", volunteers: [] as { id: number }[],
     status: "recruiting" as const,
   },
   {
     id: 402,
-    animal: { name: "쿠키",  photo_url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400", size: "small" as const },
+    animal_info: { name: "쿠키",  photo_url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400", size: "small" as const },
     origin: "울산광역시", destination: "서울특별시 마포구",
     scheduled_date: "2026-04-22", volunteers: [{ id: 1 }] as { id: number }[],
     status: "recruiting" as const,
   },
   {
     id: 403,
-    animal: { name: "보리",  photo_url: "https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=400", size: "medium" as const },
+    animal_info: { name: "보리",  photo_url: "https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=400", size: "medium" as const },
     origin: "강원도 춘천시", destination: "인천광역시",
     scheduled_date: "2026-04-23", volunteers: [{ id: 1 }, { id: 2 }] as { id: number }[],
     status: "recruiting" as const,
