@@ -8,9 +8,15 @@ def normalize_phone(raw: Optional[str]) -> Optional[str]:
     if not raw:
         return None
 
-    digits = "".join(c for c in raw if c.isdigit())
+    digits = "".join(c for c in str(raw) if c.isdigit())
 
-    if len(digits) == 9:
+    if digits.startswith("82"):
+        digits = "0" + digits[2:]
+
+    if not digits.startswith("0"):
+        return None
+
+    if len(digits) == 9 and digits.startswith("02"):
         return f"{digits[:2]}-{digits[2:5]}-{digits[5:]}"
     if len(digits) == 10:
         if digits.startswith("02"):
