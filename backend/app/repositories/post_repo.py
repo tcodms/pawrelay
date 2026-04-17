@@ -19,9 +19,24 @@ async def get_dashboard_posts(db: AsyncSession, shelter_id: int) -> list[tuple]:
         .subquery()
     )
 
+    chain_subq = (
+        select(
+            RelayChain.transport_post_id,
+            func.max(RelayChain.id).label("chain_id"),
+        )
+        .where(RelayChain.status == "proposed")
+        .group_by(RelayChain.transport_post_id)
+        .subquery()
+    )
+
     result = await db.execute(
-        select(TransportPost, func.coalesce(volunteer_count_subq.c.volunteer_count, 0))
+        select(
+            TransportPost,
+            func.coalesce(volunteer_count_subq.c.volunteer_count, 0),
+            chain_subq.c.chain_id,
+        )
         .outerjoin(volunteer_count_subq, TransportPost.id == volunteer_count_subq.c.post_id)
+        .outerjoin(chain_subq, TransportPost.id == chain_subq.c.transport_post_id)
         .where(TransportPost.shelter_id == shelter_id)
         .order_by(TransportPost.scheduled_date.desc())
     )

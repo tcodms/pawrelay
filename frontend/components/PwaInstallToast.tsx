@@ -66,7 +66,7 @@ export default function PwaInstallToast() {
   return (
     <div
       role="banner"
-      className="fixed top-0 inset-x-0 z-50 flex items-center gap-3 bg-orange-500 px-4 py-3 shadow-md animate-fade-in"
+      className="fixed top-0 inset-x-0 z-50 flex items-center gap-3 bg-[#EEA968] px-4 py-3 shadow-md animate-fade-in"
     >
       {/* 앱 아이콘 */}
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20">
@@ -97,7 +97,7 @@ export default function PwaInstallToast() {
           type="button"
           onClick={handleInstall}
           disabled={installing}
-          className="shrink-0 rounded-xl bg-white px-3.5 py-1.5 text-[12px] font-bold text-orange-500 transition-all active:scale-95 disabled:opacity-60"
+          className="shrink-0 rounded-xl bg-white px-3.5 py-1.5 text-[12px] font-bold text-[#EEA968] transition-all active:scale-95 disabled:opacity-60"
         >
           {installing ? "설치 중" : "설치"}
         </button>

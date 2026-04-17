@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signupShelter, ApiError } from "@/lib/api";
-import { getPhotoUploadUrl } from "@/lib/api/posts";
 import { getErrorMessage } from "@/lib/errors";
 import EyeIcon from "@/components/ui/EyeIcon";
 import Spinner from "@/components/ui/Spinner";
@@ -12,7 +11,7 @@ import ErrorBox from "@/components/ui/ErrorBox";
 import StepIndicator from "@/components/ui/StepIndicator";
 
 const INPUT =
-  "h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:border-orange-400 focus:bg-white focus:outline-none";
+  "h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-base text-gray-700 placeholder:text-gray-400 shadow-sm transition-colors duration-150 focus:border-[#EEA968]/60 focus:bg-white focus:outline-none";
 
 const PW_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,17 +58,12 @@ export default function ShelterSignupPage() {
   function handleStep1Next(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
     const errors: typeof fieldErrors = {};
     if (!name.trim()) errors.name = "보호소 이름을 입력해 주세요.";
     if (!EMAIL_REGEX.test(email)) errors.email = "올바른 이메일 형식이 아닙니다.";
     if (!PW_REGEX.test(password)) errors.password = "영문+숫자+특수문자를 포함해 8자 이상 입력해 주세요.";
     if (password !== passwordConfirm) errors.passwordConfirm = "비밀번호가 일치하지 않습니다.";
-
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      return;
-    }
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
     setFieldErrors({});
     setStep(2);
     window.scrollTo({ top: 0 });
@@ -79,59 +73,35 @@ export default function ShelterSignupPage() {
     e.preventDefault();
     setError("");
     setFileError("");
-
-    if (!phone.trim()) {
-      setError("전화번호를 입력해 주세요.");
-      return;
-    }
-    if (!EMAIL_REGEX.test(contactEmail)) {
-      setError("올바른 알림 수신 이메일을 입력해 주세요.");
-      return;
-    }
-    if (!address.trim()) {
-      setError("주소를 입력해 주세요.");
-      return;
-    }
-    if (!businessFile) {
-      setFileError("증빙 서류 PDF를 업로드해 주세요.");
-      return;
-    }
+    if (!phone.trim()) { setError("전화번호를 입력해 주세요."); return; }
+    if (!EMAIL_REGEX.test(contactEmail)) { setError("올바른 알림 수신 이메일을 입력해 주세요."); return; }
+    if (!address.trim()) { setError("주소를 입력해 주세요."); return; }
+    // 업로드 엔드포인트 준비 전까지 선택 사항으로 처리 (api-spec-requests.md 참고)
 
     setLoading(true);
     try {
-      // 1. S3 Presigned URL 발급
-      const { upload_url, photo_url } = await getPhotoUploadUrl(businessFile.name);
+      // TODO: GET /auth/signup/shelter/upload-url?filename= (인증 불필요) 엔드포인트 백엔드 요청 중
+      // 해당 엔드포인트 준비되면 아래 플로우로 교체:
+      //   const { upload_url, photo_url } = await request<{ upload_url: string; photo_url: string }>(
+      //     `/auth/signup/shelter/upload-url?filename=${encodeURIComponent(businessFile!.name)}`
+      //   );
+      //   await fetch(upload_url, { method: "PUT", body: businessFile, headers: { "Content-Type": businessFile!.type } });
+      //   docUrl = photo_url;
+      let docUrl: string | null = null;
 
-      // 2. S3에 파일 직접 업로드 (PUT)
-      const s3Res = await fetch(upload_url, {
-        method: "PUT",
-        body: businessFile,
-        headers: { "Content-Type": "application/pdf" },
-      });
-      if (!s3Res.ok) throw new Error("S3_UPLOAD_FAILED");
-
-      // 3. 회원가입 API 호출 (JSON)
       await signupShelter({
-        email,
-        password,
-        name,
-        phone,
+        email, password, name, phone,
         contact_email: contactEmail,
         address,
-        shelter_registration_doc_url: photo_url,
+        shelter_registration_doc_url: docUrl,
       });
-
       localStorage.setItem("pwa_welcome_pending", "1");
       router.replace(`/signup/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
       if (err instanceof Error && err.message === "S3_UPLOAD_FAILED") {
         setError("파일 업로드에 실패했습니다. 다시 시도해 주세요.");
       } else {
-        setError(
-          err instanceof ApiError
-            ? getErrorMessage(err.code)
-            : getErrorMessage("UNKNOWN_ERROR"),
-        );
+        setError(err instanceof ApiError ? getErrorMessage(err.code) : getErrorMessage("UNKNOWN_ERROR"));
       }
     } finally {
       setLoading(false);
@@ -139,14 +109,10 @@ export default function ShelterSignupPage() {
   }
 
   const header = (
-    <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white/90 px-4 py-4 backdrop-blur-sm">
+    <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-gray-50/90 px-4 py-4 backdrop-blur-sm">
       <button
         type="button"
-        onClick={() => {
-          setError("");
-          if (step === 2) setStep(1);
-          else router.back();
-        }}
+        onClick={() => { setError(""); if (step === 2) setStep(1); else router.back(); }}
         className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-100 active:bg-gray-200"
         aria-label="뒤로가기"
       >
@@ -154,26 +120,26 @@ export default function ShelterSignupPage() {
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
       </button>
-      <h2 className="text-[17px] font-bold text-gray-900">보호소 회원가입</h2>
+      <h2 className="text-[17px] font-bold text-gray-700">보호소 회원가입</h2>
     </header>
   );
 
   const approvalBanner = (
-    <div className="flex items-start gap-2.5 rounded-xl bg-blue-50 px-4 py-3 mx-6 mt-3">
-      <svg className="mt-0.5 shrink-0 text-blue-400" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <div className="flex items-start gap-2.5 rounded-2xl bg-[#FDF3EC] px-4 py-3 mx-6 mt-3">
+      <svg className="mt-0.5 shrink-0 text-[#EEA968]" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
       </svg>
-      <p className="text-[12px] leading-relaxed text-blue-600">
+      <p className="text-[12px] leading-relaxed text-[#7A4A28]">
         관리자의 서류 검토 및 승인 후 회원가입이 완료됩니다.
       </p>
     </div>
   );
 
-  // ── 1단계: 기본 정보 ──────────────────────────────────────────────────────────
+  // ── 1단계 ──────────────────────────────────────────────────────────────────
 
   if (step === 1) {
     return (
-      <main className="flex min-h-screen flex-col bg-white">
+      <main className="flex min-h-screen flex-col bg-gray-50">
         {header}
         {approvalBanner}
         <StepIndicator current={1} />
@@ -182,7 +148,7 @@ export default function ShelterSignupPage() {
           <p className="mb-5 text-[13px] text-gray-400">기본 정보를 입력해 주세요.</p>
 
           <form onSubmit={handleStep1Next} noValidate className="flex flex-1 flex-col gap-3.5 animate-slide-up">
-            {/* 보호소 이름 */}
+
             <div className="space-y-1.5">
               <label htmlFor="name" className="block text-[13px] font-semibold text-gray-500">보호소 이름</label>
               <input
@@ -194,7 +160,6 @@ export default function ShelterSignupPage() {
               {fieldErrors.name && <p className="text-[12px] text-red-500">{fieldErrors.name}</p>}
             </div>
 
-            {/* 이메일 */}
             <div className="space-y-1.5">
               <label htmlFor="email" className="block text-[13px] font-semibold text-gray-500">이메일</label>
               <input
@@ -206,14 +171,11 @@ export default function ShelterSignupPage() {
               {fieldErrors.email && <p className="text-[12px] text-red-500">{fieldErrors.email}</p>}
             </div>
 
-            {/* 비밀번호 */}
             <div className="space-y-1.5">
               <label htmlFor="password" className="block text-[13px] font-semibold text-gray-500">비밀번호</label>
               <div className="relative">
                 <input
-                  id="password" name="password"
-                  type={showPw ? "text" : "password"}
-                  autoComplete="new-password" required
+                  id="password" name="password" type={showPw ? "text" : "password"} autoComplete="new-password" required
                   value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
                   placeholder="영문+숫자+특수문자를 포함해 주세요"
                   className={`${INPUT} pr-12 ${fieldErrors.password ? "border-red-400 focus:border-red-400" : ""}`}
@@ -227,14 +189,11 @@ export default function ShelterSignupPage() {
               {fieldErrors.password && <p className="text-[12px] text-red-500">{fieldErrors.password}</p>}
             </div>
 
-            {/* 비밀번호 확인 */}
             <div className="space-y-1.5">
               <label htmlFor="passwordConfirm" className="block text-[13px] font-semibold text-gray-500">비밀번호 확인</label>
               <div className="relative">
                 <input
-                  id="passwordConfirm" name="passwordConfirm"
-                  type={showPwConfirm ? "text" : "password"}
-                  autoComplete="new-password" required
+                  id="passwordConfirm" name="passwordConfirm" type={showPwConfirm ? "text" : "password"} autoComplete="new-password" required
                   value={passwordConfirm} onChange={(e) => { setPasswordConfirm(e.target.value); setFieldErrors((prev) => ({ ...prev, passwordConfirm: undefined })); }}
                   placeholder="비밀번호를 다시 입력해 주세요"
                   className={`${INPUT} pr-12 ${fieldErrors.passwordConfirm ? "border-red-400 focus:border-red-400" : ""}`}
@@ -252,12 +211,12 @@ export default function ShelterSignupPage() {
 
             <div className="mt-auto space-y-4 pt-4">
               <button type="submit"
-                className="h-14 w-full rounded-2xl bg-orange-500 text-[15px] font-bold text-white shadow-md shadow-orange-100 transition-all duration-150 active:scale-[0.97]">
+                className="h-14 w-full rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all duration-150 active:scale-[0.97] hover:bg-[#D99A55]">
                 다음
               </button>
               <p className="text-center text-[13px] text-gray-400">
                 이미 계정이 있으신가요?{" "}
-                <Link href="/login" className="font-bold text-orange-500">로그인</Link>
+                <Link href="/login" className="font-bold text-[#EEA968]">로그인</Link>
               </p>
             </div>
           </form>
@@ -266,115 +225,110 @@ export default function ShelterSignupPage() {
     );
   }
 
-  // ── 2단계: 보호소 정보 및 증빙 서류 ─────────────────────────────────────────
+  // ── 2단계 ──────────────────────────────────────────────────────────────────
 
   return (
-    <main className="flex min-h-screen flex-col bg-white">
+    <main className="flex h-[100dvh] flex-col bg-gray-50">
       {header}
       {approvalBanner}
       <StepIndicator current={2} />
 
-      <div className="flex flex-1 flex-col px-6 pb-8">
-        <p className="mb-5 text-[13px] text-gray-400">보호소 상세 정보를 입력해 주세요.</p>
+      <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden animate-slide-up">
+        {/* 스크롤 영역 */}
+        <div className="flex-1 overflow-y-auto px-6 py-3">
+          <p className="mb-3 text-[13px] text-gray-400">보호소 상세 정보를 입력해 주세요.</p>
 
-        <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4 animate-slide-up">
+          <div className="flex flex-col gap-3">
+            <div className="space-y-1.5">
+              <label htmlFor="phone" className="block text-[13px] font-semibold text-gray-500">전화번호</label>
+              <input
+                id="phone" name="phone" type="tel" autoComplete="tel"
+                value={phone} onChange={(e) => setPhone(e.target.value)}
+                placeholder="062-000-0000"
+                className={INPUT}
+              />
+            </div>
 
-          {/* 전화번호 */}
-          <div className="space-y-1.5">
-            <label htmlFor="phone" className="block text-[13px] font-semibold text-gray-500">전화번호</label>
-            <input
-              id="phone" name="phone" type="tel" autoComplete="tel"
-              value={phone} onChange={(e) => setPhone(e.target.value)}
-              placeholder="062-000-0000"
-              className={INPUT}
-            />
+            <div className="space-y-1.5">
+              <label htmlFor="contactEmail" className="block text-[13px] font-semibold text-gray-500">
+                알림 수신 이메일
+                <span className="ml-1 font-normal text-gray-400">(로그인 이메일과 별도)</span>
+              </label>
+              <input
+                id="contactEmail" name="contactEmail" type="email" autoComplete="off"
+                value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="알림을 받을 이메일 주소"
+                className={INPUT}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="address" className="block text-[13px] font-semibold text-gray-500">주소</label>
+              <input
+                id="address" name="address" type="text" autoComplete="street-address"
+                value={address} onChange={(e) => setAddress(e.target.value)}
+                placeholder="보호소 주소를 입력해 주세요"
+                className={INPUT}
+              />
+            </div>
+
+            {/* 증빙 서류 PDF */}
+            <div className="space-y-1.5">
+              <label className="block text-[13px] font-semibold text-gray-500">
+                증빙 서류 <span className="font-normal text-gray-400">(PDF)</span>
+              </label>
+              <label
+                htmlFor="businessFile"
+                className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed px-4 py-5 transition-colors ${
+                  fileError
+                    ? "border-red-300 bg-red-50"
+                    : businessFile
+                    ? "border-[#EEA968]/50 bg-[#FDF3EC]"
+                    : "border-gray-200 bg-white hover:border-[#EEA968]/50 hover:bg-[#FDF3EC]"
+                }`}
+              >
+                {businessFile ? (
+                  <>
+                    <svg className="text-[#EEA968]" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <p className="text-[13px] font-semibold text-[#EEA968] text-center break-all px-2">{businessFile.name}</p>
+                    <p className="text-[11px] text-gray-400">다시 클릭하면 변경돼요</p>
+                  </>
+                ) : (
+                  <>
+                    <svg className="text-gray-300" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <p className="text-[13px] font-medium text-gray-400">PDF 파일 업로드</p>
+                  </>
+                )}
+              </label>
+              <input id="businessFile" type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
+              {fileError && <p className="text-[12px] text-red-500">{fileError}</p>}
+              <p className="text-[11px] text-gray-400">동물보호센터 지정서, 신고확인증 등</p>
+            </div>
+
+            {error && <ErrorBox message={error} />}
           </div>
+        </div>
 
-          {/* 알림 수신 이메일 */}
-          <div className="space-y-1.5">
-            <label htmlFor="contactEmail" className="block text-[13px] font-semibold text-gray-500">
-              알림 수신 이메일
-              <span className="ml-1 font-normal text-gray-400">(로그인 이메일과 별도)</span>
-            </label>
-            <input
-              id="contactEmail" name="contactEmail" type="email" autoComplete="off"
-              value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="알림을 받을 이메일 주소"
-              className={INPUT}
-            />
-          </div>
-
-          {/* 주소 */}
-          <div className="space-y-1.5">
-            <label htmlFor="address" className="block text-[13px] font-semibold text-gray-500">주소</label>
-            <input
-              id="address" name="address" type="text" autoComplete="street-address"
-              value={address} onChange={(e) => setAddress(e.target.value)}
-              placeholder="보호소 주소를 입력해 주세요"
-              className={INPUT}
-            />
-          </div>
-
-          {/* 증빙 서류 PDF */}
-          <div className="space-y-1.5">
-            <label className="block text-[13px] font-semibold text-gray-500">
-              보호소 진위 확인 증빙 서류 <span className="font-normal text-gray-400">(PDF)</span>
-            </label>
-            <label
-              htmlFor="businessFile"
-              className={`flex cursor-pointer flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed px-4 py-10 transition-colors ${
-                fileError
-                  ? "border-red-300 bg-red-50"
-                  : businessFile
-                  ? "border-orange-300 bg-orange-50"
-                  : "border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50"
-              }`}
-            >
-              {businessFile ? (
-                <>
-                  <svg className="text-orange-400" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  <p className="text-[13px] font-semibold text-orange-600 text-center break-all px-2">{businessFile.name}</p>
-                  <p className="text-[11px] text-gray-400">파일을 변경하려면 다시 클릭하세요</p>
-                </>
-              ) : (
-                <>
-                  <svg className="text-gray-300" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                  <p className="text-[14px] font-medium text-gray-400">클릭하여 PDF 파일 업로드</p>
-                </>
-              )}
-            </label>
-            <input id="businessFile" type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
-            {fileError && <p className="text-[12px] text-red-500">{fileError}</p>}
-            <p className="text-[11px] text-gray-400 leading-relaxed pt-1">
-              공식 보호소 확인 후 서비스 이용이 가능합니다.<br />준비하신 증빙 서류를 위에 업로드해 주세요.
-              <br />(동물보호센터 지정서, 동물보호시설 신고확인증 등)
-            </p>
-          </div>
-
-          {error && <ErrorBox message={error} />}
-
-          <div className="mt-auto pt-2">
-            <button type="submit" disabled={loading}
-              className="h-14 w-full rounded-2xl bg-orange-500 text-[15px] font-bold text-white shadow-md shadow-orange-100 transition-all duration-150 active:scale-[0.97] disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none">
-              {loading ? (
-                <span className="flex items-center justify-center gap-2.5">
-                  <Spinner />
-                  신청 중...
-                </span>
-              ) : (
-                "가입 신청하기"
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+        {/* 고정 버튼 */}
+        <div className="px-6 pb-8 pt-3 bg-gray-50">
+          <button type="submit" disabled={loading}
+            className="h-14 w-full rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all duration-150 active:scale-[0.97] hover:bg-[#D99A55] disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none">
+            {loading ? (
+              <span className="flex items-center justify-center gap-2.5">
+                <Spinner />
+                신청 중...
+              </span>
+            ) : "가입 신청하기"}
+          </button>
+        </div>
+      </form>
     </main>
   );
 }
