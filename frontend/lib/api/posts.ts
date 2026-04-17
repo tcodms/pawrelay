@@ -17,6 +17,8 @@ export type { Post, PostStatus };
 
 // ── Query / Request 타입 ──────────────────────────────────────────────────────
 
+// PostsQuery (region, date, animal_size 등)는 GET /posts (봉사자용 공개 목록) 전용.
+// 보호소 대시보드는 GET /shelter/dashboard 를 파라미터 없이 호출함.
 export interface PostsQuery {
   region?: string;
   date?: string;
@@ -40,7 +42,7 @@ export interface CreatePostData {
 export interface CreatePostResponse {
   id: number;
   share_token: string;
-  status: string;
+  status: PostStatus;
 }
 
 export interface PhotoUploadUrl {
@@ -50,10 +52,14 @@ export interface PhotoUploadUrl {
 
 // ── API 함수 ──────────────────────────────────────────────────────────────────
 
-export async function getPosts(_query?: PostsQuery): Promise<Post[]> {
-  // TODO: const params = new URLSearchParams({ ...(_query ?? {}) } as Record<string, string>);
-  //       const res = await request<{ posts: Post[] }>(`/posts?${params}`);
+export async function getPosts(): Promise<Post[]> {
+  // TODO: const res = await request<{ posts: Post[] }>("/shelter/dashboard");
   //       return res.posts;
+  //
+  // 주의: GET /shelter/dashboard 응답에 animal_info, chain_id, share_token 등이
+  //       누락되어 있음 → 백엔드에 필드 추가 요청 필요. (api-spec.md 스펙 갭)
+  //       지역/날짜/크기 필터(region, date, animal_size)는 GET /posts 파라미터이며
+  //       보호소 대시보드에는 해당 없음.
   return DUMMY_POSTS;
 }
 
@@ -77,7 +83,6 @@ export async function updatePost(id: number, data: Partial<CreatePostData>): Pro
 }
 
 export async function deletePost(id: number): Promise<void> {
-  // api-spec.md 미확정 — 백엔드 팀에 DELETE /posts/{id} 추가 요청 필요
   await request<{ ok: boolean }>(`/posts/${id}`, { method: "DELETE" });
 }
 

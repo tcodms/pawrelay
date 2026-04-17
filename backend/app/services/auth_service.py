@@ -68,6 +68,11 @@ async def signup_volunteer(
     )
     token = create_email_verification_token(user.id)
     await send_verification_email(body.email, token)
+
+    # TODO: 배포 시 이 블록 제거 — 로컬에서만 이메일 인증 자동 처리
+    if settings.environment == "development":
+        await user_repo.verify_email(db, user.id)
+
     return user
 
 
@@ -91,6 +96,11 @@ async def signup_shelter(
     )
     token = create_email_verification_token(user.id)
     await send_verification_email(body.email, token)
+
+    # TODO: 배포 시 이 블록 제거 — 로컬에서만 이메일 인증 자동 처리
+    if settings.environment == "development":
+        await user_repo.verify_email(db, user.id)
+
     return user
 
 

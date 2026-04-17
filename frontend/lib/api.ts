@@ -87,6 +87,7 @@ export interface SignupVolunteerRequest {
   email: string;
   password: string;
   name: string;
+  vehicle_available: boolean;
   max_animal_size: AnimalSize;
   activity_regions: string[];
 }
@@ -95,7 +96,10 @@ export interface SignupShelterRequest {
   email: string;
   password: string;
   name: string;
-  business_registration_file: File;
+  phone: string;
+  contact_email: string;
+  address: string;
+  shelter_registration_doc_url: string | null;
 }
 
 export interface SignupShelterResponse {
@@ -126,15 +130,9 @@ export async function signupVolunteer(
 export async function signupShelter(
   data: SignupShelterRequest,
 ): Promise<SignupShelterResponse> {
-  const formData = new FormData();
-  formData.append("email", data.email);
-  formData.append("password", data.password);
-  formData.append("name", data.name);
-  formData.append("business_registration_file", data.business_registration_file);
-
   return request<SignupShelterResponse>("/auth/signup/shelter", {
     method: "POST",
-    body: formData,
+    body: JSON.stringify(data),
   });
 }
 
