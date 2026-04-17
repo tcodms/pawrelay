@@ -78,19 +78,7 @@ def recommend_waypoints(
     vehicle_available: bool,
     radius_km: float = _DEFAULT_RADIUS_KM,
 ) -> dict[str, list[WaypointResult]]:
-    """차량 유무에 따라 근처 waypoints를 타입별로 추천.
-
-    Args:
-        conn: psycopg2 DB 연결
-        latitude: 기준 위도
-        longitude: 기준 경도
-        vehicle_available: 차량 보유 여부
-        radius_km: 검색 반경 (기본 10km)
-
-    Returns:
-        타입별 WaypointResult 리스트 딕셔너리
-        예: {"train": [...], "bus": [...], "rest_area": [...]}
-    """
+    """차량 유무에 따라 근처 waypoints를 타입별로 추천한다."""
     types = _TYPES_WITH_VEHICLE if vehicle_available else _TYPES_WITHOUT_VEHICLE
     result: dict[str, list[WaypointResult]] = {}
     remaining = _MAX_TOTAL
