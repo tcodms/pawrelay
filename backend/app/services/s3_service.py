@@ -8,10 +8,12 @@ from app.core.s3 import get_s3_client
 
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MIME_TO_EXT = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+EXT_TO_MIME = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
 
 
 def generate_upload_url(filename: str) -> tuple[str, str]:
-    mime_type, _ = mimetypes.guess_type(filename)
+    ext = ("." + filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
+    mime_type = EXT_TO_MIME.get(ext) or mimetypes.guess_type(filename)[0]
     if mime_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail={"error": "UNSUPPORTED_FILE_TYPE"})
 

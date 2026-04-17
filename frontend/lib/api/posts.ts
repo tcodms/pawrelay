@@ -10,7 +10,6 @@
  *   GET    /posts/upload-url 사진 업로드 Presigned URL
  */
 import { request } from "@/lib/api";
-import { DUMMY_POSTS } from "@/lib/dummy-posts";
 import type { Post, PostStatus } from "@/lib/dummy-posts";
 
 export type { Post, PostStatus };
@@ -52,20 +51,62 @@ export interface PhotoUploadUrl {
 
 // ── API 함수 ──────────────────────────────────────────────────────────────────
 
+interface DashboardPostItem {
+  id: number;
+  origin: string;
+  destination: string;
+  scheduled_date: string;
+  status: PostStatus;
+  volunteer_count: number;
+  animal_info: { name: string; size: "small" | "medium" | "large"; photo_url: string | null };
+  chain_id: number | null;
+  share_token: string;
+}
+
 export async function getPosts(): Promise<Post[]> {
-  // TODO: const res = await request<{ posts: Post[] }>("/shelter/dashboard");
-  //       return res.posts;
-  //
-  // 주의: GET /shelter/dashboard 응답에 animal_info, chain_id, share_token 등이
-  //       누락되어 있음 → 백엔드에 필드 추가 요청 필요. (api-spec.md 스펙 갭)
-  //       지역/날짜/크기 필터(region, date, animal_size)는 GET /posts 파라미터이며
-  //       보호소 대시보드에는 해당 없음.
-  return DUMMY_POSTS;
+  const res = await request<{ posts: DashboardPostItem[] }>("/shelter/dashboard");
+  return res.posts.map((item) => ({
+    id: item.id,
+    origin: item.origin,
+    destination: item.destination,
+    scheduled_date: item.scheduled_date,
+    status: item.status,
+    animal: {
+      name: item.animal_info.name,
+      size: item.animal_info.size,
+      photo_url: item.animal_info.photo_url ?? undefined,
+    },
+    volunteers: Array(item.volunteer_count).fill({ id: 0, name: "", from: "", to: "" }),
+    chain_id: item.chain_id ?? undefined,
+    share_token: item.share_token,
+  }));
+}
+
+interface PostDetailItem {
+  id: number;
+  origin: string;
+  destination: string;
+  scheduled_date: string;
+  status: PostStatus;
+  animal_info: { name: string; size: "small" | "medium" | "large"; photo_url: string | null };
 }
 
 export async function getPost(id: number): Promise<Post | null> {
-  // TODO: return request<Post>(`/posts/${id}`).catch(() => null);
-  return DUMMY_POSTS.find((p) => p.id === id) ?? null;
+  return request<PostDetailItem>(`/posts/${id}`)
+    .then((item) => ({
+      id: item.id,
+      origin: item.origin,
+      destination: item.destination,
+      scheduled_date: item.scheduled_date,
+      status: item.status,
+      animal: {
+        name: item.animal_info.name,
+        size: item.animal_info.size,
+        photo_url: item.animal_info.photo_url ?? undefined,
+      },
+      volunteers: [],
+    }))
+    .catch(() => null);
 }
 
 export async function createPost(data: CreatePostData): Promise<CreatePostResponse> {
