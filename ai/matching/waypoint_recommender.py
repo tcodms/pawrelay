@@ -1,20 +1,3 @@
-"""
-차량 유무에 따른 waypoints 추천 분기 로직
-
-설계 문서 기준:
-    - 차량 있음 → 휴게소(rest_area), 기차역(train), 버스터미널(bus)
-    - 차량 없음 → 기차역(train) 위주
-
-API 응답 형식 (api-spec.md 기준):
-    {
-        "waypoints": {
-            "train": [...],
-            "bus": [...],
-            "rest_area": [...]
-        }
-    }
-"""
-
 from dataclasses import dataclass
 from typing import Optional
 
@@ -60,8 +43,6 @@ _NEARBY_SQL = """
 
 @dataclass
 class WaypointResult:
-    """추천 waypoint 단건."""
-
     name: str
     type: str
     latitude: float
@@ -78,7 +59,6 @@ def recommend_waypoints(
     vehicle_available: bool,
     radius_km: float = _DEFAULT_RADIUS_KM,
 ) -> dict[str, list[WaypointResult]]:
-    """차량 유무에 따라 근처 waypoints를 타입별로 추천한다."""
     if radius_km <= 0:
         raise ValueError(f"radius_km은 0보다 커야 합니다: {radius_km}")
     types = _TYPES_WITH_VEHICLE if vehicle_available else _TYPES_WITHOUT_VEHICLE
@@ -97,7 +77,6 @@ def recommend_waypoints(
 
 
 def _row_to_result(row: dict) -> WaypointResult:
-    """DB 행을 WaypointResult로 변환한다."""
     return WaypointResult(
         name=row["name"],
         type=row["type"],
@@ -117,7 +96,6 @@ def _query_nearby(
     radius_km: float,
     limit: int = _MAX_PER_TYPE,
 ) -> list[WaypointResult]:
-    """PostGIS로 반경 내 특정 타입 waypoints 조회."""
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
         cur.execute(_NEARBY_SQL, (
             longitude, latitude,
