@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Date, DateTime, Enum, ForeignKey, Numeric, String, Text, Index
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, Enum, ForeignKey, Numeric, String, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy import Column
@@ -13,14 +13,19 @@ class VolunteerSchedule(Base):
         Index("ix_volunteer_schedules_volunteer_id", "volunteer_id"),
         Index("ix_volunteer_schedules_available_date_status", "available_date", "status"),
         Index("ix_volunteer_schedules_route", "route", postgresql_using="gist"),
+        CheckConstraint(
+            "available_time IS NULL OR available_time ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'",
+            name="ck_volunteer_schedules_available_time_hhmm",
+        ),
     )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     volunteer_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
     post_id = Column(BigInteger, ForeignKey("transport_posts.id"), nullable=True)
     route_description = Column(Text, nullable=False)
-    route = Column(Geometry("LINESTRING", srid=4326, spatial_index=False), nullable=False)
+    route = Column(Geometry("LINESTRING", srid=4326, spatial_index=False), nullable=True)
     available_date = Column(Date, nullable=False)
+    available_time = Column(String(5), nullable=True)
     origin_area = Column(String(100), nullable=False)
     destination_area = Column(String(100), nullable=False)
     vehicle_available = Column(Boolean, nullable=False)

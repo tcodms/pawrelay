@@ -47,7 +47,7 @@ export default function SplashScreen() {
 
       {/* 영문 로고 — Fredoka */}
       <h1
-        className="font-[family-name:var(--font-fredoka)] text-[56px] font-bold text-orange-500 leading-none animate-scale-in"
+        className="font-[family-name:var(--font-fredoka)] text-[56px] font-bold text-[#EEA968] leading-none animate-scale-in"
         style={{ animationDelay: "0.1s" }}
       >
         PawRelay
