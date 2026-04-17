@@ -1,25 +1,20 @@
 import type { PostStatus } from "@/lib/api/posts";
 
 const STATUS_MAP: Record<PostStatus, { label: string; color: string }> = {
-  urgent:      { label: "긴급",     color: "bg-red-100 text-red-600" },
   recruiting:  { label: "모집 중",  color: "bg-green-100 text-green-700" },
-  waiting:     { label: "대기 중",  color: "bg-yellow-100 text-yellow-700" },
-  in_progress: { label: "봉사 중",  color: "bg-blue-100 text-blue-700" },
+  waiting:     { label: "대기 중",  color: "bg-yellow-500/30 text-yellow-800" },
+  in_progress: { label: "봉사 중",  color: "bg-sky-100 text-sky-600" },
   completed:   { label: "봉사 종료", color: "bg-gray-100 text-gray-500" },
 };
 
 const SIZE_LABEL: Record<string, string> = {
-  소형: "소형", 중형: "중형", 대형: "대형",
   small: "소형", medium: "중형", large: "대형",
 };
 
 const SIZE_COLOR: Record<string, string> = {
-  소형: "bg-sky-50 text-sky-600",
-  중형: "bg-indigo-50 text-indigo-600",
-  대형: "bg-purple-50 text-purple-600",
-  small: "bg-sky-50 text-sky-600",
-  medium: "bg-indigo-50 text-indigo-600",
-  large: "bg-purple-50 text-purple-600",
+  small: "bg-gray-100 text-gray-500",
+  medium: "bg-gray-100 text-gray-500",
+  large: "bg-gray-100 text-gray-500",
 };
 
 /** variant="sm" — 목록 카드용, variant="md" — 상세 페이지용 */
