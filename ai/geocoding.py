@@ -6,7 +6,7 @@
 
 사용:
     coords = await geocode("광주광역시")
-    # → (35.15, 126.85) 또는 None
+    # → (35.15, 126.85) 또는 ValueError 발생
 """
 
 import logging
@@ -54,11 +54,14 @@ async def _fetch_geocode(address: str, api_key: str) -> dict:
         return response.json()
 
 
-async def geocode(address: str) -> tuple[float, float] | None:
-    """텍스트 주소를 (위도, 경도)로 변환한다. API 오류 시 None 반환."""
+async def geocode(address: str) -> tuple[float, float]:
+    """텍스트 주소를 (위도, 경도)로 변환한다. 실패 시 ValueError 발생."""
     try:
         data = await _fetch_geocode(address, _get_api_key())
-        return _parse_coords(data)
     except httpx.HTTPError as e:
-        logger.warning("카카오 Geocoding API 호출 실패 (%s): %s", address, e)
-        return None
+        logger.warning("카카오 Geocoding API 호출 실패: %s", e)
+        raise ValueError("Geocoding API 호출 실패") from e
+    coords = _parse_coords(data)
+    if coords is None:
+        raise ValueError("주소 변환 결과 없음")
+    return coords
