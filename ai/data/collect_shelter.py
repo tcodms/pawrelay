@@ -16,6 +16,7 @@ from typing import Optional
 import httpx
 
 from ai.models.waypoint import WaypointModel, WaypointType
+from ai.utils.phone import normalize_phone
 
 logger = logging.getLogger(__name__)
 
@@ -82,15 +83,7 @@ async def _fetch_all_pages(
 
 
 def _parse_shelter(item: dict) -> Optional[WaypointModel]:
-    """APMS 보호소 항목을 WaypointModel로 변환.
-
-    APMS API 주요 필드:
-        careNm      — 보호소명
-        careAddr    — 주소
-        careTel     — 전화번호
-        lat         — 위도
-        lng         — 경도
-    """
+    """APMS 보호소 항목을 WaypointModel로 변환. 좌표 없거나 오류 시 None 반환."""
     try:
         lat = item.get("lat") if item.get("lat") is not None else item.get("latitude")
         lng = item.get("lng") if item.get("lng") is not None else item.get("longitude")
@@ -104,30 +97,11 @@ def _parse_shelter(item: dict) -> Optional[WaypointModel]:
             latitude=float(lat),
             longitude=float(lng),
             address=item.get("careAddr"),
-            phone=_normalize_phone(item.get("careTel")),
+            phone=normalize_phone(item.get("careTel")),
             source="공공데이터포털_APMS_보호소API",
         )
     except (KeyError, ValueError, TypeError):
         return None
-
-
-def _normalize_phone(raw: Optional[str]) -> Optional[str]:
-    """전화번호를 0XX-XXX(X)-XXXX 형식으로 정규화."""
-    if not raw:
-        return None
-
-    digits = "".join(c for c in raw if c.isdigit())
-
-    if len(digits) == 9:
-        return f"{digits[:2]}-{digits[2:5]}-{digits[5:]}"
-    if len(digits) == 10:
-        if digits.startswith("02"):
-            return f"{digits[:2]}-{digits[2:6]}-{digits[6:]}"
-        return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
-    if len(digits) == 11:
-        return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
-
-    return None
 
 
 async def collect_shelters(service_key: str) -> list[WaypointModel]:
