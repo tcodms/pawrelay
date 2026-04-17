@@ -74,11 +74,17 @@ def _parse_response(text: str) -> dict | None:
         if not _REQUIRED_KEYS.issubset(data.keys()):
             logger.warning("응답에 필수 키 누락: %s", data.keys())
             return None
-        if not isinstance(data["selected_chain_index"], int):
+        if type(data["selected_chain_index"]) is not int:
             logger.warning("selected_chain_index 타입 오류: %r", data["selected_chain_index"])
             return None
         if not isinstance(data["matching_reason"], str) or not data["matching_reason"].strip():
             logger.warning("matching_reason 타입/내용 오류")
+            return None
+        sentence_count = len(
+            [s for s in data["matching_reason"].replace("。", ".").split(".") if s.strip()]
+        )
+        if not (2 <= sentence_count <= 3):
+            logger.warning("matching_reason 문장 수 오류: %d문장", sentence_count)
             return None
         return data
     except (json.JSONDecodeError, AttributeError) as e:
