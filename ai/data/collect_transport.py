@@ -19,58 +19,52 @@ from ai.utils.phone import normalize_phone
 logger = logging.getLogger(__name__)
 
 
-def parse_rest_area_json(filepath: str) -> list[WaypointModel]:
-    """전국휴게소정보표준데이터 JSON 파일 파싱.
-
-    필드 순서: 휴게소명(0), 소재지도로명주소(3), 위도(5), 경도(6), 휴게소전화번호(25)
-    """
-    results = []
-    skipped = 0
-
-    with open(filepath, encoding="utf-8") as f:
-        data = json.load(f)
-
+def _extract_field_keys(data: dict) -> dict:
+    """JSON 데이터에서 필드 키 매핑을 추출한다. 필드 수 부족 시 ValueError."""
     field_keys = [field["id"] for field in data.get("fields", [])]
-    records = data.get("records", [])
-
     if len(field_keys) < 7:
         raise ValueError(f"fields 개수 부족: {len(field_keys)}개 (최소 7개 필요)")
+    return {
+        "name": field_keys[0],
+        "addr": field_keys[3],
+        "lat": field_keys[5],
+        "lng": field_keys[6],
+        "phone": field_keys[25] if len(field_keys) > 25 else None,
+    }
 
-    name_key = field_keys[0]
-    addr_key = field_keys[3]   # 소재지도로명주소
-    lat_key = field_keys[5]
-    lng_key = field_keys[6]
-    phone_key = field_keys[25] if len(field_keys) > 25 else None
 
-    for record in records:
-        try:
-            lat = float(record[lat_key])
-            lng = float(record[lng_key])
-            raw_name = record[name_key]
-            if raw_name is None:
-                skipped += 1
-                continue
-            name = str(raw_name).strip()
+def _parse_record(record: dict, keys: dict) -> WaypointModel | None:
+    """단일 휴게소 레코드를 WaypointModel로 변환한다. 오류 시 None 반환."""
+    try:
+        lat, lng = float(record[keys["lat"]]), float(record[keys["lng"]])
+        raw_name = record[keys["name"]]
+        if not raw_name or not str(raw_name).strip():
+            return None
+        return WaypointModel(
+            name=str(raw_name).strip(), type=WaypointType.REST_AREA,
+            latitude=lat, longitude=lng,
+            address=str(record.get(keys["addr"], "") or "").strip() or None,
+            phone=normalize_phone(record.get(keys["phone"])),
+            source="공공데이터포털_전국휴게소정보표준데이터",
+        )
+    except (KeyError, ValueError, TypeError):
+        return None
 
-            if not name:
-                skipped += 1
-                continue
 
-            results.append(WaypointModel(
-                name=name,
-                type=WaypointType.REST_AREA,
-                latitude=lat,
-                longitude=lng,
-                address=str(record.get(addr_key, "") or "").strip() or None,
-                phone=normalize_phone(record.get(phone_key)),
-                source="공공데이터포털_전국휴게소정보표준데이터",
-            ))
-        except (KeyError, ValueError, TypeError):
+def parse_rest_area_json(filepath: str) -> list[WaypointModel]:
+    """전국휴게소정보표준데이터 JSON 파일 파싱."""
+    with open(filepath, encoding="utf-8") as f:
+        data = json.load(f)
+    keys = _extract_field_keys(data)
+    results, skipped = [], 0
+    for record in data.get("records", []):
+        parsed = _parse_record(record, keys)
+        if parsed is None:
             skipped += 1
-
+        else:
+            results.append(parsed)
     if skipped:
         logger.warning("파싱 실패로 제외된 항목: %d건", skipped)
-
     return results
 
 

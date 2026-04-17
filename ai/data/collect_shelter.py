@@ -48,6 +48,11 @@ def _extract_items(body: dict) -> list[dict]:
     return item_list or []
 
 
+def _build_params(service_key: str, page: int) -> dict:
+    """API 요청 파라미터를 생성한다."""
+    return {"serviceKey": service_key, "numOfRows": _PAGE_SIZE, "pageNo": page, "_type": "json"}
+
+
 async def _fetch_all_pages(
     client: httpx.AsyncClient,
     service_key: str,
@@ -56,9 +61,7 @@ async def _fetch_all_pages(
     results = []
     page = 1
     while True:
-        params = {"serviceKey": service_key, "numOfRows": _PAGE_SIZE,
-                  "pageNo": page, "_type": "json"}
-        data = await _fetch_json(client, _SHELTER_URL, params)
+        data = await _fetch_json(client, _SHELTER_URL, _build_params(service_key, page))
         body = data.get("response", {}).get("body", {})
         total_count = int(body.get("totalCount", 0))
         item_list = _extract_items(body)
@@ -72,15 +75,7 @@ async def _fetch_all_pages(
 
 
 def _parse_shelter(item: dict) -> Optional[WaypointModel]:
-    """APMS 보호소 항목을 WaypointModel로 변환.
-
-    APMS API 주요 필드:
-        careNm      — 보호소명
-        careAddr    — 주소
-        careTel     — 전화번호
-        lat         — 위도
-        lng         — 경도
-    """
+    """APMS 보호소 항목을 WaypointModel로 변환. 좌표 없거나 오류 시 None 반환."""
     try:
         lat = item.get("lat") or item.get("latitude")
         lng = item.get("lng") or item.get("longitude")

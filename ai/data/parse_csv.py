@@ -73,15 +73,20 @@ def _build_bus_waypoint(row: list[str]) -> Optional[WaypointModel]:
     )
 
 
+def _validate_train_row(row: list[str]) -> bool:
+    """기차 CSV 행 유효성 검사. 유효하면 True."""
+    if len(row) <= _TRAIN_COL_LNG:
+        return False
+    if row[_TRAIN_COL_CLOSED].strip() == "0":
+        return False
+    return bool(row[_TRAIN_COL_NAME].strip())
+
+
 def _build_train_waypoint(row: list[str]) -> Optional[WaypointModel]:
     """기차 CSV 한 행을 WaypointModel로 변환. 유효하지 않으면 None 반환."""
-    if len(row) <= _TRAIN_COL_LNG:
-        return None
-    if row[_TRAIN_COL_CLOSED].strip() == "0":
+    if not _validate_train_row(row):
         return None
     name = row[_TRAIN_COL_NAME].strip()
-    if not name:
-        return None
     lat = _parse_float(row[_TRAIN_COL_LAT])
     lng = _parse_float(row[_TRAIN_COL_LNG])
     if lat is None or lng is None:
@@ -139,31 +144,37 @@ def parse_train_stations(filepath: str) -> list[WaypointModel]:
     return results
 
 
-def _main():
-    """CLI 진입점: 버스터미널·기차역 CSV 파싱 후 저장."""
-    logging.basicConfig(level=logging.INFO)
-
+def _build_parser() -> argparse.ArgumentParser:
+    """CLI 인자 파서 생성."""
     parser = argparse.ArgumentParser(description="버스터미널·기차역 CSV 파서")
     parser.add_argument("--bus", help="버스 CSV 파일 경로")
     parser.add_argument("--train", help="기차역 CSV 파일 경로")
     parser.add_argument("--output", help="저장할 JSON 파일 경로")
-    args = parser.parse_args()
+    return parser
 
-    if not args.bus and not args.train:
-        parser.error("--bus 또는 --train 중 하나 이상 지정해주세요.")
 
+def _collect_data(args) -> dict:
+    """인자에 따라 버스/기차 데이터 수집 후 dict 반환."""
     output_data = {}
-
     if args.bus:
         buses = parse_bus_terminals(args.bus)
         logger.info("버스터미널: %d건", len(buses))
         output_data["bus"] = [b.model_dump() for b in buses]
-
     if args.train:
         trains = parse_train_stations(args.train)
         logger.info("기차역: %d건", len(trains))
         output_data["train"] = [t.model_dump() for t in trains]
+    return output_data
 
+
+def _main():
+    """CLI 진입점: 버스터미널·기차역 CSV 파싱 후 저장."""
+    logging.basicConfig(level=logging.INFO)
+    parser = _build_parser()
+    args = parser.parse_args()
+    if not args.bus and not args.train:
+        parser.error("--bus 또는 --train 중 하나 이상 지정해주세요.")
+    output_data = _collect_data(args)
     if args.output and output_data:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
