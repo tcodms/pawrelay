@@ -1,4 +1,5 @@
 import json
+import logging
 import zoneinfo
 from datetime import datetime
 
@@ -13,6 +14,7 @@ from .prompts import CHATBOT_SYSTEM_PROMPT, CHATBOT_USER_PROMPT
 
 _KST = zoneinfo.ZoneInfo("Asia/Seoul")
 _MAX_INPUT_LENGTH = 500
+_logger = logging.getLogger(__name__)
 
 
 class ChatbotEngine:
@@ -30,9 +32,9 @@ class ChatbotEngine:
 
     def _post_context_message(self) -> str:
         filled_info = []
-        if "available_date" in self.auto_filled:
+        if self.auto_filled.get("available_date") is not None:
             filled_info.append(f"날짜: {self.auto_filled['available_date']}")
-        if "max_animal_size" in self.auto_filled:
+        if self.auto_filled.get("max_animal_size") is not None:
             filled_info.append(f"동물 크기: {self.auto_filled['max_animal_size']}")
         return (
             "공고 정보를 확인했어요!\n" + "\n".join(filled_info)
@@ -97,7 +99,8 @@ class ChatbotEngine:
                 return {"state": "COLLECTING", "message": "이해하지 못했어요. 다시 한번 말씀해주세요.",
                         "completed": False, "error": "PARSE_FAILED"}
             return self._build_collecting_result(parsed)
-        except Exception:
+        except Exception as e:
+            _logger.warning("LLM 처리 중 오류 (state=%s): %s", prev_state, e)
             self.state, self.collected_data = prev_state, prev_collected
             return {"state": self.state, "message": "처리 중 오류가 발생했어요. 다시 시도해주세요.",
                     "completed": False, "error": "LLM_ERROR"}
