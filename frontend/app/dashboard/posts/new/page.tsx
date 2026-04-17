@@ -80,12 +80,9 @@ export default function NewPostPage() {
   }
 
   async function uploadPhoto(file: File): Promise<string | null> {
-    // TODO: 실제 S3 업로드 플로우
-    // const { upload_url, photo_url } = await getPhotoUploadUrl(file.name);
-    // await fetch(upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-    // return photo_url;
-    void getPhotoUploadUrl;
-    return null; // S3 미구현 — blob URL을 API payload에 사용하지 않음
+    const { upload_url, photo_url } = await getPhotoUploadUrl(file.name);
+    await fetch(upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    return photo_url;
   }
 
   async function handleSubmit(e: React.FormEvent) {
