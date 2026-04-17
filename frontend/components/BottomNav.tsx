@@ -12,12 +12,12 @@ const TABS = [
   },
   {
     href: "/volunteer/chat",
-    label: "채팅",
+    label: "챗봇",
     icon: MessageCircle,
   },
   {
     href: "/volunteer/services",
-    label: "봉사내역",
+    label: "나의 봉사",
     icon: PawPrint,
   },
   {

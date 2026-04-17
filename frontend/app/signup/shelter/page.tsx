@@ -76,11 +76,17 @@ export default function ShelterSignupPage() {
     if (!phone.trim()) { setError("전화번호를 입력해 주세요."); return; }
     if (!EMAIL_REGEX.test(contactEmail)) { setError("올바른 알림 수신 이메일을 입력해 주세요."); return; }
     if (!address.trim()) { setError("주소를 입력해 주세요."); return; }
+    // 업로드 엔드포인트 준비 전까지 선택 사항으로 처리 (api-spec-requests.md 참고)
 
     setLoading(true);
     try {
-      // 스펙: shelter_registration_doc_url은 nullable — 가입 시 미첨부 가능, 이후 별도 업로드
-      // GET /posts/upload-url 은 보호소 인증 필요이므로 가입 전에는 호출 불가
+      // TODO: GET /auth/signup/shelter/upload-url?filename= (인증 불필요) 엔드포인트 백엔드 요청 중
+      // 해당 엔드포인트 준비되면 아래 플로우로 교체:
+      //   const { upload_url, photo_url } = await request<{ upload_url: string; photo_url: string }>(
+      //     `/auth/signup/shelter/upload-url?filename=${encodeURIComponent(businessFile!.name)}`
+      //   );
+      //   await fetch(upload_url, { method: "PUT", body: businessFile, headers: { "Content-Type": businessFile!.type } });
+      //   docUrl = photo_url;
       let docUrl: string | null = null;
 
       await signupShelter({
