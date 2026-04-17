@@ -5,58 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Users, Bell, Search } from "lucide-react";
-import { DUMMY_POSTS } from "@/lib/dummy-posts";
+import { DUMMY_POSTS, URGENT_POST_IDS } from "@/lib/dummy-posts";
 
-// ── 긴급 공고 더미 ────────────────────────────────────────────────────────────
-
-const URGENT_POSTS = [
-  {
-    id: 301,
-    animal_info: { name: "콩이",  photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=600", size: "small"  },
-    origin: "광주", destination: "서울", scheduled_date: "2026-04-18",
-  },
-  {
-    id: 302,
-    animal_info: { name: "복실이", photo_url: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600", size: "small"  },
-    origin: "부산", destination: "인천", scheduled_date: "2026-04-18",
-  },
-  {
-    id: 303,
-    animal_info: { name: "두부",  photo_url: "https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=600", size: "small"  },
-    origin: "전주", destination: "수원", scheduled_date: "2026-04-19",
-  },
-  {
-    id: 304,
-    animal_info: { name: "몽실",  photo_url: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=600", size: "large"  },
-    origin: "대전", destination: "서울", scheduled_date: "2026-04-19",
-  },
-];
-
-// ── 추가 더미 공고 (그리드 채우기) ───────────────────────────────────────────
-
-const EXTRA_POSTS = [
-  {
-    id: 401,
-    animal_info: { name: "해피",  photo_url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400", size: "medium" as const },
-    origin: "대구광역시", destination: "경기도 용인시",
-    scheduled_date: "2026-04-21", volunteers: [] as { id: number }[],
-    status: "recruiting" as const,
-  },
-  {
-    id: 402,
-    animal_info: { name: "쿠키",  photo_url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400", size: "small" as const },
-    origin: "울산광역시", destination: "서울특별시 마포구",
-    scheduled_date: "2026-04-22", volunteers: [{ id: 1 }] as { id: number }[],
-    status: "recruiting" as const,
-  },
-  {
-    id: 403,
-    animal_info: { name: "보리",  photo_url: "https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=400", size: "medium" as const },
-    origin: "강원도 춘천시", destination: "인천광역시",
-    scheduled_date: "2026-04-23", volunteers: [{ id: 1 }, { id: 2 }] as { id: number }[],
-    status: "recruiting" as const,
-  },
-];
+const URGENT_POSTS = DUMMY_POSTS.filter((p) => URGENT_POST_IDS.includes(p.id));
 
 // ── 옵션 ──────────────────────────────────────────────────────────────────────
 
@@ -131,10 +82,7 @@ function PostsPage() {
     setActiveCard(Math.round(el.scrollLeft / cardWidth));
   }
 
-  const allPosts = [
-    ...DUMMY_POSTS.filter((p) => p.status === "recruiting"),
-    ...EXTRA_POSTS,
-  ];
+  const allPosts = DUMMY_POSTS.filter((p) => p.status === "recruiting");
 
   const recruitingPosts = allPosts.filter((p) => {
     if (search && !p.origin.includes(search) && !p.destination.includes(search)) return false;
@@ -222,7 +170,11 @@ function PostsPage() {
                 className="snap-start shrink-0 w-52 rounded-2xl bg-white border border-red-100 shadow-sm overflow-hidden active:scale-[0.97] transition-transform"
               >
                 <div className="relative h-32 w-full bg-[#FDF3EC]">
-                  <Image src={post.animal_info.photo_url} alt={post.animal_info.name} fill className="object-cover" />
+                  {post.animal_info.photo_url ? (
+                    <Image src={post.animal_info.photo_url} alt={post.animal_info.name} fill className="object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-4xl">🐾</div>
+                  )}
                   <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 shadow">
                     <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                     <span className="text-[10px] font-bold text-white">긴급</span>

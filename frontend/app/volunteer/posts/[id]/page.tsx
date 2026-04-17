@@ -128,33 +128,39 @@ export default function VolunteerPostDetailPage({ params }: { params: { id: stri
       {/* 신청 버튼 (하단 고정 — BottomNav h-16 위에 배치) */}
       <div className="fixed bottom-16 left-0 right-0 z-20 px-4 pb-3 pt-3">
         <div className="mx-auto max-w-lg">
-          <button
-            onClick={async () => {
-              if (applying) return;
-              setApplying(true);
-              try {
-                const res = await sendChatbotMessage({
-                  session_id: null,
-                  post_id: post.id,
-                  message: null,
-                });
-                sessionStorage.setItem(CHATBOT_SESSION_KEY, res.session_id);
-                router.push("/volunteer/chat");
-              } catch {
-                alert("신청 중 오류가 발생했습니다. 다시 시도해 주세요.");
-              } finally {
-                setApplying(false);
-              }
-            }}
-            disabled={applying}
-            className="flex w-full items-center justify-center h-14 rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] hover:bg-[#D99A55] disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {applying ? (
-              <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-            ) : (
-              "이 공고 신청하기"
-            )}
-          </button>
+          {post.status === "recruiting" ? (
+            <button
+              onClick={async () => {
+                if (applying || post.status !== "recruiting") return;
+                setApplying(true);
+                try {
+                  const res = await sendChatbotMessage({
+                    session_id: null,
+                    post_id: post.id,
+                    message: null,
+                  });
+                  sessionStorage.setItem(CHATBOT_SESSION_KEY, res.session_id);
+                  router.push("/volunteer/chat");
+                } catch {
+                  alert("신청 중 오류가 발생했습니다. 다시 시도해 주세요.");
+                } finally {
+                  setApplying(false);
+                }
+              }}
+              disabled={applying}
+              className="flex w-full items-center justify-center h-14 rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] hover:bg-[#D99A55] disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {applying ? (
+                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : (
+                "이 공고 신청하기"
+              )}
+            </button>
+          ) : (
+            <div className="flex w-full items-center justify-center h-14 rounded-full bg-gray-100 text-[15px] font-bold text-gray-400">
+              신청이 마감된 공고입니다
+            </div>
+          )}
         </div>
       </div>
     </main>

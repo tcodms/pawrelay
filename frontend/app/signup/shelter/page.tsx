@@ -76,7 +76,7 @@ export default function ShelterSignupPage() {
     if (!phone.trim()) { setError("전화번호를 입력해 주세요."); return; }
     if (!EMAIL_REGEX.test(contactEmail)) { setError("올바른 알림 수신 이메일을 입력해 주세요."); return; }
     if (!address.trim()) { setError("주소를 입력해 주세요."); return; }
-    if (!businessFile) { setError("증빙 서류(PDF)를 첨부해 주세요. 관리자 승인에 필요합니다."); return; }
+    // 업로드 엔드포인트 준비 전까지 선택 사항으로 처리 (api-spec-requests.md 참고)
 
     setLoading(true);
     try {
