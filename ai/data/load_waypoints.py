@@ -128,10 +128,8 @@ def load_from_file(filepath: str, database_url: str) -> None:
         conn.close()
 
 
-def _main() -> None:
-    """CLI 진입점: JSON 파일을 읽어 PostGIS에 적재."""
-    logging.basicConfig(level=logging.INFO)
-
+def _build_parser() -> argparse.ArgumentParser:
+    """CLI 인자 파서를 생성한다."""
     parser = argparse.ArgumentParser(description="waypoints PostGIS 적재")
     parser.add_argument(
         "--file",
@@ -139,14 +137,13 @@ def _main() -> None:
         required=True,
         help="적재할 JSON 파일 경로 (여러 번 지정 가능)",
     )
-    args = parser.parse_args()
+    return parser
 
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        parser.error("DATABASE_URL 환경변수를 설정해주세요.")
 
+def _load_all_files(files: list[str], database_url: str) -> int:
+    """파일 목록을 순서대로 적재하고 실패 건수를 반환한다."""
     failed = 0
-    for filepath in args.file:
+    for filepath in files:
         try:
             load_from_file(filepath, database_url)
         except WaypointIndexError as e:
@@ -155,7 +152,18 @@ def _main() -> None:
         except (OSError, json.JSONDecodeError, psycopg2.Error) as e:
             failed += 1
             logger.error("파일 처리 실패 (%s): %s", filepath, e)
-    if failed:
+    return failed
+
+
+def _main() -> None:
+    """CLI 진입점: JSON 파일을 읽어 PostGIS에 적재."""
+    logging.basicConfig(level=logging.INFO)
+    parser = _build_parser()
+    args = parser.parse_args()
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        parser.error("DATABASE_URL 환경변수를 설정해주세요.")
+    if _load_all_files(args.file, database_url):
         raise SystemExit(1)
 
 
