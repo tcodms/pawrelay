@@ -32,8 +32,8 @@ export interface PostSuggestion {
 export interface ChatbotApiResponse {
   session_id: string;
   message: string;
-  /** 자연어 대화 중에는 null. CONFIRM 단계에서만 "buttons" */
-  input_type: "buttons" | null;
+  /** 자연어 대화 중에는 null. 위젯 종류에 따라 분기됨 */
+  input_type: "buttons" | "date_picker" | "address_search" | null;
   /** input_type: "buttons"일 때만 존재. 예) ["등록하기", "처음부터 다시"] */
   options: string[] | null;
   completed: boolean;
@@ -50,7 +50,7 @@ function dummyResponse(
   message: string | null
 ): ChatbotApiResponse {
   const sid = sessionId ?? crypto.randomUUID();
-  const base = { session_id: sid, input_type: null as "buttons" | null, options: null, completed: false, schedule_id: null };
+  const base = { session_id: sid, input_type: null as "buttons" | "date_picker" | "address_search" | null, options: null, completed: false, schedule_id: null };
 
   // 세션 초기화 (인사말)
   if (message === null) {
@@ -69,11 +69,11 @@ function dummyResponse(
   if (message === "수락할게요") {
     return { ...base, message: "수락 완료됐어요! 보호소 최종 확인 후 매칭이 확정돼요. 🐾", completed: true, schedule_id: 17 };
   }
-  if (message === "처음부터 다시" || message === "거절할게요") {
-    return {
-      ...base,
-      message: "알겠어요. 다른 봉사 기회가 생기면 또 알려드릴게요! 🐾",
-    };
+  if (message === "거절할게요") {
+    return { ...base, message: "알겠어요. 다른 봉사 기회가 생기면 또 알려드릴게요! 🐾", completed: true };
+  }
+  if (message === "처음부터 다시") {
+    return { ...base, message: "알겠어요. 다시 처음부터 시작해볼게요! 🐾" };
   }
 
   // 자연어 파싱 (더미용 간이 키워드)

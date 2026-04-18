@@ -695,6 +695,32 @@ export default function ChatRoomPage() {
       return;
     }
 
+    // ── isDemo2 특수 처리 ─────────────────────────────────────────────────────
+    if (isDemo2) {
+      await new Promise((r) => setTimeout(r, 400));
+      setSending(false);
+
+      if (userText === "등록하기") {
+        setRegisteredFields({ origin: "광주광역시", vehicle: "있음" });
+        setCompleted(true);
+        setConfirmOptions(null);
+        setTimeout(() => setMessages((prev) => [...prev, { role: "bot", type: "text", text: "봉사 정보가 등록되었어요! 매칭 제안 해드릴게요. 🐾" }]), 400);
+        return;
+      }
+      if (userText === "처음부터 다시") {
+        setRegisteredFields(undefined);
+        setConfirmOptions(null);
+        setMessages([]);
+        const timers: ReturnType<typeof setTimeout>[] = [];
+        DEMO_MESSAGES_2.forEach((msg, idx) => {
+          timers.push(setTimeout(() => setMessages((prev) => [...prev, msg]), idx * 600));
+        });
+        timers.push(setTimeout(() => setConfirmOptions(["등록하기", "처음부터 다시"]), DEMO_MESSAGES_2.length * 600));
+        return;
+      }
+      return;
+    }
+
     // ── 실제 API ──────────────────────────────────────────────────────────────
     try {
       const res = await sendChatMessage(beSessionId, null, userText);
@@ -838,7 +864,7 @@ export default function ChatRoomPage() {
                   e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                     e.preventDefault();
                     const text = textInput.trim();
                     if (text) { handleUserInput(text); setTextInput(""); }

@@ -14,8 +14,6 @@ export default function VolunteerPostDetailPage({ params }: { params: { id: stri
   const router = useRouter();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
-
   useEffect(() => {
     getPost(Number(params.id))
       .then(setPost)
@@ -132,7 +130,6 @@ export default function VolunteerPostDetailPage({ params }: { params: { id: stri
           {post.status === "recruiting" ? (
             <button
               onClick={() => {
-                if (applying || post.status !== "recruiting") return;
                 const sessionId = crypto.randomUUID();
                 const postContext: PostContext = {
                   post_id: post.id,
@@ -144,14 +141,9 @@ export default function VolunteerPostDetailPage({ params }: { params: { id: stri
                 sessionStorage.setItem(CHATBOT_POST_CONTEXT_KEY, JSON.stringify(postContext));
                 router.push(`/volunteer/chat/${sessionId}`);
               }}
-              disabled={applying}
-              className="flex w-full items-center justify-center h-14 rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] hover:bg-[#D99A55] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center h-14 rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] hover:bg-[#D99A55]"
             >
-              {applying ? (
-                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-              ) : (
-                "이 공고 신청하기"
-              )}
+              이 공고 신청하기
             </button>
           ) : (
             <div className="flex w-full items-center justify-center h-14 rounded-full bg-gray-100 text-[15px] font-bold text-gray-400">
