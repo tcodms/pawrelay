@@ -5,14 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.post import TransportPost
 from app.models.volunteer import VolunteerSchedule
 
-# 동물 크기 우선순위 (숫자가 클수록 큰 동물)
-ANIMAL_SIZE_RANK = case(
-    (VolunteerSchedule.max_animal_size == "small", 1),
-    (VolunteerSchedule.max_animal_size == "medium", 2),
-    (VolunteerSchedule.max_animal_size == "large", 3),
-    else_=0,
-)
-
 POST_SIZE_RANK = {
     "small": 1,
     "medium": 2,
@@ -21,6 +13,16 @@ POST_SIZE_RANK = {
 
 # PostGIS ST_DWithin 거리 기준 (단위: 미터), 약 50km
 ROUTE_DISTANCE_METERS = 50_000
+
+
+def _animal_size_rank_expr():
+    """쿼리 내부에서 동물 크기 우선순위 표현식 생성"""
+    return case(
+        (VolunteerSchedule.max_animal_size == "small", 1),
+        (VolunteerSchedule.max_animal_size == "medium", 2),
+        (VolunteerSchedule.max_animal_size == "large", 3),
+        else_=0,
+    )
 
 
 async def get_recruiting_posts(db: AsyncSession) -> list[TransportPost]:
@@ -48,7 +50,7 @@ async def get_candidate_volunteers(
             and_(
                 VolunteerSchedule.available_date == post.scheduled_date,
                 VolunteerSchedule.status == "available",
-                ANIMAL_SIZE_RANK >= post_size_rank,
+                _animal_size_rank_expr() >= post_size_rank,
                 VolunteerSchedule.route.isnot(None),
                 ST_DWithin(
                     VolunteerSchedule.route,
