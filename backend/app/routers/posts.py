@@ -69,7 +69,8 @@ async def get_post(
     current_user: User | None = Depends(get_optional_user),
 ):
     role = current_user.role if current_user else None
-    return await post_service.get_post_detail(db, post_id, role)
+    user_id = current_user.id if current_user else None
+    return await post_service.get_post_detail(db, post_id, role, user_id)
 
 
 @router.put("/{post_id}", response_model=dict)

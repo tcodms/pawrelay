@@ -29,6 +29,7 @@ export interface Post {
   scheduled_date: string;
   status: PostStatus;
   volunteers: Volunteer[];
+  volunteer_count?: number;
   relayChain?: RelaySegment[];
   matchingReason?: string;
 }

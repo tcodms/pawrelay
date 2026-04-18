@@ -104,7 +104,7 @@ async def get_post_by_id(db: AsyncSession, post_id: int) -> TransportPost | None
     return result.scalar_one_or_none()
 
 
-async def get_volunteers_for_post(db: AsyncSession, post_id: int) -> list[tuple]:
+async def get_volunteers_for_post(db: AsyncSession, post_id: int) -> list[tuple[int, str, str, str]]:
     result = await db.execute(
         select(User.id, User.name, VolunteerSchedule.origin_area, VolunteerSchedule.destination_area)
         .join(VolunteerSchedule, User.id == VolunteerSchedule.volunteer_id)

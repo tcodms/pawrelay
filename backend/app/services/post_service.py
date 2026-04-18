@@ -58,7 +58,7 @@ async def get_posts(
     return PostListResponse(posts=items, total=total, page=page, limit=limit)
 
 
-async def get_post_detail(db: AsyncSession, post_id: int, role: str | None) -> PostDetailResponse:
+async def get_post_detail(db: AsyncSession, post_id: int, role: str | None, user_id: int | None = None) -> PostDetailResponse:
     post = await post_repo.get_post_by_id(db, post_id)
     if not post:
         raise HTTPException(status_code=404, detail={"error": "POST_NOT_FOUND"})
@@ -68,7 +68,7 @@ async def get_post_detail(db: AsyncSession, post_id: int, role: str | None) -> P
         photo_url=post.animal_photo_url,
         notes=post.animal_notes,
     )
-    if role == "shelter":
+    if role == "shelter" and post.shelter_id == user_id:
         rows = await post_repo.get_volunteers_for_post(db, post_id)
         volunteers = [
             VolunteerItem(id=r[0], name=r[1], from_area=r[2], to_area=r[3])

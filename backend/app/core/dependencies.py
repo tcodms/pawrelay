@@ -26,7 +26,7 @@ async def get_current_user_id(
 async def get_optional_user(
     access_token: str | None = Cookie(default=None),
     db: AsyncSession = Depends(get_db),
-):
+) -> "User | None":
     if not access_token:
         return None
     user_id = decode_access_token(access_token)
@@ -35,7 +35,10 @@ async def get_optional_user(
     from sqlalchemy import select
     from app.models.user import User
     result = await db.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
+    if user and user.account_status in ("suspended", "banned"):
+        return None
+    return user
 
 
 async def get_current_user(
