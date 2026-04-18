@@ -42,7 +42,7 @@ export interface ChatbotApiResponse {
 
 // ── 더미 모드 ──────────────────────────────────────────────────────────────────
 
-const DUMMY_MODE = true;
+const DUMMY_MODE = false;
 
 function dummyResponse(
   sessionId: string | null,

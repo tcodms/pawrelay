@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories import post_repo
 from app.schemas.post import (
+    AnimalInfo,
     CheckpointItem,
     PostCreateResponse,
     PostDetailResponse,
@@ -13,8 +14,8 @@ from app.schemas.post import (
     PostPublicResponse,
     SegmentInfo,
     TimelineItem,
-    AnimalInfo,
     PostListItem,
+    VolunteerItem,
 )
 
 
@@ -57,22 +58,32 @@ async def get_posts(
     return PostListResponse(posts=items, total=total, page=page, limit=limit)
 
 
-async def get_post_detail(db: AsyncSession, post_id: int) -> PostDetailResponse:
+async def get_post_detail(db: AsyncSession, post_id: int, role: str | None) -> PostDetailResponse:
     post = await post_repo.get_post_by_id(db, post_id)
     if not post:
         raise HTTPException(status_code=404, detail={"error": "POST_NOT_FOUND"})
+    animal_info = AnimalInfo(
+        name=post.animal_name,
+        size=post.animal_size,
+        photo_url=post.animal_photo_url,
+        notes=post.animal_notes,
+    )
+    if role == "shelter":
+        rows = await post_repo.get_volunteers_for_post(db, post_id)
+        volunteers = [
+            VolunteerItem(id=r[0], name=r[1], from_area=r[2], to_area=r[3])
+            for r in rows
+        ]
+        return PostDetailResponse(
+            id=post.id, origin=post.origin, destination=post.destination,
+            scheduled_date=post.scheduled_date, status=post.status,
+            animal_info=animal_info, volunteers=volunteers,
+        )
+    count = await post_repo.count_volunteers_for_post(db, post_id)
     return PostDetailResponse(
-        id=post.id,
-        origin=post.origin,
-        destination=post.destination,
-        scheduled_date=post.scheduled_date,
-        status=post.status,
-        animal_info=AnimalInfo(
-            name=post.animal_name,
-            size=post.animal_size,
-            photo_url=post.animal_photo_url,
-            notes=post.animal_notes,
-        ),
+        id=post.id, origin=post.origin, destination=post.destination,
+        scheduled_date=post.scheduled_date, status=post.status,
+        animal_info=animal_info, volunteer_count=count,
     )
 
 
