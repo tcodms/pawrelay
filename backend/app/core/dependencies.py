@@ -1,10 +1,13 @@
-from typing import AsyncGenerator
+from typing import TYPE_CHECKING, AsyncGenerator
 
 from fastapi import Cookie, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import decode_access_token
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -21,6 +24,24 @@ async def get_current_user_id(
     if not user_id:
         raise HTTPException(status_code=401, detail={"error": "UNAUTHORIZED"})
     return user_id
+
+
+async def get_optional_user(
+    access_token: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> "User | None":
+    if not access_token:
+        return None
+    user_id = decode_access_token(access_token)
+    if not user_id:
+        return None
+    from sqlalchemy import select
+    from app.models.user import User
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user and user.account_status in ("suspended", "banned"):
+        return None
+    return user
 
 
 async def get_current_user(

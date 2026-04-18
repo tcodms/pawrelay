@@ -50,6 +50,13 @@ class PostListResponse(BaseModel):
     limit: int
 
 
+class VolunteerItem(BaseModel):
+    id: int
+    name: str
+    from_area: str
+    to_area: str
+
+
 class PostDetailResponse(BaseModel):
     id: int
     origin: str
@@ -57,6 +64,8 @@ class PostDetailResponse(BaseModel):
     scheduled_date: date
     status: str
     animal_info: AnimalInfo
+    volunteers: list[VolunteerItem] | None = None
+    volunteer_count: int | None = None
 
 
 class CheckpointItem(BaseModel):

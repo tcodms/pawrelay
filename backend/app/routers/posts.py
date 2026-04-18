@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user, get_db, get_optional_user
 from app.models.user import User
 from app.schemas.post import (
     PostCreateRequest,
@@ -66,8 +66,11 @@ async def get_public_post(
 async def get_post(
     post_id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
 ):
-    return await post_service.get_post_detail(db, post_id)
+    role = current_user.role if current_user else None
+    user_id = current_user.id if current_user else None
+    return await post_service.get_post_detail(db, post_id, role, user_id)
 
 
 @router.put("/{post_id}", response_model=dict)

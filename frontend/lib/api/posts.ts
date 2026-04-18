@@ -88,7 +88,9 @@ interface PostDetailItem {
   destination: string;
   scheduled_date: string;
   status: PostStatus;
-  animal_info: { name: string; size: "small" | "medium" | "large"; photo_url: string | null };
+  animal_info: { name: string; size: "small" | "medium" | "large"; photo_url: string | null; notes: string | null };
+  volunteers?: { id: number; name: string; from_area: string; to_area: string }[];
+  volunteer_count?: number;
 }
 
 export async function getPost(id: number): Promise<Post | null> {
@@ -99,12 +101,14 @@ export async function getPost(id: number): Promise<Post | null> {
       destination: item.destination,
       scheduled_date: item.scheduled_date,
       status: item.status,
-      animal: {
+      animal_info: {
         name: item.animal_info.name,
         size: item.animal_info.size,
         photo_url: item.animal_info.photo_url ?? undefined,
+        notes: item.animal_info.notes ?? undefined,
       },
-      volunteers: [],
+      volunteers: item.volunteers?.map((v) => ({ id: v.id, name: v.name, from: v.from_area, to: v.to_area })) ?? [],
+      volunteer_count: item.volunteer_count,
     }))
     .catch(() => null);
 }
