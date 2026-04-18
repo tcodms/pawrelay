@@ -1,8 +1,7 @@
 from datetime import datetime
 
-from geoalchemy2.functions import ST_DWithin, ST_Length, ST_MakePoint, ST_SetSRID
-from sqlalchemy import and_, case, cast, select
-from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION
+from geoalchemy2.functions import ST_DWithin, ST_EndPoint, ST_Length, ST_MakePoint, ST_SetSRID, ST_StartPoint
+from sqlalchemy import and_, case, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.post import TransportPost
@@ -53,6 +52,24 @@ async def get_candidate_volunteers(
     # ST_Length(..., true): use_spheroid=True → 미터 단위 반환
     route_length = ST_Length(VolunteerSchedule.route, True).label("route_length_m")
 
+    # 차량: 전체 경로 기준 (중간 어디서든 픽업 가능)
+    # 대중교통: 출발·도착 포인트 기준만 (정차역만 픽업 가능)
+    vehicle_geo_filter = ST_DWithin(
+        VolunteerSchedule.route, origin_point, ROUTE_DISTANCE_METERS
+    ) | ST_DWithin(
+        VolunteerSchedule.route, dest_point, ROUTE_DISTANCE_METERS
+    )
+    transit_geo_filter = (
+        ST_DWithin(ST_StartPoint(VolunteerSchedule.route), origin_point, ROUTE_DISTANCE_METERS)
+        | ST_DWithin(ST_StartPoint(VolunteerSchedule.route), dest_point, ROUTE_DISTANCE_METERS)
+        | ST_DWithin(ST_EndPoint(VolunteerSchedule.route), origin_point, ROUTE_DISTANCE_METERS)
+        | ST_DWithin(ST_EndPoint(VolunteerSchedule.route), dest_point, ROUTE_DISTANCE_METERS)
+    )
+    geo_filter = case(
+        (VolunteerSchedule.vehicle_available.is_(True), vehicle_geo_filter),
+        else_=transit_geo_filter,
+    )
+
     result = await db.execute(
         select(VolunteerSchedule, route_length).where(
             and_(
@@ -60,16 +77,7 @@ async def get_candidate_volunteers(
                 VolunteerSchedule.status == "available",
                 _animal_size_rank_expr() >= post_size_rank,
                 VolunteerSchedule.route.isnot(None),
-                ST_DWithin(
-                    VolunteerSchedule.route,
-                    origin_point,
-                    ROUTE_DISTANCE_METERS,
-                )
-                | ST_DWithin(
-                    VolunteerSchedule.route,
-                    dest_point,
-                    ROUTE_DISTANCE_METERS,
-                ),
+                geo_filter,
             )
         )
     )
