@@ -792,10 +792,15 @@ Response: { "ok": true }
 
 ## 9. 챗봇
 
+> 자연어(Free-text) 기반 LLM 파이프라인. 정해진 입력 위젯 없이 봉사자가 자유롭게 대화하면
+> LLM이 파싱·정규화하여 필요한 정보를 수집한다. 대화 기록은 Redis 세션으로 관리되며
+> FE는 최신 메시지 1건만 전송한다.
+
 ### POST `/chatbot/message`
 봉사자 인증 필요.
 
 ```json
+// 첫 요청 — 세션 초기화 (인사말 수신)
 Request:
 {
   "session_id": null,
@@ -803,81 +808,77 @@ Request:
   "message": null
 }
 
+// 이후 요청 — 사용자 자유 입력
+Request:
+{
+  "session_id": "550e8400-e29b-41d4-a716",
+  "post_id": null,
+  "message": "광주에서 출발 가능하고 차도 있어요"
+}
+
 Response 200:
 {
   "session_id": "550e8400-e29b-41d4-a716",
-  "state": "ASK_ORIGIN",
-  "message": "어느 지역에서 출발하실 수 있나요?",
-  "input_type": "address_search" | "date_picker" | "buttons" | null,
-  "options": ["있어요", "없어요"],
-  "auto_filled": {
-    "available_date": "2026-04-10",
-    "max_animal_size": "small",
-    "post_origin": "광주광역시",
-    "post_destination": "서울특별시"
-  },
+  "message": "알겠어요! 언제 이동 가능하신가요?",
   "completed": false,
   "schedule_id": null
 }
+
+// 완료 시 Response
+{
+  "session_id": "550e8400-e29b-41d4-a716",
+  "message": "동선이 등록되었어요! 매칭 결과는 알림으로 알려드릴게요. 🐾",
+  "completed": true,
+  "schedule_id": 17
+}
 ```
 
-**state 전체 목록**
+**동작 규칙**
+- `session_id: null` + `message: null`: 세션 초기화. BE가 session_id를 생성해 반환. `post_id` 있으면 LLM이 공고 컨텍스트(목적지·날짜·동물크기)를 인지한 상태로 시작하여 불필요한 질문을 생략한다.
+- 이후 요청은 `session_id` 포함, `post_id: null`.
+- LLM이 대화를 통해 출발지·도착지·날짜·차량 유무·최대 동물 크기를 수집. 한 번에 여러 정보를 말해도 파싱한다.
+- 모든 정보 수집 완료 시 LLM이 요약 메시지와 함께 `input_type: "buttons"`, `options: ["등록하기", "처음부터 다시"]` 반환 (CONFIRM 단계).
+  - `"등록하기"` 전송 → BE가 `volunteer_schedules` 저장 후 `completed: true, schedule_id` 반환.
+  - `"처음부터 다시"` 전송 → 처음 인사말 메시지 반환, 대화 재시작.
+- FE 렌더링: `input_type: "buttons"` 수신 시 textarea 숨기고 버튼 2개 표시. 그 외 모든 단계는 자유 입력 textarea.
 
-| state | input_type | options |
-|-------|-----------|---------|
-| `ASK_ORIGIN` | `address_search` | null |
-| `ASK_DESTINATION` | `address_search` | null |
-| `ASK_DATE` | `date_picker` | null |
-| `ASK_VEHICLE` | `buttons` | `["있어요", "없어요"]` |
-| `ASK_ANIMAL_SIZE` | `buttons` | `["소형 (5kg 이하)", "중형 (5~15kg)", "대형 (15kg 이상)"]` |
-| `CONFIRM` | `buttons` | `["등록하기", "처음부터 다시"]` |
-| `COMPLETED` | `null` | null |
+**LLM 정규화 예시**
 
-**post_id에 따른 state SKIP**
-
-| post_id | SKIP되는 state |
-|---------|--------------|
-| 있음 | `ASK_DATE`, `ASK_ANIMAL_SIZE` |
-| 없음 | SKIP 없음 |
-
-**FE 렌더링 규칙**
-- `address_search`: 카카오 주소 검색 모달. 텍스트 직접 입력 불가.
-- `date_picker`: 달력 위젯. 오늘 이후 자유 선택. ISO 형식(`2026-04-10`)으로 전송.
-- `buttons`: options 배열 버튼 렌더링. 텍스트 입력창 숨김.
-- `null`: 입력 UI 없음 (COMPLETED).
-- `auto_filled` 항목: CONFIRM 화면에서 회색 표시 (수정 불가).
-- `auto_filled` 있을 때: 챗봇 상단에 공고 요약 카드 고정 표시.
+| 봉사자 입력 | LLM 변환 결과 |
+|------------|--------------|
+| `"내일"`, `"다음주 월요일"` | `available_date: "YYYY-MM-DD"` |
+| `"서울"` | `destination: "서울특별시"` |
+| `"차 없어요"`, `"대중교통 됩니다"` | `vehicle_available: false` |
+| `"소형만 가능"`, `"다 가능해요"` | `max_animal_size: "small"` / `"large"` |
 
 **에러 코드**
 
 | 에러 코드 | 조건 | 처리 |
 |----------|------|------|
-| `GEOCODING_FAILED` | 주소 좌표 변환 실패 | ASK_ORIGIN 복귀 |
-| `INVALID_INPUT` | 버튼 state에서 예상 외 입력 | 현재 state 유지 |
-| `SCHEDULE_SAVE_FAILED` | volunteer_schedules 저장 실패 | CONFIRM 복귀 |
-| `SESSION_EXPIRED` | 세션 1시간 초과 | FE: 세션 초기화 후 재시작 |
+| `GEOCODING_FAILED` | 주소 좌표 변환 실패 | LLM이 재입력 요청 메시지 반환 |
+| `SCHEDULE_SAVE_FAILED` | volunteer_schedules 저장 실패 | LLM이 재확인 요청 메시지 반환 |
+| `SESSION_EXPIRED` | 세션 1시간 초과 | FE: 세션 초기화 후 재시작 안내 |
 
-> `session_id`: 첫 요청 시 null → BE가 생성해서 반환. 이후 요청부터 포함.
-> `completed: true` 시 BE 내부에서 volunteer_schedules 저장까지 처리. FE 별도 호출 불필요.
 > `session_id` 저장: FE는 sessionStorage 사용.
+> FE 입력 UI: 항상 자유 입력 textarea + 전송 버튼. 별도 모달/위젯 없음.
 
 ---
 
 ### GET `/chatbot/session/{session_id}`
-봉사자 인증 필요.
+봉사자 인증 필요. 새로고침 시 대화 복원.
 
 ```json
 Response 200:
 {
-  "state": "ASK_VEHICLE",
-  "message": "차량이 있으신가요?",
-  "input_type": "buttons",
-  "options": ["있어요", "없어요"],
-  "auto_filled": { ... }
+  "messages": [
+    { "role": "assistant", "content": "릴레이 봉사를 신청해 주셔서 감사해요! ..." },
+    { "role": "user", "content": "광주에서 출발 가능하고 차도 있어요" },
+    { "role": "assistant", "content": "알겠어요! 언제 이동 가능하신가요?" }
+  ],
+  "completed": false,
+  "post_id": 5
 }
 ```
-
-> FE 새로고침 시 sessionStorage의 session_id로 마지막 state 복원.
 
 | 에러 코드 | 조건 |
 |----------|------|
