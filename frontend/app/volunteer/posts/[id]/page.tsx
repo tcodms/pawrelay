@@ -7,7 +7,8 @@ import { ArrowLeft, ArrowRight, Calendar, MapPin, Users } from "lucide-react";
 import { getPost } from "@/lib/api/posts";
 import type { Post } from "@/lib/api/posts";
 import { StatusBadge, SizeBadge } from "@/components/ui/PostBadges";
-import { sendChatbotMessage, CHATBOT_SESSION_KEY } from "@/lib/api/chatbot";
+import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY } from "@/lib/api/chatbot";
+import type { PostContext } from "@/lib/api/chatbot";
 
 export default function VolunteerPostDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -130,22 +131,18 @@ export default function VolunteerPostDetailPage({ params }: { params: { id: stri
         <div className="mx-auto max-w-lg">
           {post.status === "recruiting" ? (
             <button
-              onClick={async () => {
+              onClick={() => {
                 if (applying || post.status !== "recruiting") return;
-                setApplying(true);
-                try {
-                  const res = await sendChatbotMessage({
-                    session_id: null,
-                    post_id: post.id,
-                    message: null,
-                  });
-                  sessionStorage.setItem(CHATBOT_SESSION_KEY, res.session_id);
-                  router.push("/volunteer/chat");
-                } catch {
-                  alert("신청 중 오류가 발생했습니다. 다시 시도해 주세요.");
-                } finally {
-                  setApplying(false);
-                }
+                const sessionId = crypto.randomUUID();
+                const postContext: PostContext = {
+                  post_id: post.id,
+                  destination: post.destination,
+                  available_date: post.scheduled_date,
+                  max_animal_size: post.animal_info.size,
+                };
+                sessionStorage.setItem(CHATBOT_SESSION_KEY, sessionId);
+                sessionStorage.setItem(CHATBOT_POST_CONTEXT_KEY, JSON.stringify(postContext));
+                router.push(`/volunteer/chat/${sessionId}`);
               }}
               disabled={applying}
               className="flex w-full items-center justify-center h-14 rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] hover:bg-[#D99A55] disabled:opacity-60 disabled:cursor-not-allowed"
