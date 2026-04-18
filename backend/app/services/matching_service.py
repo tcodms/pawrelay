@@ -1,5 +1,7 @@
 import logging
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,9 +10,18 @@ from app.models.volunteer import VolunteerSchedule
 from app.repositories import matching_repo
 from app.services.geocoding_service import geocode
 
+# ai/ 모듈 경로 추가
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "ai"))
+from ai.matching.chain_selector import select_chain
+
 logger = logging.getLogger(__name__)
 
 HANDOVER_BUFFER = timedelta(minutes=30)
+
+# 이동 속도 추정 (직선 거리 기반 MVP 근사값)
+# TODO: 추후 카카오 길찾기 API로 실제 이동 시간 계산으로 고도화 필요
+VEHICLE_SPEED_MPS = 60 * 1000 / 3600    # 차량 60km/h → m/s
+TRANSIT_SPEED_MPS = 100 * 1000 / 3600  # 대중교통 100km/h → m/s
 
 
 # ── 2단계 헬퍼 ────────────────────────────────────────────────────────────────
@@ -34,50 +45,67 @@ def _parse_time(time_str: str | None) -> datetime | None:
         return None
 
 
-def _has_time_buffer(vol_a: VolunteerSchedule, vol_b: VolunteerSchedule) -> bool:
-    """A 이후 B가 30분 이상 여유 있는지 확인. 시간 정보 없으면 통과"""
-    time_a = _parse_time(vol_a.available_time)
-    time_b = _parse_time(vol_b.available_time)
-    if not time_a or not time_b:
+def _estimate_arrival(vol: VolunteerSchedule, route_length_m: float) -> datetime | None:
+    """출발 시간 + 이동 시간(직선 거리 기반)으로 예상 도착 시간 계산"""
+    departure = _parse_time(vol.available_time)
+    if not departure:
+        return None
+    speed = VEHICLE_SPEED_MPS if vol.vehicle_available else TRANSIT_SPEED_MPS
+    travel_seconds = route_length_m / speed
+    return departure + timedelta(seconds=travel_seconds)
+
+
+def _has_time_buffer(
+    vol_a: VolunteerSchedule, route_length_m_a: float,
+    vol_b: VolunteerSchedule,
+) -> bool:
+    """A의 예상 도착 시간 + HANDOVER_BUFFER <= B의 출발 시간인지 확인
+    시간 정보 없으면 통과 (MVP 한계 — 추후 카카오 길찾기 API로 고도화 필요)
+    """
+    estimated_arrival_a = _estimate_arrival(vol_a, route_length_m_a)
+    departure_b = _parse_time(vol_b.available_time)
+    if not estimated_arrival_a or not departure_b:
         return True
-    return time_b >= time_a + HANDOVER_BUFFER
+    return departure_b >= estimated_arrival_a + HANDOVER_BUFFER
 
 
-def _can_connect(vol_a: VolunteerSchedule, vol_b: VolunteerSchedule) -> bool:
+def _can_connect(
+    vol_a: VolunteerSchedule, route_length_m_a: float,
+    vol_b: VolunteerSchedule,
+) -> bool:
     """A의 도착지와 B의 출발지가 연결 가능하고 시간 버퍼를 만족하는지 확인"""
     return (
         _regions_overlap(vol_a.destination_area, vol_b.origin_area)
-        and _has_time_buffer(vol_a, vol_b)
+        and _has_time_buffer(vol_a, route_length_m_a, vol_b)
     )
 
 
 def _build_chains(
-    candidates: list[VolunteerSchedule],
+    candidates: list[tuple[VolunteerSchedule, float]],
     post_origin: str,
     post_destination: str,
 ) -> list[list[VolunteerSchedule]]:
     """DFS로 유효한 릴레이 체인 조합 탐색"""
     valid_chains: list[list[VolunteerSchedule]] = []
+    length_map = {vol.id: length for vol, length in candidates}
+    vols = [vol for vol, _ in candidates]
 
     def dfs(chain: list[VolunteerSchedule], used: set[int]) -> None:
         last = chain[-1]
         if _regions_overlap(last.destination_area, post_destination):
             valid_chains.append(list(chain))
 
-        for vol in candidates:
+        for vol in vols:
             if vol.id in used:
                 continue
-            if _can_connect(last, vol):
+            if _can_connect(last, length_map[last.id], vol):
                 chain.append(vol)
                 used.add(vol.id)
                 dfs(chain, used)
                 chain.pop()
                 used.remove(vol.id)
 
-    starters = [
-        v for v in candidates
-        if _regions_overlap(v.origin_area, post_origin)
-    ]
+    starters = [vol for vol in vols if _regions_overlap(vol.origin_area, post_origin)]
     for starter in starters:
         dfs([starter], {starter.id})
 
@@ -114,16 +142,56 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
     logger.info(f"[매칭 1단계] 공고 {post.id} → 후보 {len(candidates)}명")
 
     chains = _build_chains(candidates, post.origin, post.destination)
+
     logger.info(f"[매칭 2단계] 공고 {post.id} → 유효 체인 {len(chains)}개")
+
+    if not chains:
+        logger.info(f"[매칭] 공고 {post.id} → 유효 체인 없음")
+        return {"post_id": post.id, "candidate_count": len(candidates), "chain_id": None}
+
+    # 3단계: LLM 최적 체인 선택
+    chains_for_llm = [
+        [
+            {
+                "origin_area": v.origin_area,
+                "destination_area": v.destination_area,
+                "available_date": str(v.available_date),
+                "vehicle_available": v.vehicle_available,
+            }
+            for v in chain
+        ]
+        for chain in chains
+    ]
+    post_for_llm = {
+        "id": post.id,
+        "origin": post.origin,
+        "destination": post.destination,
+        "scheduled_date": str(post.scheduled_date),
+        "animal_info": post.animal_name,
+    }
+
+    try:
+        llm_result = await select_chain(chains_for_llm, post_for_llm)
+        selected_index = llm_result["selected_chain_index"]
+        matching_reason = llm_result["matching_reason"]
+    except ValueError as e:
+        logger.error(f"[매칭 3단계] 공고 {post.id} LLM 실패, 스킵: {e}")
+        return {"post_id": post.id, "candidate_count": len(candidates), "chain_id": None}
+
+    logger.info(f"[매칭 3단계] 공고 {post.id} → 체인 {selected_index} 선택")
+
+    primary = chains[selected_index]
+    backups = [c for i, c in enumerate(chains) if i != selected_index]
+    saved_chain = await matching_repo.save_relay_chain(
+        db, post.id, primary, backups, post.scheduled_date, matching_reason
+    )
+    logger.info(f"[매칭] 공고 {post.id} → relay_chain {saved_chain.id} 저장 완료")
 
     return {
         "post_id": post.id,
         "candidate_count": len(candidates),
-        "chains": [
-            [{"schedule_id": v.id, "volunteer_id": v.volunteer_id,
-              "origin": v.origin_area, "destination": v.destination_area,
-              "time": v.available_time}
-             for v in chain]
-            for chain in chains
-        ],
+        "chain_id": saved_chain.id,
+        "segments": len(primary),
+        "backup_count": len(backups),
+        "matching_reason": matching_reason,
     }
