@@ -40,7 +40,7 @@ async def get_session(
     current_user: User = Depends(get_current_user),
 ):
     _require_volunteer(current_user)
-    return await chatbot_service.get_session(redis=redis_client, session_id=session_id)
+    return await chatbot_service.get_session(redis=redis_client, session_id=session_id, volunteer_id=current_user.id)
 
 
 @router.delete("/session/{session_id}", status_code=204)
@@ -49,4 +49,4 @@ async def delete_session(
     current_user: User = Depends(get_current_user),
 ):
     _require_volunteer(current_user)
-    await chatbot_service.delete_session(redis=redis_client, session_id=session_id)
+    await chatbot_service.delete_session(redis=redis_client, session_id=session_id, volunteer_id=current_user.id)

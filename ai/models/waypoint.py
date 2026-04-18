@@ -31,6 +31,14 @@ CREATE INDEX IF NOT EXISTS idx_waypoints_type ON waypoints(type);
 CREATE INDEX IF NOT EXISTS idx_waypoints_geom ON waypoints USING GIST(geom);
 """
 
+# UNIQUE 인덱스를 분리한 이유:
+# 기존 DB에 (name, type) 중복 데이터가 있으면 생성 실패하므로
+# _ensure_table()에서 별도 처리(경고 후 continue) 할 수 있도록 분리.
+WAYPOINT_UNIQUE_INDEX_SQL = (
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_waypoints_name_type"
+    " ON waypoints(name, type)"
+)
+
 
 class WaypointModel(BaseModel):
     """waypoints 테이블 데이터 구조.

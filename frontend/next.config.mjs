@@ -12,6 +12,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "api.qrserver.com",
       },
+      {
+        protocol: "https",
+        hostname: "pawrelay-images.s3.ap-northeast-2.amazonaws.com",
+      },
     ],
   },
 };
