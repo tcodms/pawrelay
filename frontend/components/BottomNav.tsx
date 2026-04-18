@@ -2,28 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, MessageCircle, PawPrint, User } from "lucide-react";
+import { Home, MessageCircle, Route, User } from "lucide-react";
 
 const TABS = [
   {
-    href: "/volunteer/posts",
-    label: "공고",
-    icon: ClipboardList,
+    href: "/volunteer",
+    label: "홈",
+    icon: Home,
+    exact: true,
   },
   {
     href: "/volunteer/chat",
-    label: "챗봇",
+    label: "채팅",
     icon: MessageCircle,
+    exact: false,
   },
   {
     href: "/volunteer/services",
-    label: "나의 봉사",
-    icon: PawPrint,
+    label: "내 릴레이",
+    icon: Route,
+    exact: false,
   },
   {
     href: "/volunteer/mypage",
     label: "프로필",
     icon: User,
+    exact: false,
   },
 ] as const;
 
@@ -33,8 +37,8 @@ export default function BottomNav() {
   return (
     <nav aria-label="하단 내비게이션" className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-100 bg-white/95 backdrop-blur-sm">
       <ul className="flex h-16 items-stretch">
-        {TABS.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href);
+        {TABS.map(({ href, label, icon: Icon, exact }) => {
+          const active = exact ? pathname === href : pathname.startsWith(href);
           return (
             <li key={href} className="flex flex-1">
               <Link
