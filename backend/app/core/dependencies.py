@@ -1,10 +1,13 @@
-from typing import AsyncGenerator
+from typing import TYPE_CHECKING, AsyncGenerator
 
 from fastapi import Cookie, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import decode_access_token
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
