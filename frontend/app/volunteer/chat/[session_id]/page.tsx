@@ -13,6 +13,8 @@ import {
   CHATBOT_POST_CONTEXT_KEY,
 } from "@/lib/api/chatbot";
 import type { PostContext, PostSuggestion } from "@/lib/api/chatbot";
+import { getUnreadNotifications, markNotificationRead } from "@/lib/api/notifications";
+import type { AppNotification } from "@/lib/api/notifications";
 
 // ── 메시지 타입 ───────────────────────────────────────────────────────────────
 
@@ -22,7 +24,8 @@ type Message =
   | { role: "bot"; type: "recommendation"; rec: RecommendedPost }
   | { role: "bot"; type: "matching_confirmed"; info: MatchingInfo }
   | { role: "bot"; type: "matching_reason"; reason: string; chain: ChainSegment[] }
-  | { role: "bot"; type: "ping_check"; segment_id: number; animal_name: string; depart_time: string; from: string };
+  | { role: "bot"; type: "ping_check"; segment_id: number; animal_name: string; depart_time: string; from: string }
+  | { role: "bot"; type: "notification"; notif_id: number; notif_type: string; message: string; segment_id?: number; url?: string };
 
 interface RecommendedPost {
   post_id: number;
@@ -52,6 +55,7 @@ interface MatchingInfo {
   my_segment: { from: string; to: string };
   scheduled_date: string;
   depart_time: string;
+  estimated_arrival_time?: string;
   open_chat_url: string;
   handover_candidates: HandoverCandidate[];
   prev_volunteer?: string;
@@ -86,7 +90,7 @@ const SIZE_LABEL: Record<string, string> = {
 const DEMO_MESSAGES_1_PRE: Message[] = [
   {
     role: "bot", type: "text",
-    text: "초코 릴레이 봉사를 신청해 주셔서 감사해요! 🐾\n도착지·날짜·동물 크기는 공고에서 확인했어요.\n출발 가능한 지역과 차량 유무만 알려주세요.",
+    text: "초코 릴레이 봉사를 신청해 주셔서 감사해요! 🐾\n도착지·날짜·동물 크기는 공고에서 확인했어요.\n출발 가능한 지역과 차량 유무를 알려주세요.",
   },
   {
     role: "bot", type: "post_card",
@@ -103,7 +107,12 @@ const DEMO_MESSAGES_1_PRE: Message[] = [
   { role: "user", type: "text", text: "광주에서 출발 가능해. 차도 있어!" },
   {
     role: "bot", type: "text",
-    text: "감사합니다! 아래 내용으로 동선을 등록할까요?\n\n출발지: 광주광역시\n도착지: 서울특별시 강남구\n날짜: 2026-04-10\n차량: 있음\n최대 동물 크기: 소형 (5kg 이하)",
+    text: "알겠어요! 출발 예정 시간과 목적지 도착 예정 시간도 알려주세요.\n예) 09:00 출발 → 10:40 도착 예정",
+  },
+  { role: "user", type: "text", text: "09시에 출발해서 10시 40분쯤 도착할 것 같아" },
+  {
+    role: "bot", type: "text",
+    text: "감사합니다! 아래 내용으로 동선을 등록할까요?\n\n출발지: 광주광역시\n도착지: 서울특별시 강남구\n날짜: 2026-04-10\n차량: 있음\n최대 동물 크기: 소형 (5kg 이하)\n출발 시간: 09:00\n도착 예정: 10:40",
   },
 ];
 
@@ -161,6 +170,7 @@ const DEMO_MESSAGES_1_ACCEPT: Message[] = [
       my_segment: { from: "광주광역시 북구", to: "천안역" },
       scheduled_date: "2026-04-10",
       depart_time: "09:00",
+      estimated_arrival_time: "10:40",
       open_chat_url: "https://open.kakao.com/o/dummy",
       handover_candidates: [
         { name: "천안아산역", type: "station", distance_km: 0.3 },
@@ -205,7 +215,12 @@ const DEMO_MESSAGES_2: Message[] = [
   },
   {
     role: "bot", type: "text",
-    text: "감사합니다! 아래 내용으로 동선을 등록할까요?\n\n출발지: 광주광역시\n날짜: 2026-04-10\n차량: 있음\n최대 동물 크기: 소형 (5kg 이하)",
+    text: "알겠어요! 출발 예정 시간과 도착 예정 시간도 알려주세요.\n예) 09:00 출발 → 10:30 도착 예정",
+  },
+  { role: "user", type: "text", text: "9시에 출발해서 10시 반쯤 도착할 것 같아" },
+  {
+    role: "bot", type: "text",
+    text: "감사합니다! 아래 내용으로 동선을 등록할까요?\n\n출발지: 광주광역시\n날짜: 2026-04-10\n차량: 있음\n최대 동물 크기: 소형 (5kg 이하)\n출발 시간: 09:00\n도착 예정: 10:30",
   },
 ];
 
@@ -433,7 +448,9 @@ function MatchingConfirmedBubble({ info, onViewDetail }: { info: MatchingInfo; o
       <div className="px-3 py-2.5 space-y-2">
         {/* 내 구간 */}
         <div className="rounded-xl bg-gray-50 px-2.5 py-2">
-          <p className="text-[9px] font-bold text-[#EEA968] mb-1">내 담당 구간 · {info.depart_time} 출발</p>
+          <p className="text-[9px] font-bold text-[#EEA968] mb-1">
+            내 담당 구간 · {info.depart_time} 출발{info.estimated_arrival_time && ` → ${info.estimated_arrival_time} 도착 예정`}
+          </p>
           <div className="flex items-center gap-1 text-[12px] font-semibold text-gray-800 flex-wrap">
             <span>{info.my_segment.from}</span>
             <ArrowRight size={9} className="text-[#EEA968] shrink-0" />
@@ -466,7 +483,7 @@ function MatchingConfirmedBubble({ info, onViewDetail }: { info: MatchingInfo; o
           rel="noopener noreferrer"
           className="flex items-center justify-between h-9 rounded-xl bg-gray-100 px-3 active:scale-[0.97] transition-transform"
         >
-          <span className="text-[12px] font-bold text-gray-700">카카오 오픈채팅 참여</span>
+          <span className="text-[12px] font-bold text-gray-500">카카오 오픈채팅 참여</span>
           <ExternalLink size={12} className="text-gray-400" />
         </a>
         <button
@@ -541,9 +558,72 @@ function PingCheckBubble({
   );
 }
 
+// ── 알림 버블 (실제 백엔드 notifications 기반) ────────────────────────────────
+
+const NOTIF_CONFIG: Record<string, { label: string; headerClass: string; icon: React.ReactNode; btnLabel: string }> = {
+  matching_proposed: {
+    label: "새 매칭 제안",
+    headerClass: "bg-[#EEA968]",
+    icon: <PawPrint size={11} className="text-white/80" />,
+    btnLabel: "매칭 제안 보기",
+  },
+  matching_confirmed: {
+    label: "매칭 확정!",
+    headerClass: "bg-[#A07050]",
+    icon: <CheckCircle2 size={12} className="text-white" />,
+    btnLabel: "매칭 상세 보기",
+  },
+  ping_check: {
+    label: "출발 확인 요청",
+    headerClass: "bg-orange-400",
+    icon: <div className="h-2 w-2 rounded-full bg-white animate-pulse" />,
+    btnLabel: "매칭 상세 보기",
+  },
+};
+
+function NotificationBubble({
+  notifType,
+  message,
+  url,
+  onNavigate,
+}: {
+  notifType: string;
+  message: string;
+  url?: string;
+  onNavigate: () => void;
+}) {
+  const cfg = NOTIF_CONFIG[notifType] ?? {
+    label: "알림",
+    headerClass: "bg-gray-400",
+    icon: null,
+    btnLabel: "보러 가기",
+  };
+
+  return (
+    <div className="w-[260px] rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+      <div className={`${cfg.headerClass} px-3 py-2 flex items-center gap-1.5`}>
+        {cfg.icon}
+        <p className="text-[11px] font-bold text-white">{cfg.label}</p>
+      </div>
+      <div className="px-3 py-2.5 space-y-2.5">
+        <p className="text-[12px] text-gray-600 leading-relaxed">{message}</p>
+        {url && (
+          <button
+            onClick={onNavigate}
+            className="w-full flex items-center justify-center gap-1 h-9 rounded-xl border border-gray-200 text-[12px] font-semibold text-gray-500 active:scale-[0.97] transition-transform"
+          >
+            <ExternalLink size={11} />
+            {cfg.btnLabel}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── 공고 요약 카드 (Sticky) ────────────────────────────────────────────────────
 
-interface RegisteredFields { origin?: string; vehicle?: string; }
+interface RegisteredFields { origin?: string; vehicle?: string; available_time?: string; estimated_arrival_time?: string; }
 
 function PostSummaryCard({ postContext, registered }: { postContext: PostContext; registered?: RegisteredFields }) {
   const fields = [
@@ -552,6 +632,8 @@ function PostSummaryCard({ postContext, registered }: { postContext: PostContext
     { label: "날짜",   value: postContext.available_date },
     { label: "차량",   value: registered?.vehicle },
     { label: "크기",   value: postContext.max_animal_size ? SIZE_LABEL[postContext.max_animal_size] : undefined },
+    { label: "출발",   value: registered?.available_time },
+    { label: "도착예정", value: registered?.estimated_arrival_time },
   ];
 
   return (
@@ -602,6 +684,30 @@ export default function ChatRoomPage() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  function notifsToMessages(notifs: AppNotification[]): Message[] {
+    return notifs
+      .filter((n) => ["matching_proposed", "matching_confirmed", "ping_check"].includes(n.type))
+      .map((n) => ({
+        role: "bot" as const,
+        type: "notification" as const,
+        notif_id: n.id,
+        notif_type: n.type,
+        message: n.message,
+        segment_id: n.payload.segment_id,
+        url: n.payload.url,
+      }));
+  }
+
+  async function appendUnreadNotifications() {
+    try {
+      const notifs = await getUnreadNotifications();
+      const msgs = notifsToMessages(notifs);
+      if (msgs.length > 0) {
+        setMessages((prev) => [...prev, ...msgs]);
+        notifs.forEach((n) => markNotificationRead(n.id).catch(() => {}));
+      }
+    } catch {}
+  }
 
   const DEMO_CACHE_KEY = `demoChat_${sessionId}`;
 
@@ -702,6 +808,45 @@ export default function ChatRoomPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
 
+  // Service Worker postMessage → 푸시 수신 시 버블 추가
+  useEffect(() => {
+    if (isDemo || isDemo2) return;
+    function handleSwMessage(e: MessageEvent) {
+      if (e.data?.type !== "PUSH_NOTIFICATION") return;
+      const { payload } = e.data;
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "bot" as const,
+          type: "notification" as const,
+          notif_id: Date.now(),
+          notif_type: payload.type ?? "",
+          message: payload.message ?? "",
+          segment_id: payload.segment_id,
+          url: payload.url,
+        },
+      ]);
+    }
+    navigator.serviceWorker?.addEventListener("message", handleSwMessage);
+    return () => navigator.serviceWorker?.removeEventListener("message", handleSwMessage);
+  }, [isDemo, isDemo2]);
+
+  // 마지막 메시지를 localStorage에 저장 (채팅 목록에서 미리보기용)
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    let preview = "";
+    if (last.type === "text") preview = last.text.replace(/\n/g, " ");
+    else if (last.type === "recommendation") preview = `[${last.rec.animal_name}] 매칭 제안이 도착했어요`;
+    else if (last.type === "matching_confirmed") preview = `[${last.info.animal_name}] 매칭이 확정됐어요!`;
+    else if (last.type === "ping_check") preview = `[${last.animal_name}] 출발 확인 요청이 왔어요`;
+    else if (last.type === "notification") preview = last.message;
+    else if (last.type === "matching_reason") preview = "AI 매칭 이유가 도착했어요";
+    else if (last.type === "post_card") preview = "공고 정보가 도착했어요";
+    if (preview) localStorage.setItem(`chatLastMsg_${sessionId}`, preview);
+  }, [messages, sessionId]);
+
+
   async function initConversation(context: PostContext | null) {
     setInitializing(true);
     try {
@@ -710,6 +855,8 @@ export default function ChatRoomPage() {
       setMessages([{ role: "bot", type: "text", text: res.message }]);
       setConfirmOptions(res.options);
       if (!res.input_type) setTimeout(() => textareaRef.current?.focus(), 100);
+      // 채팅 시작 후 미읽은 매칭 알림 표시
+      await appendUnreadNotifications();
     } catch {
       setMessages([{ role: "bot", type: "text", text: "채팅을 시작할 수 없습니다. 다시 시도해 주세요." }]);
     } finally {
@@ -735,7 +882,7 @@ export default function ChatRoomPage() {
       setSending(false);
 
       if (userText === "등록하기") {
-        setRegisteredFields({ origin: "광주광역시", vehicle: "있음" });
+        setRegisteredFields({ origin: "광주광역시", vehicle: "있음", available_time: "09:00", estimated_arrival_time: "10:40" });
         showSequential(DEMO_MESSAGES_1_POST, 600);
         return;
       }
@@ -770,7 +917,7 @@ export default function ChatRoomPage() {
       setSending(false);
 
       if (userText === "등록하기") {
-        setRegisteredFields({ origin: "광주광역시", vehicle: "있음" });
+        setRegisteredFields({ origin: "광주광역시", vehicle: "있음", available_time: "09:00", estimated_arrival_time: "10:30" });
         setCompleted(true);
         setConfirmOptions(null);
         setTimeout(() => setMessages((prev) => [...prev, { role: "bot", type: "text", text: "봉사 정보가 등록되었어요! 매칭 제안 해드릴게요. 🐾" }]), 400);
@@ -843,6 +990,21 @@ export default function ChatRoomPage() {
       <div className="flex-1 overflow-y-auto pb-36">
       <div className="mx-auto max-w-2xl px-4 py-4 flex flex-col gap-3">
         {messages.map((msg, i) => {
+          if (msg.type === "notification") return (
+            <BotRow key={i}>
+              <NotificationBubble
+                notifType={msg.notif_type}
+                message={msg.message}
+                url={msg.url}
+                onNavigate={() => {
+                  if (msg.url) {
+                    sessionStorage.setItem("matchingChatSession", sessionId);
+                    router.push(msg.url);
+                  }
+                }}
+              />
+            </BotRow>
+          );
           if (msg.type === "post_card") return (
             <BotRow key={i}><PostCardBubble post={msg.post} /></BotRow>
           );
@@ -855,7 +1017,11 @@ export default function ChatRoomPage() {
                 rec={msg.rec}
                 onAccept={() => handleUserInput("수락할게요")}
                 onReject={() => handleUserInput("거절할게요")}
-                onViewDetail={() => { saveDemoState(); router.push(`/volunteer/matching/${msg.rec.segment_id}`); }}
+                onViewDetail={() => {
+                  saveDemoState();
+                  sessionStorage.setItem("matchingChatSession", sessionId);
+                  router.push(`/volunteer/matching/${msg.rec.segment_id}`);
+                }}
                 decided={matchingDecided}
               />
             </BotRow>
@@ -864,7 +1030,11 @@ export default function ChatRoomPage() {
             <BotRow key={i}>
               <MatchingConfirmedBubble
                 info={msg.info}
-                onViewDetail={() => { saveDemoState(); router.push(`/volunteer/matching/${msg.info.segment_id}`); }}
+                onViewDetail={() => {
+                  saveDemoState();
+                  sessionStorage.setItem("matchingChatSession", sessionId);
+                  router.push(`/volunteer/matching/${msg.info.segment_id}`);
+                }}
               />
             </BotRow>
           );

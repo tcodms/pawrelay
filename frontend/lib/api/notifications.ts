@@ -4,7 +4,7 @@ export interface AppNotification {
   id: number;
   type: string;
   message: string;
-  payload: { segment_id?: number; url?: string };
+  payload: { segment_id?: number; url?: string; chat_session_id?: string };
   created_at: string;
 }
 

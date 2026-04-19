@@ -54,14 +54,14 @@ const DUMMY_NOTIFICATIONS: AppNotification[] = [
     id: 1,
     type: "matching_proposed",
     message: "새로운 매칭 제안이 도착했어요.",
-    payload: { segment_id: 42, url: "/volunteer/matching/42" },
+    payload: { segment_id: 1, url: "/volunteer/matching/1", chat_session_id: "session-001" },
     created_at: "2026-04-10T09:00:00Z",
   },
   {
     id: 2,
     type: "matching_confirmed",
     message: "[초코] 매칭이 확정됐어요! 상세 내용을 확인하세요.",
-    payload: { segment_id: 42, url: "/volunteer/matching/42" },
+    payload: { segment_id: 42, url: "/volunteer/matching/42", chat_session_id: "session-001" },
     created_at: "2026-04-09T15:30:00Z",
   },
 ];
@@ -94,12 +94,23 @@ export default function ChatPage() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>(DUMMY_NOTIFICATIONS);
   const [readIds, setReadIds] = useState<Set<number>>(new Set());
+  const [rooms, setRooms] = useState<ChatRoom[]>(DUMMY_ROOMS);
+
+  useEffect(() => {
+    setRooms(DUMMY_ROOMS.map((room) => {
+      const saved = localStorage.getItem(`chatLastMsg_${room.session_id}`);
+      return saved ? { ...room, last_message: saved } : room;
+    }));
+  }, []);
 
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
   function handleNotifClick(notif: AppNotification) {
     setReadIds((prev) => new Set(Array.from(prev).concat(notif.id)));
     setNotifOpen(false);
+    if (notif.payload.chat_session_id) {
+      sessionStorage.setItem("matchingChatSession", notif.payload.chat_session_id);
+    }
     if (notif.payload.url) {
       router.push(notif.payload.url);
     }
@@ -145,7 +156,7 @@ export default function ChatPage() {
 
       {/* 채팅방 목록 */}
       <div className="mx-auto max-w-2xl">
-      {DUMMY_ROOMS.length === 0 ? (
+      {rooms.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 pt-28 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FDF3EC]">
             <MessageCircle size={28} className="text-[#EEA968]" />
@@ -155,7 +166,7 @@ export default function ChatPage() {
         </div>
       ) : (
         <ul className="px-4 pt-3 pb-4 space-y-2.5">
-          {DUMMY_ROOMS.map((room) => (
+          {rooms.map((room) => (
             <li key={room.session_id}>
               <button
                 onClick={() => {
@@ -214,12 +225,12 @@ export default function ChatPage() {
 
       {/* 알림 패널 */}
       {notifOpen && (
-        <div className="fixed inset-0 z-50 flex items-end">
+        <div className="fixed inset-0 z-50 flex items-start">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setNotifOpen(false)}
           />
-          <div className="relative w-full bg-white rounded-t-3xl max-w-2xl mx-auto max-h-[70vh] flex flex-col">
+          <div className="relative w-full bg-white rounded-b-3xl max-w-2xl mx-auto max-h-screen flex flex-col">
             <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
               <div>
                 <p className="text-[16px] font-bold text-gray-900">알림</p>
@@ -248,9 +259,7 @@ export default function ChatPage() {
                       <li key={notif.id}>
                         <button
                           onClick={() => handleNotifClick(notif)}
-                          className={`w-full flex items-start gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors active:scale-[0.98] ${
-                            isRead ? "bg-gray-50" : "bg-[#FDF3EC] border border-[#EEA968]/20"
-                          }`}
+                          className="w-full flex items-start gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors active:scale-[0.98] bg-gray-50"
                         >
                           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isRead ? "bg-gray-200" : "bg-[#EEA968]"}`}>
                             <CheckCircle2 size={14} className={isRead ? "text-gray-400" : "text-white"} />

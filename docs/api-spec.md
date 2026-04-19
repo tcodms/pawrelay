@@ -671,11 +671,17 @@ Response 200:
       "destination": "서울특별시",
       "scheduled_date": "2026-04-10",
       "status": "recruiting",
-      "volunteer_count": 2
+      "volunteer_count": 2,
+      "animal_info": { "name": "초코", "size": "small", "photo_url": "https://s3.../dog.jpg" },
+      "chain_id": 101,
+      "share_token": "550e8400-e29b-41d4-a716"
     }
   ]
 }
 ```
+
+> `chain_id`: `waiting` 상태일 때만 존재. 보호소 승인/거절 시 사용.
+> `share_token`: 입양자 조회 링크 생성용.
 
 ---
 

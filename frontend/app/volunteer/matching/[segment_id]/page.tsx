@@ -28,6 +28,7 @@ const DUMMY_SEGMENT = {
   dropoff_location: { name: "천안아산역", address: "충남 아산시 배방읍 장재리", lat: 36.7951, lng: 127.1046 },
   scheduled_time: "2026-04-10T09:00:00Z",
   depart_time: "09:00",
+  estimated_arrival_time: "10:40",
   status: "proposed",
   notified_at: "2026-04-19T04:00:00Z",
   matching_reason:
@@ -336,7 +337,7 @@ function WaypointsCard({
             href={openchatUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gray-800 text-[13px] font-bold text-white active:scale-[0.98] transition-transform mt-1"
+            className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gray-100 text-[13px] font-bold text-gray-500 active:scale-[0.98] transition-transform mt-1"
           >
             <MessageCircle size={15} />
             {partnerName ? `${partnerName}님과 오픈채팅 참여` : "오픈채팅 참여하기"}
@@ -403,13 +404,23 @@ export default function MatchingDetailPage() {
 
   const segmentId = Number(params.segment_id);
 
+  function goBackToChat(action?: "accepted" | "declined") {
+    const chatSession = sessionStorage.getItem("matchingChatSession");
+    if (action) sessionStorage.setItem("matchingAction", action);
+    sessionStorage.removeItem("matchingChatSession");
+    if (chatSession) {
+      router.push(`/volunteer/chat/${chatSession}`);
+    } else {
+      router.back();
+    }
+  }
+
   async function handleAccept() {
     setActing(true);
     try { await acceptMatching(segmentId); } catch { /* 더미 */ }
     finally {
-      setStatus("accepted");
       setActing(false);
-      sessionStorage.setItem("matchingAction", "accepted");
+      goBackToChat("accepted");
     }
   }
 
@@ -417,10 +428,9 @@ export default function MatchingDetailPage() {
     setActing(true);
     try { await declineMatching(segmentId, declineInput || "일정 변경"); } catch { /* 더미 */ }
     finally {
-      setStatus("declined");
       setActing(false);
       setShowDeclineModal(false);
-      sessionStorage.setItem("matchingAction", "declined");
+      goBackToChat("declined");
     }
   }
 
@@ -462,7 +472,7 @@ export default function MatchingDetailPage() {
       {/* 헤더 */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-100">
         <div className="mx-auto max-w-2xl flex items-center gap-3 px-4 py-4">
-          <button onClick={() => router.back()}
+          <button onClick={() => goBackToChat()}
             className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors">
             <ArrowLeft size={20} />
           </button>
@@ -514,9 +524,14 @@ export default function MatchingDetailPage() {
                   <p className="text-[11px] text-gray-400">{seg.dropoff_location.address}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                <Clock size={11} className="text-[#EEA968]" />
-                <span className="text-[12px] font-semibold text-gray-600">{seg.depart_time} 출발</span>
+              <div className="flex flex-col items-end gap-0.5 shrink-0 pt-0.5">
+                <div className="flex items-center gap-1">
+                  <Clock size={11} className="text-[#EEA968]" />
+                  <span className="text-[12px] font-semibold text-gray-600">{seg.depart_time} 출발</span>
+                </div>
+                {"estimated_arrival_time" in seg && seg.estimated_arrival_time && (
+                  <span className="text-[11px] text-gray-400">{seg.estimated_arrival_time} 도착 예정</span>
+                )}
               </div>
             </div>
           </div>
