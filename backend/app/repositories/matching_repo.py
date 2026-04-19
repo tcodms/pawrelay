@@ -121,7 +121,7 @@ async def save_relay_chain(
         )
         db.add(segment)
 
-    await db.commit()
+    await db.flush()
     return chain
 
 

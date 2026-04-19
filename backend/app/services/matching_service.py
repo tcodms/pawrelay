@@ -10,8 +10,8 @@ from app.models.volunteer import VolunteerSchedule
 from app.repositories import matching_repo
 from app.services.geocoding_service import geocode
 
-# ai/ 모듈 경로 추가
-sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "ai"))
+# ai/ 모듈 경로 추가 (프로젝트 루트: pawrelay/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from ai.matching.chain_selector import select_chain
 
 logger = logging.getLogger(__name__)
@@ -29,8 +29,10 @@ _SIDO_MAP = {
 }
 
 
-def _normalize_sido(area: str) -> str:
+def _normalize_sido(area: str | None) -> str:
     """시/도 단위로 정규화. 예: '광주광역시 북구' → '광주광역시'"""
+    if not area:
+        return ""
     for suffix in _SIDO_SUFFIXES:
         if suffix in area:
             return area[:area.index(suffix) + len(suffix)]
@@ -113,25 +115,31 @@ async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> d
     if volunteer_id not in [s.volunteer_id for s in chain.segments]:
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
-    volunteer_ids = [s.volunteer_id for s in chain.segments]
+    try:
+        volunteer_ids = [s.volunteer_id for s in chain.segments]
+        scheduled_date = chain.transport_post.scheduled_date if chain.transport_post else None
+        await matching_repo.activate_chain(db, chain)
+        await matching_repo.mark_schedules_matched(db, volunteer_ids, scheduled_date)
 
-    scheduled_date = chain.transport_post.scheduled_date if chain.transport_post else None
-    await matching_repo.activate_chain(db, chain)
-    await matching_repo.mark_schedules_matched(db, volunteer_ids, scheduled_date)
-
-    conflicting = await matching_repo.get_proposed_chains_with_volunteers(
-        db, volunteer_ids, exclude_chain_id=chain_id
-    )
-    for conflicted in conflicting:
-        await matching_repo.cancel_chain(db, conflicted)
-        promoted = await matching_repo.promote_backup(
-            db, conflicted, conflicted.transport_post.scheduled_date if conflicted.transport_post else None
+        conflicting = await matching_repo.get_proposed_chains_with_volunteers(
+            db, volunteer_ids, exclude_chain_id=chain_id
         )
-        if not promoted:
-            await matching_repo.restore_post_to_recruiting(db, conflicted.transport_post_id)
+        for conflicted in conflicting:
+            await matching_repo.cancel_chain(db, conflicted)
+            promoted = await matching_repo.promote_backup(
+                db, conflicted, conflicted.transport_post.scheduled_date if conflicted.transport_post else None
+            )
+            if not promoted:
+                await matching_repo.restore_post_to_recruiting(db, conflicted.transport_post_id)
 
-    await db.commit()
-    return {"chain_id": chain_id, "status": "active", "cancelled_chains": len(conflicting)}
+        await db.commit()
+        return {"chain_id": chain_id, "status": "active", "cancelled_chains": len(conflicting)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"[approve_chain] chain {chain_id} 처리 중 오류: {e}")
+        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"})
 
 
 async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> dict:
@@ -145,16 +153,23 @@ async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> di
     if volunteer_id not in [s.volunteer_id for s in chain.segments]:
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
-    await matching_repo.cancel_chain(db, chain)
+    try:
+        await matching_repo.cancel_chain(db, chain)
 
-    promoted = await matching_repo.promote_backup(
-        db, chain, chain.transport_post.scheduled_date if chain.transport_post else None
-    )
-    if not promoted:
-        await matching_repo.restore_post_to_recruiting(db, chain.transport_post_id)
+        promoted = await matching_repo.promote_backup(
+            db, chain, chain.transport_post.scheduled_date if chain.transport_post else None
+        )
+        if not promoted:
+            await matching_repo.restore_post_to_recruiting(db, chain.transport_post_id)
 
-    await db.commit()
-    return {"chain_id": chain_id, "status": "broken", "promoted": promoted is not None}
+        await db.commit()
+        return {"chain_id": chain_id, "status": "broken", "promoted": promoted is not None}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"[reject_chain] chain {chain_id} 처리 중 오류: {e}")
+        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"})
 
 
 # ── 메인 실행 함수 ─────────────────────────────────────────────────────────────
@@ -238,6 +253,7 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
     saved_chain = await matching_repo.save_relay_chain(
         db, post.id, primary, backups, post.scheduled_date, matching_reason
     )
+    await db.commit()
     logger.info(f"[매칭] 공고 {post.id} → relay_chain {saved_chain.id} 저장 완료")
 
     return {
