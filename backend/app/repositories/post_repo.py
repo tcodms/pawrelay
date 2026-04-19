@@ -35,9 +35,12 @@ async def get_dashboard_posts(db: AsyncSession, shelter_id: int) -> list[tuple]:
             TransportPost,
             func.coalesce(volunteer_count_subq.c.volunteer_count, 0),
             chain_subq.c.chain_id,
+            RelayChain.matching_reason,
+            RelayChain.chain_expires_at,
         )
         .outerjoin(volunteer_count_subq, TransportPost.id == volunteer_count_subq.c.post_id)
         .outerjoin(chain_subq, TransportPost.id == chain_subq.c.transport_post_id)
+        .outerjoin(RelayChain, RelayChain.id == chain_subq.c.chain_id)
         .where(TransportPost.shelter_id == shelter_id)
         .order_by(TransportPost.scheduled_date.desc())
     )

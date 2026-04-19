@@ -17,6 +17,10 @@ class VolunteerSchedule(Base):
             "available_time IS NULL OR available_time ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'",
             name="ck_volunteer_schedules_available_time_hhmm",
         ),
+        CheckConstraint(
+            "estimated_arrival_time IS NULL OR estimated_arrival_time ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'",
+            name="ck_volunteer_schedules_estimated_arrival_time_hhmm",
+        ),
     )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
@@ -26,6 +30,7 @@ class VolunteerSchedule(Base):
     route = Column(Geometry("LINESTRING", srid=4326, spatial_index=False), nullable=True)
     available_date = Column(Date, nullable=False)
     available_time = Column(String(5), nullable=True)
+    estimated_arrival_time = Column(String(5), nullable=True)
     origin_area = Column(String(100), nullable=False)
     destination_area = Column(String(100), nullable=False)
     vehicle_available = Column(Boolean, nullable=False)

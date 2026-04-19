@@ -49,8 +49,10 @@ async def get_shelter_dashboard(
                 photo_url=post.animal_photo_url,
             ),
             chain_id=chain_id,
+            chain_expires_at=chain_expires_at,
+            matching_reason=matching_reason,
             share_token=post.share_token,
         )
-        for post, count, chain_id in rows
+        for post, count, chain_id, matching_reason, chain_expires_at in rows
     ]
     return ShelterDashboardResponse(posts=posts)

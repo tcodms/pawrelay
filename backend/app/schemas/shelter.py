@@ -26,6 +26,8 @@ class DashboardPostItem(BaseModel):
     volunteer_count: int
     animal_info: AnimalInfo
     chain_id: int | None
+    chain_expires_at: datetime | None
+    matching_reason: str | None
     share_token: UUID
 
 

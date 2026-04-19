@@ -139,6 +139,8 @@ class ChatbotEngine:
             "available_date": "이동 가능한 날짜가 언제인가요?",
             "vehicle_available": "차량이 있으신가요?",
             "max_animal_size": "탑승 가능한 동물 크기는 어떻게 되나요? (소형/중형/대형)",
+            "available_time": "출발 예정 시간이 어떻게 되시나요? (예: 09:00)",
+            "estimated_arrival_time": "목적지 도착 예정 시간이 어떻게 되시나요? (예: 10:40)",
         }
         return fallback.get(missing[0], "추가 정보를 알려주세요.")
 
