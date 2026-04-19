@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
@@ -253,9 +251,11 @@ function HandoverCodeCard({ code }: { code: string }) {
 }
 
 function HandoverCodeLockedCard({ scheduledDate }: { scheduledDate: string }) {
-  const daysUntil = Math.ceil(
+  const rawDiffDays = Math.ceil(
     (new Date(scheduledDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   );
+  const daysUntil = Math.max(0, rawDiffDays);
+  const isScheduledInPast = new Date(scheduledDate).getTime() < Date.now();
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
@@ -272,7 +272,11 @@ function HandoverCodeLockedCard({ scheduledDate }: { scheduledDate: string }) {
           ))}
         </div>
         <p className="text-[12px] text-gray-400 mt-1">
-          {daysUntil > 0 ? `출발 ${daysUntil}일 전 · 당일 00:00에 공개돼요` : "당일 00:00에 공개돼요"}
+          {isScheduledInPast
+            ? "이미 공개되었습니다"
+            : daysUntil > 0
+              ? `출발 ${daysUntil}일 전 · 당일 00:00에 공개돼요`
+              : "당일 00:00에 공개돼요"}
         </p>
       </div>
     </div>
@@ -417,20 +421,26 @@ export default function MatchingDetailPage() {
 
   async function handleAccept() {
     setActing(true);
-    try { await acceptMatching(segmentId); } catch { /* 더미 */ }
-    finally {
-      setActing(false);
+    try {
+      await acceptMatching(segmentId);
       goBackToChat("accepted");
+    } catch (err) {
+      console.error("매칭 수락 실패", err);
+    } finally {
+      setActing(false);
     }
   }
 
   async function handleDecline() {
     setActing(true);
-    try { await declineMatching(segmentId, declineInput || "일정 변경"); } catch { /* 더미 */ }
-    finally {
-      setActing(false);
+    try {
+      await declineMatching(segmentId, declineInput || "일정 변경");
       setShowDeclineModal(false);
       goBackToChat("declined");
+    } catch (err) {
+      console.error("매칭 거절 실패", err);
+    } finally {
+      setActing(false);
     }
   }
 

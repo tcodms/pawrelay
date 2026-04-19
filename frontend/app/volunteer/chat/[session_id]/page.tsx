@@ -68,14 +68,6 @@ interface HandoverCandidate {
   distance_km: number;
 }
 
-interface _Unused {
-  code: string;
-  partner_name: string;
-  partner_role: "prev" | "next";
-  location: string;
-  scheduled_time: string;
-}
-
 // ── 상수 ──────────────────────────────────────────────────────────────────────
 
 const SIZE_LABEL: Record<string, string> = {
@@ -704,7 +696,9 @@ export default function ChatRoomPage() {
       const msgs = notifsToMessages(notifs);
       if (msgs.length > 0) {
         setMessages((prev) => [...prev, ...msgs]);
-        notifs.forEach((n) => markNotificationRead(n.id).catch(() => {}));
+        notifs.forEach((n) => markNotificationRead(n.id).catch((err) => {
+          console.error(`알림 읽음 처리 실패 (id: ${n.id})`, err);
+        }));
       }
     } catch {}
   }
@@ -734,7 +728,7 @@ export default function ChatRoomPage() {
       setConfirmOptions(s.confirmOptions ?? null);
       setInitializing(false);
       // StrictMode 이중 마운트 대응: 즉시 삭제 대신 지연 삭제
-      setTimeout(() => sessionStorage.removeItem(DEMO_CACHE_KEY), 500);
+      setTimeout(() => sessionStorage.removeItem(DEMO_CACHE_KEY), 100);
       // 수락/거절 결과 처리
       const action = sessionStorage.getItem("matchingAction");
       if (action) {
@@ -802,7 +796,7 @@ export default function ChatRoomPage() {
     }
 
     initConversation(context);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isDemo, isDemo2]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

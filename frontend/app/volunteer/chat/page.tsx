@@ -81,6 +81,7 @@ function formatNotifTime(isoString: string) {
   const date = new Date(isoString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return "방금 전";
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   if (diffHours < 1) return "방금 전";
   if (diffHours < 24) return `${diffHours}시간 전`;
@@ -98,15 +99,19 @@ export default function ChatPage() {
 
   useEffect(() => {
     setRooms(DUMMY_ROOMS.map((room) => {
-      const saved = localStorage.getItem(`chatLastMsg_${room.session_id}`);
-      return saved ? { ...room, last_message: saved } : room;
+      try {
+        const saved = localStorage.getItem(`chatLastMsg_${room.session_id}`);
+        return saved ? { ...room, last_message: saved } : room;
+      } catch {
+        return room;
+      }
     }));
   }, []);
 
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
   function handleNotifClick(notif: AppNotification) {
-    setReadIds((prev) => new Set(Array.from(prev).concat(notif.id)));
+    setReadIds((prev) => { const next = new Set(prev); next.add(notif.id); return next; });
     setNotifOpen(false);
     if (notif.payload.chat_session_id) {
       sessionStorage.setItem("matchingChatSession", notif.payload.chat_session_id);
