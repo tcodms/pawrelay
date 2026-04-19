@@ -16,7 +16,9 @@ export interface RelaySegment {
 
 export interface Post {
   id: number;
-  chain_id?: number;   // relay_chains.id — waiting 상태에서 승인/거절 시 필요
+  chain_id?: number;
+  chain_expires_at?: string;
+  chain_status?: "pending_shelter" | "auto_approved";
   share_token?: string;
   animal_info: {
     name: string;
@@ -34,157 +36,106 @@ export interface Post {
   matchingReason?: string;
 }
 
-export const URGENT_POST_IDS = [301, 302, 303, 304];
+export const URGENT_POST_IDS: number[] = [];
 
 export const DUMMY_POSTS: Post[] = [
   {
     id: 1,
-    chain_id: 101,
-    animal_info: {
-      name: "초코",
-      size: "small",
-      photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400",
-      notes: "겁이 많아 조용한 이동이 필요합니다. 낯선 사람에게 짖을 수 있어요.",
-    },
-    origin: "광주광역시 북구",
-    destination: "서울특별시 강남구",
-    scheduled_date: "2026-04-10",
-    status: "waiting",
-    volunteers: [
-      { id: 1, name: "김봉사", from: "광주역", to: "천안역" },
-      { id: 2, name: "이릴레이", from: "천안역", to: "수원역" },
-      { id: 3, name: "박도움", from: "수원역", to: "서울 강남구" },
-    ],
-    relayChain: [
-      { volunteer: "김봉사", from: "광주역", to: "천안역", time: "09:00" },
-      { volunteer: "이릴레이", from: "천안역", to: "수원역", time: "11:30" },
-      { volunteer: "박도움", from: "수원역", to: "서울 강남구", time: "13:00" },
-    ],
-    matchingReason: "세 분의 이동 경로가 완벽하게 연결되며, 인계 시간 간격이 모두 30분 이상 확보됩니다.",
-  },
-  {
-    id: 2,
     animal_info: {
       name: "뽀삐",
       size: "medium",
       photo_url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400",
-      notes: "차량 이동에 익숙합니다. 간식을 좋아하며 순합니다.",
     },
     origin: "부산광역시 해운대구",
     destination: "대구광역시 수성구",
-    scheduled_date: "2026-04-12",
+    scheduled_date: "2026-04-25",
     status: "recruiting",
     volunteers: [
-      { id: 4, name: "최자원", from: "부산역", to: "밀양역" },
-      { id: 5, name: "정봉사", from: "밀양역", to: "경산역" },
+      { id: 1, name: "최자원", from: "부산역", to: "밀양역" },
+      { id: 2, name: "정봉사", from: "밀양역", to: "경산역" },
     ],
   },
   {
+    id: 2,
+    chain_id: 201,
+    chain_expires_at: "2026-04-20T06:00:00Z",
+    chain_status: "pending_shelter",
+    animal_info: {
+      name: "초코",
+      size: "small",
+      photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400",
+    },
+    origin: "광주광역시 북구",
+    destination: "서울특별시 강남구",
+    scheduled_date: "2026-04-22",
+    status: "waiting",
+    volunteers: [
+      { id: 3, name: "김봉사", from: "광주역", to: "천안역" },
+      { id: 4, name: "이릴레이", from: "천안역", to: "서울 강남구" },
+    ],
+    relayChain: [
+      { volunteer: "김봉사", from: "광주역", to: "천안역", time: "09:00" },
+      { volunteer: "이릴레이", from: "천안역", to: "서울 강남구", time: "11:30" },
+    ],
+    matchingReason: "두 봉사자의 이동 경로가 천안역에서 연결되며, 인계 시간 간격이 충분히 확보됩니다.",
+  },
+  {
     id: 3,
+    chain_id: 202,
+    chain_expires_at: "2026-04-19T06:00:00Z",
+    chain_status: "auto_approved",
     animal_info: {
       name: "나비",
       size: "small",
       photo_url: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400",
-      notes: "이동장에 가두면 스트레스를 받습니다. 가능하면 넓은 공간 확보 부탁드립니다.",
     },
     origin: "인천광역시 남동구",
     destination: "경기도 수원시",
-    scheduled_date: "2026-04-08",
-    status: "recruiting",
+    scheduled_date: "2026-04-21",
+    status: "waiting",
     volunteers: [
-      { id: 6, name: "홍길동", from: "인천터미널", to: "수원역" },
+      { id: 5, name: "홍길동", from: "인천터미널", to: "수원역" },
     ],
+    relayChain: [
+      { volunteer: "홍길동", from: "인천터미널", to: "수원역", time: "10:00" },
+    ],
+    matchingReason: "출발지와 도착지가 일치하며 단일 봉사자로 완전한 이동이 가능합니다.",
   },
   {
     id: 4,
+    share_token: "abc123-dummy-token",
+    animal_info: {
+      name: "몽이",
+      size: "medium",
+      photo_url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400",
+    },
+    origin: "전라북도 전주시",
+    destination: "경기도 고양시",
+    scheduled_date: "2026-04-20",
+    status: "in_progress",
+    volunteers: [
+      { id: 6, name: "황봉사", from: "전주역", to: "대전역" },
+      { id: 7, name: "윤릴레이", from: "대전역", to: "고양시" },
+    ],
+    relayChain: [
+      { volunteer: "황봉사", from: "전주역", to: "대전역", time: "08:30" },
+      { volunteer: "윤릴레이", from: "대전역", to: "고양시", time: "11:00" },
+    ],
+  },
+  {
+    id: 5,
     animal_info: {
       name: "까미",
       size: "large",
       photo_url: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=400",
-      notes: "대형견이므로 충분한 차량 공간이 필요합니다.",
     },
     origin: "대전광역시 유성구",
     destination: "서울특별시 송파구",
     scheduled_date: "2026-03-28",
     status: "completed",
     volunteers: [
-      { id: 7, name: "신봉사", from: "대전역", to: "천안아산역" },
-      { id: 8, name: "오릴레이", from: "천안아산역", to: "서울 송파구" },
+      { id: 8, name: "신봉사", from: "대전역", to: "천안아산역" },
+      { id: 9, name: "오릴레이", from: "천안아산역", to: "서울 송파구" },
     ],
   },
-  {
-    id: 5,
-    chain_id: 102,
-    animal_info: {
-      name: "흰둥이",
-      size: "small",
-      photo_url: "https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=400",
-      notes: "특이사항 없음. 건강하고 활발한 성격입니다.",
-    },
-    origin: "광주광역시 동구",
-    destination: "경기도 성남시",
-    scheduled_date: "2026-04-15",
-    status: "waiting",
-    volunteers: [
-      { id: 9, name: "강자원", from: "광주송정역", to: "오송역" },
-      { id: 10, name: "배봉사", from: "오송역", to: "경기 성남" },
-    ],
-    relayChain: [
-      { volunteer: "강자원", from: "광주송정역", to: "오송역", time: "10:00" },
-      { volunteer: "배봉사", from: "오송역", to: "경기 성남", time: "12:00" },
-    ],
-    matchingReason: "두 봉사자의 경로가 오송역에서 연결되며, 이동 시간과 인계 여유 시간이 최적화되어 있습니다.",
-  },
-  {
-    id: 7,
-    share_token: "abc123-dummy-token",
-    animal_info: {
-      name: "몽이",
-      size: "medium",
-      photo_url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400",
-      notes: "온순하고 차량 이동에 익숙합니다.",
-    },
-    origin: "전라북도 전주시",
-    destination: "경기도 고양시",
-    scheduled_date: "2026-04-16",
-    status: "in_progress",
-    volunteers: [
-      { id: 14, name: "황봉사", from: "전주역", to: "대전역" },
-      { id: 15, name: "윤릴레이", from: "대전역", to: "수원역" },
-      { id: 16, name: "장도움", from: "수원역", to: "고양시" },
-    ],
-    relayChain: [
-      { volunteer: "황봉사", from: "전주역", to: "대전역", time: "08:30" },
-      { volunteer: "윤릴레이", from: "대전역", to: "수원역", time: "11:00" },
-      { volunteer: "장도움", from: "수원역", to: "고양시", time: "13:30" },
-    ],
-    matchingReason: "세 봉사자의 이동 경로가 매끄럽게 연결되며, 인계 여유 시간이 충분합니다.",
-  },
-  {
-    id: 6,
-    animal_info: {
-      name: "루시",
-      size: "medium",
-      photo_url: "https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=400",
-      notes: "사람을 잘 따르며 다른 동물과도 잘 지냅니다.",
-    },
-    origin: "대구광역시 달서구",
-    destination: "충청북도 청주시",
-    scheduled_date: "2026-04-20",
-    status: "recruiting",
-    volunteers: [
-      { id: 11, name: "임자원", from: "대구역", to: "김천구미역" },
-      { id: 12, name: "한봉사", from: "김천구미역", to: "오송역" },
-      { id: 13, name: "조릴레이", from: "오송역", to: "청주" },
-    ],
-  },
-  // 긴급 릴레이 (캐러셀용)
-  { id: 301, animal_info: { name: "콩이",   size: "small",  photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=600" }, origin: "광주", destination: "서울",  scheduled_date: "2026-04-18", status: "recruiting", volunteers: [] },
-  { id: 302, animal_info: { name: "복실이", size: "small",  photo_url: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600" }, origin: "부산", destination: "인천",  scheduled_date: "2026-04-18", status: "recruiting", volunteers: [] },
-  { id: 303, animal_info: { name: "두부",   size: "small",  photo_url: "https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=600" }, origin: "전주", destination: "수원",  scheduled_date: "2026-04-19", status: "recruiting", volunteers: [] },
-  { id: 304, animal_info: { name: "몽실",   size: "large",  photo_url: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=600" }, origin: "대전", destination: "서울",  scheduled_date: "2026-04-19", status: "recruiting", volunteers: [] },
-  // 추가 공고 (그리드 채우기)
-  { id: 401, animal_info: { name: "해피",   size: "medium", photo_url: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400" }, origin: "대구광역시",    destination: "경기도 용인시",    scheduled_date: "2026-04-21", status: "recruiting", volunteers: [] },
-  { id: 402, animal_info: { name: "쿠키",   size: "small",  photo_url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400" }, origin: "울산광역시",    destination: "서울특별시 마포구", scheduled_date: "2026-04-22", status: "recruiting", volunteers: [{ id: 1, name: "김봉사", from: "울산역", to: "서울" }] },
-  { id: 403, animal_info: { name: "보리",   size: "medium", photo_url: "https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=400" }, origin: "강원도 춘천시", destination: "인천광역시",       scheduled_date: "2026-04-23", status: "recruiting", volunteers: [{ id: 2, name: "이봉사", from: "춘천역", to: "인천" }, { id: 3, name: "박봉사", from: "인천역", to: "인천항" }] },
 ];

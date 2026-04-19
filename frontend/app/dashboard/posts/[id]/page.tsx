@@ -7,6 +7,7 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, Calendar, MapPin, Pencil, Trash2, Users } from "lucide-react";
 import { getPost, deletePost } from "@/lib/api/posts";
 import type { Post } from "@/lib/api/posts";
+import { DUMMY_POSTS } from "@/lib/dummy-posts";
 import { StatusBadge, SizeBadge } from "@/components/ui/PostBadges";
 
 export default function PostDetailPage({ params }: { params: { id: string } }) {
@@ -15,8 +16,9 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPost(Number(params.id))
-      .then(setPost)
+    const id = Number(params.id);
+    getPost(id)
+      .then((p) => setPost(p ?? (DUMMY_POSTS.find((d) => d.id === id) as Post | undefined) ?? null))
       .finally(() => setLoading(false));
   }, [params.id]);
 

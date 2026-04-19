@@ -6,8 +6,9 @@ import Image from "next/image";
 import Script from "next/script";
 import {
   ArrowLeft, Clock, Train, Coffee,
-  ExternalLink, CheckCircle2, PawPrint, MapPin, Lock, MessageCircle,
+  ExternalLink, CheckCircle2, MapPin, Lock, MessageCircle,
 } from "lucide-react";
+import MatchingReasonBubble from "@/components/MatchingReasonBubble";
 import { acceptMatching, declineMatching, getSegment } from "@/lib/api/matching";
 
 declare global {
@@ -557,15 +558,7 @@ export default function MatchingDetailPage() {
         />
 
         {/* AI 매칭 이유 */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-          <div className="bg-[#A07050] px-4 py-2.5 flex items-center gap-1.5">
-            <PawPrint size={12} className="text-white/70" />
-            <p className="text-[12px] font-bold text-white">AI 매칭 이유</p>
-          </div>
-          <div className="px-4 py-3.5">
-            <p className="text-[13px] text-gray-600 leading-relaxed">{seg.matching_reason}</p>
-          </div>
-        </div>
+        <MatchingReasonBubble reason={seg.matching_reason} />
 
         {/* 인계 후보지 + 오픈채팅 버튼 */}
         <WaypointsCard

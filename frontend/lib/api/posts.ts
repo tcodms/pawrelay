@@ -51,6 +51,13 @@ export interface PhotoUploadUrl {
 
 // ── API 함수 ──────────────────────────────────────────────────────────────────
 
+interface DashboardRelaySegment {
+  volunteer_name: string;
+  from_area: string;
+  to_area: string;
+  depart_time?: string;
+}
+
 interface DashboardPostItem {
   id: number;
   origin: string;
@@ -60,6 +67,10 @@ interface DashboardPostItem {
   volunteer_count: number;
   animal_info: { name: string; size: "small" | "medium" | "large"; photo_url: string | null };
   chain_id: number | null;
+  chain_expires_at: string | null;
+  chain_status: "pending_shelter" | "auto_approved" | null;
+  matching_reason: string | null;
+  relay_segments: DashboardRelaySegment[] | null;
   share_token: string;
 }
 
@@ -105,6 +116,15 @@ export async function getPosts(): Promise<Post[]> {
     },
     volunteers: Array(item.volunteer_count).fill({ id: 0, name: "", from: "", to: "" }),
     chain_id: item.chain_id ?? undefined,
+    chain_expires_at: item.chain_expires_at ?? undefined,
+    chain_status: item.chain_status ?? undefined,
+    matchingReason: item.matching_reason ?? undefined,
+    relayChain: item.relay_segments?.map((s) => ({
+      volunteer: s.volunteer_name,
+      from: s.from_area,
+      to: s.to_area,
+      time: s.depart_time ?? "",
+    })) ?? undefined,
     share_token: item.share_token,
   }));
 }
