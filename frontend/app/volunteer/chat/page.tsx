@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { MessageCircle, Plus, Bell } from "lucide-react";
+import { MessageCircle, Plus, Bell, CheckCircle2, X } from "lucide-react";
 import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY } from "@/lib/api/chatbot";
 import type { PostContext } from "@/lib/api/chatbot";
+import type { AppNotification } from "@/lib/api/notifications";
 
 // ── 더미 채팅방 목록 ───────────────────────────────────────────────────────────
 
@@ -46,10 +47,63 @@ const DUMMY_ROOMS: ChatRoom[] = [
   },
 ];
 
+// ── 더미 알림 ─────────────────────────────────────────────────────────────────
+
+const DUMMY_NOTIFICATIONS: AppNotification[] = [
+  {
+    id: 1,
+    type: "matching_proposed",
+    message: "새로운 매칭 제안이 도착했어요.",
+    payload: { segment_id: 42, url: "/volunteer/matching/42" },
+    created_at: "2026-04-10T09:00:00Z",
+  },
+  {
+    id: 2,
+    type: "matching_confirmed",
+    message: "[초코] 매칭이 확정됐어요! 상세 내용을 확인하세요.",
+    payload: { segment_id: 42, url: "/volunteer/matching/42" },
+    created_at: "2026-04-09T15:30:00Z",
+  },
+];
+
+const NOTIF_TYPE_LABEL: Record<string, string> = {
+  matching_proposed: "매칭 제안",
+  matching_confirmed: "매칭 확정",
+  ping_check: "출발 확인",
+  delay_reported: "지연 알림",
+  sos_triggered: "SOS 발생",
+  handover_waiting_confirm: "인계 대기",
+  handover_location_changed: "장소 변경",
+  matching_failed: "매칭 실패",
+};
+
+function formatNotifTime(isoString: string) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 1) return "방금 전";
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  return `${Math.floor(diffHours / 24)}일 전`;
+}
+
 // ── 페이지 ────────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
   const router = useRouter();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>(DUMMY_NOTIFICATIONS);
+  const [readIds, setReadIds] = useState<Set<number>>(new Set());
+
+  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
+
+  function handleNotifClick(notif: AppNotification) {
+    setReadIds((prev) => new Set(Array.from(prev).concat(notif.id)));
+    setNotifOpen(false);
+    if (notif.payload.url) {
+      router.push(notif.payload.url);
+    }
+  }
 
   useEffect(() => {
     const sessionId = sessionStorage.getItem(CHATBOT_SESSION_KEY);
@@ -75,8 +129,16 @@ export default function ChatPage() {
             <h1 className="text-[18px] font-bold text-gray-900 leading-tight">채팅</h1>
             <p className="text-[11px] text-gray-400 mt-0.5">봉사를 시작해볼까요?</p>
           </div>
-          <button className="flex h-8 w-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-50 transition-colors">
+          <button
+            onClick={() => setNotifOpen(true)}
+            className="relative flex h-8 w-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-50 transition-colors"
+          >
             <Bell size={18} strokeWidth={1.8} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
           </button>
         </div>
       </header>
@@ -149,6 +211,74 @@ export default function ChatPage() {
         </ul>
       )}
       </div>
+
+      {/* 알림 패널 */}
+      {notifOpen && (
+        <div className="fixed inset-0 z-50 flex items-end">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setNotifOpen(false)}
+          />
+          <div className="relative w-full bg-white rounded-t-3xl max-w-2xl mx-auto max-h-[70vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+              <div>
+                <p className="text-[16px] font-bold text-gray-900">알림</p>
+                {unreadCount > 0 && (
+                  <p className="text-[12px] text-[#EEA968] font-semibold">{unreadCount}개의 새 알림</p>
+                )}
+              </div>
+              <button
+                onClick={() => setNotifOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="overflow-y-auto pb-8">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                  <Bell size={28} strokeWidth={1.5} className="mb-2" />
+                  <p className="text-[14px]">새 알림이 없어요</p>
+                </div>
+              ) : (
+                <ul className="px-4 space-y-2 pb-2">
+                  {notifications.map((notif) => {
+                    const isRead = readIds.has(notif.id);
+                    return (
+                      <li key={notif.id}>
+                        <button
+                          onClick={() => handleNotifClick(notif)}
+                          className={`w-full flex items-start gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors active:scale-[0.98] ${
+                            isRead ? "bg-gray-50" : "bg-[#FDF3EC] border border-[#EEA968]/20"
+                          }`}
+                        >
+                          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isRead ? "bg-gray-200" : "bg-[#EEA968]"}`}>
+                            <CheckCircle2 size={14} className={isRead ? "text-gray-400" : "text-white"} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className={`text-[11px] font-bold ${isRead ? "text-gray-400" : "text-[#EEA968]"}`}>
+                                {NOTIF_TYPE_LABEL[notif.type] ?? notif.type}
+                              </span>
+                              {!isRead && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#EEA968]" />
+                              )}
+                            </div>
+                            <p className={`text-[13px] leading-snug ${isRead ? "text-gray-500" : "text-gray-800 font-medium"}`}>
+                              {notif.message}
+                            </p>
+                            <p className="text-[11px] text-gray-400 mt-1">{formatNotifTime(notif.created_at)}</p>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 플로팅 버튼 */}
       <div className="fixed bottom-20 left-0 right-0 flex justify-center z-20 pointer-events-none">

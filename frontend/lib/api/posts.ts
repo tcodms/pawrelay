@@ -71,7 +71,7 @@ export async function getPosts(): Promise<Post[]> {
     destination: item.destination,
     scheduled_date: item.scheduled_date,
     status: item.status,
-    animal: {
+    animal_info: {
       name: item.animal_info.name,
       size: item.animal_info.size,
       photo_url: item.animal_info.photo_url ?? undefined,

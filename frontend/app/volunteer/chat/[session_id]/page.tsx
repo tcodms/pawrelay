@@ -26,6 +26,7 @@ type Message =
 
 interface RecommendedPost {
   post_id: number;
+  segment_id: number;
   animal_name: string;
   photo_url?: string;
   size: "small" | "medium" | "large";
@@ -129,6 +130,7 @@ const DEMO_MESSAGES_1_POST: Message[] = [
     role: "bot", type: "recommendation",
     rec: {
       post_id: 1,
+      segment_id: 42,
       animal_name: "초코",
       photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400",
       size: "small",
@@ -322,11 +324,13 @@ function RecommendationBubble({
   rec,
   onAccept,
   onReject,
+  onViewDetail,
   decided,
 }: {
   rec: RecommendedPost;
   onAccept: () => void;
   onReject: () => void;
+  onViewDetail: () => void;
   decided?: boolean;
 }) {
   const filledSlots = rec.current_volunteers;
@@ -374,6 +378,15 @@ function RecommendationBubble({
         </div>
       </div>
 
+      <div className="px-3 pb-1">
+        <button
+          onClick={onViewDetail}
+          className="w-full flex items-center justify-center gap-1 h-8 rounded-full bg-gray-50 text-[11px] font-semibold text-gray-500 active:scale-95 transition-transform"
+        >
+          <ExternalLink size={11} />
+          상세 보기
+        </button>
+      </div>
       <div className="flex gap-1.5 px-3 pb-3">
         <button
           onClick={onAccept}
@@ -786,6 +799,7 @@ export default function ChatRoomPage() {
                 rec={msg.rec}
                 onAccept={() => handleUserInput("수락할게요")}
                 onReject={() => handleUserInput("거절할게요")}
+                onViewDetail={() => router.push(`/volunteer/matching/${msg.rec.segment_id}`)}
                 decided={matchingDecided}
               />
             </BotRow>

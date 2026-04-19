@@ -3,8 +3,9 @@ import { Fredoka, Noto_Sans_KR } from "next/font/google";
 import dynamic from "next/dynamic";
 import "./globals.css";
 
-const SplashScreen = dynamic(() => import("@/components/SplashScreen"), { ssr: false });
-const PwaCapture   = dynamic(() => import("@/components/PwaCapture"),   { ssr: false });
+const SplashScreen            = dynamic(() => import("@/components/SplashScreen"),            { ssr: false });
+const PwaCapture              = dynamic(() => import("@/components/PwaCapture"),              { ssr: false });
+const NotificationPermission  = dynamic(() => import("@/components/NotificationPermission"),  { ssr: false });
 
 // 영문 로고용
 const fredoka = Fredoka({
@@ -56,6 +57,7 @@ export default function RootLayout({
       <body className="bg-white text-gray-900 antialiased font-[family-name:var(--font-noto)]">
         <SplashScreen />
         <PwaCapture />
+        <NotificationPermission />
         {children}
       </body>
     </html>
