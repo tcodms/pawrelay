@@ -42,15 +42,12 @@ async def get_candidate_volunteers(
     origin_lng: float,
     dest_lat: float,
     dest_lng: float,
-) -> list[tuple[VolunteerSchedule, float]]:
+) -> list[VolunteerSchedule]:
     """후보 봉사자 목록과 각 경로 길이(미터) 반환"""
     post_size_rank = POST_SIZE_RANK.get(post.animal_size, 0)
 
     origin_point = ST_SetSRID(ST_MakePoint(origin_lng, origin_lat), 4326)
     dest_point = ST_SetSRID(ST_MakePoint(dest_lng, dest_lat), 4326)
-
-    # ST_Length(..., true): use_spheroid=True → 미터 단위 반환
-    route_length = ST_Length(VolunteerSchedule.route, True).label("route_length_m")
 
     # 차량: 전체 경로 기준 (중간 어디서든 픽업 가능)
     # 대중교통: 출발·도착 포인트 기준만 (정차역만 픽업 가능)
@@ -71,7 +68,7 @@ async def get_candidate_volunteers(
     )
 
     result = await db.execute(
-        select(VolunteerSchedule, route_length).where(
+        select(VolunteerSchedule).where(
             and_(
                 VolunteerSchedule.available_date == post.scheduled_date,
                 VolunteerSchedule.status == "available",
@@ -81,7 +78,7 @@ async def get_candidate_volunteers(
             )
         )
     )
-    return [(row.VolunteerSchedule, float(row.route_length_m)) for row in result]
+    return list(result.scalars().all())
 
 
 async def save_relay_chain(

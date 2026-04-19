@@ -18,22 +18,90 @@ logger = logging.getLogger(__name__)
 
 HANDOVER_BUFFER = timedelta(minutes=30)
 
-# 이동 속도 추정 (직선 거리 기반 MVP 근사값)
-# TODO: 추후 카카오 길찾기 API로 실제 이동 시간 계산으로 고도화 필요
-VEHICLE_SPEED_MPS = 60 * 1000 / 3600    # 차량 60km/h → m/s
-TRANSIT_SPEED_MPS = 100 * 1000 / 3600  # 대중교통 100km/h → m/s
+# 시/도 단위 이동 시간 룩업 테이블 (단위: 분)
+# car: 고속도로 기준 평균, transit: KTX 기준 (무궁화/버스 이용 시 과소 추정 가능)
+# TODO: 챗봇에서 transit_type(KTX/일반기차/버스) 수집 후 세분화 필요
+_TRAVEL_TIME: dict[tuple[str, str], dict[str, int]] = {
+    ("서울특별시", "인천광역시"):      {"car": 60,  "transit": 70},
+    ("서울특별시", "경기도"):          {"car": 60,  "transit": 60},
+    ("서울특별시", "강원도"):          {"car": 120, "transit": 90},
+    ("서울특별시", "세종특별자치시"):  {"car": 110, "transit": 55},
+    ("서울특별시", "대전광역시"):      {"car": 100, "transit": 50},
+    ("서울특별시", "충청북도"):        {"car": 120, "transit": 60},
+    ("서울특별시", "충청남도"):        {"car": 120, "transit": 70},
+    ("서울특별시", "전라북도"):        {"car": 180, "transit": 80},
+    ("서울특별시", "광주광역시"):      {"car": 210, "transit": 90},
+    ("서울특별시", "전라남도"):        {"car": 230, "transit": 110},
+    ("서울특별시", "대구광역시"):      {"car": 200, "transit": 100},
+    ("서울특별시", "경상북도"):        {"car": 210, "transit": 110},
+    ("서울특별시", "부산광역시"):      {"car": 270, "transit": 155},
+    ("서울특별시", "울산광역시"):      {"car": 260, "transit": 140},
+    ("서울특별시", "경상남도"):        {"car": 260, "transit": 150},
+    ("서울특별시", "제주특별자치도"):  {"car": 480, "transit": 480},
+    ("인천광역시", "경기도"):          {"car": 40,  "transit": 50},
+    ("인천광역시", "대전광역시"):      {"car": 110, "transit": 60},
+    ("인천광역시", "광주광역시"):      {"car": 220, "transit": 100},
+    ("인천광역시", "부산광역시"):      {"car": 280, "transit": 165},
+    ("경기도", "강원도"):              {"car": 90,  "transit": 80},
+    ("경기도", "대전광역시"):          {"car": 110, "transit": 60},
+    ("경기도", "충청북도"):            {"car": 100, "transit": 70},
+    ("경기도", "충청남도"):            {"car": 110, "transit": 75},
+    ("경기도", "전라북도"):            {"car": 180, "transit": 90},
+    ("경기도", "광주광역시"):          {"car": 220, "transit": 100},
+    ("경기도", "대구광역시"):          {"car": 210, "transit": 110},
+    ("경기도", "부산광역시"):          {"car": 280, "transit": 165},
+    ("대전광역시", "세종특별자치시"):  {"car": 20,  "transit": 15},
+    ("대전광역시", "충청북도"):        {"car": 50,  "transit": 30},
+    ("대전광역시", "충청남도"):        {"car": 50,  "transit": 40},
+    ("대전광역시", "전라북도"):        {"car": 80,  "transit": 40},
+    ("대전광역시", "광주광역시"):      {"car": 130, "transit": 55},
+    ("대전광역시", "대구광역시"):      {"car": 110, "transit": 55},
+    ("대전광역시", "부산광역시"):      {"car": 180, "transit": 110},
+    ("광주광역시", "전라남도"):        {"car": 60,  "transit": 40},
+    ("광주광역시", "전라북도"):        {"car": 70,  "transit": 40},
+    ("광주광역시", "대구광역시"):      {"car": 150, "transit": 80},
+    ("광주광역시", "부산광역시"):      {"car": 200, "transit": 110},
+    ("대구광역시", "경상북도"):        {"car": 50,  "transit": 30},
+    ("대구광역시", "부산광역시"):      {"car": 80,  "transit": 45},
+    ("대구광역시", "울산광역시"):      {"car": 70,  "transit": 40},
+    ("대구광역시", "경상남도"):        {"car": 90,  "transit": 50},
+    ("부산광역시", "울산광역시"):      {"car": 60,  "transit": 35},
+    ("부산광역시", "경상남도"):        {"car": 50,  "transit": 40},
+    ("울산광역시", "경상남도"):        {"car": 60,  "transit": 45},
+    ("전라북도", "전라남도"):          {"car": 80,  "transit": 50},
+    ("충청북도", "충청남도"):          {"car": 70,  "transit": 50},
+    ("충청북도", "경상북도"):          {"car": 90,  "transit": 60},
+    ("강원도", "경상북도"):            {"car": 120, "transit": 90},
+}
+
+_SIDO_SUFFIXES = ("특별시", "광역시", "특별자치시", "특별자치도", "도")
+_SIDO_MAP = {
+    "서울": "서울특별시", "부산": "부산광역시", "대구": "대구광역시",
+    "인천": "인천광역시", "광주": "광주광역시", "대전": "대전광역시",
+    "울산": "울산광역시", "세종": "세종특별자치시", "경기": "경기도",
+    "강원": "강원도", "충북": "충청북도", "충남": "충청남도",
+    "전북": "전라북도", "전남": "전라남도",
+    "경북": "경상북도", "경남": "경상남도", "제주": "제주특별자치도",
+}
 
 
-# ── 2단계 헬퍼 ────────────────────────────────────────────────────────────────
+def _normalize_sido(area: str) -> str:
+    """시/도 단위로 정규화. 예: '광주광역시 북구' → '광주광역시'"""
+    for suffix in _SIDO_SUFFIXES:
+        if suffix in area:
+            return area[:area.index(suffix) + len(suffix)]
+    for short, full in _SIDO_MAP.items():
+        if area.startswith(short):
+            return full
+    return area
 
-MIN_REGION_LENGTH = 2  # 너무 짧은 문자열의 오탐 방지 (예: "구" in "대구광역시")
 
-
-def _regions_overlap(area_a: str, area_b: str) -> bool:
-    """두 지역명이 포함 관계인지 확인 (예: '천안' in '천안아산역')"""
-    if len(area_a) < MIN_REGION_LENGTH or len(area_b) < MIN_REGION_LENGTH:
-        return False
-    return area_a in area_b or area_b in area_a
+def _get_travel_minutes(origin_sido: str, dest_sido: str, mode: str) -> int | None:
+    """시/도 쌍의 이동 시간(분) 반환. 양방향 조회."""
+    times = _TRAVEL_TIME.get((origin_sido, dest_sido)) or _TRAVEL_TIME.get((dest_sido, origin_sido))
+    if not times:
+        return None
+    return times.get(mode)
 
 
 def _parse_time(time_str: str | None) -> datetime | None:
@@ -45,67 +113,65 @@ def _parse_time(time_str: str | None) -> datetime | None:
         return None
 
 
-def _estimate_arrival(vol: VolunteerSchedule, route_length_m: float) -> datetime | None:
-    """출발 시간 + 이동 시간(직선 거리 기반)으로 예상 도착 시간 계산"""
+def _estimate_arrival(vol: VolunteerSchedule) -> datetime | None:
+    """출발 시간 + 시/도 단위 룩업 테이블 기반 이동 시간으로 예상 도착 시간 계산"""
     departure = _parse_time(vol.available_time)
     if not departure:
         return None
-    speed = VEHICLE_SPEED_MPS if vol.vehicle_available else TRANSIT_SPEED_MPS
-    travel_seconds = route_length_m / speed
-    return departure + timedelta(seconds=travel_seconds)
+    origin_sido = _normalize_sido(vol.origin_area)
+    dest_sido = _normalize_sido(vol.destination_area)
+    mode = "car" if vol.vehicle_available else "transit"
+    minutes = _get_travel_minutes(origin_sido, dest_sido, mode)
+    if minutes is None:
+        return None
+    return departure + timedelta(minutes=minutes)
 
 
-def _has_time_buffer(
-    vol_a: VolunteerSchedule, route_length_m_a: float,
-    vol_b: VolunteerSchedule,
-) -> bool:
+def _has_time_buffer(vol_a: VolunteerSchedule, vol_b: VolunteerSchedule) -> bool:
     """A의 예상 도착 시간 + HANDOVER_BUFFER <= B의 출발 시간인지 확인
-    시간 정보 없으면 통과 (MVP 한계 — 추후 카카오 길찾기 API로 고도화 필요)
+    시간 정보 없으면 통과 (MVP 한계)
     """
-    estimated_arrival_a = _estimate_arrival(vol_a, route_length_m_a)
+    estimated_arrival_a = _estimate_arrival(vol_a)
     departure_b = _parse_time(vol_b.available_time)
     if not estimated_arrival_a or not departure_b:
         return True
     return departure_b >= estimated_arrival_a + HANDOVER_BUFFER
 
 
-def _can_connect(
-    vol_a: VolunteerSchedule, route_length_m_a: float,
-    vol_b: VolunteerSchedule,
-) -> bool:
+def _can_connect(vol_a: VolunteerSchedule, vol_b: VolunteerSchedule) -> bool:
     """A의 도착지와 B의 출발지가 연결 가능하고 시간 버퍼를 만족하는지 확인"""
     return (
-        _regions_overlap(vol_a.destination_area, vol_b.origin_area)
-        and _has_time_buffer(vol_a, route_length_m_a, vol_b)
+        _normalize_sido(vol_a.destination_area) == _normalize_sido(vol_b.origin_area)
+        and _has_time_buffer(vol_a, vol_b)
     )
 
 
 def _build_chains(
-    candidates: list[tuple[VolunteerSchedule, float]],
+    candidates: list[VolunteerSchedule],
     post_origin: str,
     post_destination: str,
 ) -> list[list[VolunteerSchedule]]:
     """DFS로 유효한 릴레이 체인 조합 탐색"""
     valid_chains: list[list[VolunteerSchedule]] = []
-    length_map = {vol.id: length for vol, length in candidates}
-    vols = [vol for vol, _ in candidates]
+    post_origin_sido = _normalize_sido(post_origin)
+    post_dest_sido = _normalize_sido(post_destination)
 
     def dfs(chain: list[VolunteerSchedule], used: set[int]) -> None:
         last = chain[-1]
-        if _regions_overlap(last.destination_area, post_destination):
+        if _normalize_sido(last.destination_area) == post_dest_sido:
             valid_chains.append(list(chain))
 
-        for vol in vols:
+        for vol in candidates:
             if vol.id in used:
                 continue
-            if _can_connect(last, length_map[last.id], vol):
+            if _can_connect(last, vol):
                 chain.append(vol)
                 used.add(vol.id)
                 dfs(chain, used)
                 chain.pop()
                 used.remove(vol.id)
 
-    starters = [vol for vol in vols if _regions_overlap(vol.origin_area, post_origin)]
+    starters = [v for v in candidates if _normalize_sido(v.origin_area) == post_origin_sido]
     for starter in starters:
         dfs([starter], {starter.id})
 
