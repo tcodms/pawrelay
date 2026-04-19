@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { User, Users, Plus, X, ChevronRight, ArrowRight } from "lucide-react";
+import { User, Users, Plus, X, ChevronRight, ArrowRight, CheckCircle2 } from "lucide-react";
 import { getPosts, Post } from "@/lib/api/posts";
-import { approveShelterMatching, rejectShelterMatching } from "@/lib/api/matching";
+import { DUMMY_POSTS } from "@/lib/dummy-posts";
+import { approveShelterMatching, rejectShelterMatching, cancelAutoApprovedMatching } from "@/lib/api/matching";
 import { getShelterProfile } from "@/lib/api/shelter";
 import { StatusBadge, SizeBadge } from "@/components/ui/PostBadges";
+import MatchingReasonBubble from "@/components/MatchingReasonBubble";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -79,6 +81,113 @@ function Toast({ message }: { message: string }) {
   );
 }
 
+// ── Chain Countdown Hook ───────────────────────────────────────────────────────
+
+function useChainCountdown(expiresAt?: string) {
+  const calc = useCallback(() => {
+    if (!expiresAt) return null;
+    const remaining = Math.max(0, new Date(expiresAt).getTime() - Date.now());
+    return {
+      hours:      Math.floor(remaining / (1000 * 60 * 60)),
+      minutes:    Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds:    Math.floor((remaining % (1000 * 60)) / 1000),
+      expired:    remaining === 0,
+      isReminder: remaining > 0 && remaining <= 12 * 60 * 60 * 1000,
+    };
+  }, [expiresAt]);
+
+  const [time, setTime] = useState(calc);
+  useEffect(() => {
+    const id = setInterval(() => setTime(calc()), 1000);
+    return () => clearInterval(id);
+  }, [calc]);
+  return time;
+}
+
+// ── Auto Approved Action ───────────────────────────────────────────────────────
+
+function AutoApprovedAction({ expiresAt, onCancel }: { expiresAt: string; onCancel: () => void }) {
+  const graceExpiry = new Date(new Date(expiresAt).getTime() + 60 * 60 * 1000).toISOString();
+  const countdown = useChainCountdown(graceExpiry);
+  const inGrace = countdown && !countdown.expired;
+
+  if (inGrace) {
+    return (
+      <button
+        onClick={onCancel}
+        className="h-12 w-full rounded-2xl border border-blue-200 text-[14px] font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+      >
+        자동 승인 취소 (재매칭 요청)
+      </button>
+    );
+  }
+  return (
+    <div className="h-12 w-full rounded-2xl bg-gray-50 flex items-center justify-center">
+      <span className="text-[13px] text-gray-400">승인이 최종 확정됐습니다</span>
+    </div>
+  );
+}
+
+// ── Chain Approval Banner ──────────────────────────────────────────────────────
+
+function ChainApprovalBanner({ expiresAt, chainStatus }: { expiresAt: string; chainStatus?: "pending_shelter" | "auto_approved" }) {
+  const countdown = useChainCountdown(expiresAt);
+
+  if (chainStatus === "auto_approved") {
+    const graceEndMs = new Date(expiresAt).getTime() + 60 * 60 * 1000;
+    const graceRemaining = Math.max(0, graceEndMs - Date.now());
+    const inGrace = graceRemaining > 0;
+    const graceMin = Math.floor(graceRemaining / (1000 * 60));
+
+    return (
+      <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 size={14} className="text-blue-500 shrink-0" />
+          <span className="text-[13px] font-bold text-blue-700">자동 승인됨</span>
+        </div>
+        {inGrace && (
+          <span className="text-[11px] text-blue-500">취소 가능 {graceMin}분</span>
+        )}
+      </div>
+    );
+  }
+
+  if (!countdown) return null;
+  const { hours, minutes, seconds, expired, isReminder } = countdown;
+
+  if (expired) {
+    return (
+      <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 flex items-center justify-between">
+        <span className="text-[13px] font-semibold text-gray-500">승인 기한 만료</span>
+        <span className="text-[11px] text-gray-400">자동 승인 처리 중</span>
+      </div>
+    );
+  }
+
+  const color = isReminder ? "red" : "orange";
+  return (
+    <div className={`rounded-xl px-4 py-3 flex items-center justify-between ${isReminder ? "bg-red-50 border border-red-100" : "bg-orange-50 border border-orange-100"}`}>
+      <div className="flex items-center gap-2">
+        {isReminder && <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse shrink-0" />}
+        <span className={`text-[13px] font-semibold ${isReminder ? "text-red-600" : "text-orange-600"}`}>
+          {isReminder ? "승인 기한 임박" : "승인 기한"}
+        </span>
+      </div>
+      <div className="flex items-center tabular-nums">
+        {[{ v: hours, u: "시간" }, { v: minutes, u: "분" }, { v: seconds, u: "초" }].map(({ v, u }, i) => (
+          <div key={u} className="flex items-baseline gap-0.5">
+            {i > 0 && <span className={`text-[11px] mx-0.5 ${color === "red" ? "text-red-300" : "text-orange-300"}`}>:</span>}
+            <span className={`text-[15px] font-bold ${color === "red" ? "text-red-600" : "text-orange-500"}`}>
+              {String(v).padStart(2, "0")}
+            </span>
+            <span className={`text-[10px] ${color === "red" ? "text-red-400" : "text-orange-500/70"}`}>{u}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Post Card ──────────────────────────────────────────────────────────────────
 
 function PostCard({
@@ -96,12 +205,11 @@ function PostCard({
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 transition-shadow hover:shadow-md">
-      {/* 상세 페이지 링크 — 카드 정보 영역 전체 */}
       <Link
         href={`/dashboard/posts/${post.id}`}
         className={`block px-5 pt-4 ${hasAction ? "pb-3" : "pb-5"}`}
       >
-        {/* [부차] 배지 + 날짜 — 작고 조용하게 */}
+        {/* [부차] 배지 + 날짜 */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-1.5">
             <StatusBadge status={post.status} variant="sm" />
@@ -142,8 +250,24 @@ function PostCard({
               onClick={() => onShowMatching(post)}
               className="w-full flex items-center justify-between px-4 rounded-xl py-2.5 text-[13px] font-semibold bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors active:scale-[0.98]"
             >
-              <span className="flex-1 text-center">매칭 결과</span>
-              <ChevronRight size={15} className="text-gray-400" />
+              <span className="flex-1 text-center">
+                {post.chain_status === "auto_approved" ? "자동 승인됨" : "매칭 결과"}
+              </span>
+              {post.chain_expires_at && post.chain_status !== "auto_approved" && (() => {
+                const remaining = new Date(post.chain_expires_at).getTime() - Date.now();
+                const isReminder = remaining > 0 && remaining <= 12 * 60 * 60 * 1000;
+                return isReminder ? (
+                  <span className="flex items-center gap-1 mr-1">
+                    <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
+                    <span className="text-[10px] font-semibold text-red-500">기한 임박</span>
+                  </span>
+                ) : null;
+              })()}
+              {post.chain_status === "auto_approved" ? (
+                <CheckCircle2 size={15} className="text-blue-400" />
+              ) : (
+                <ChevronRight size={15} className="text-gray-400" />
+              )}
             </button>
           )}
           {isRecruiting && (
@@ -241,20 +365,29 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [shelterName, setShelterName] = useState("행복동물 보호소");
   const [activeTab, setActiveTab] = useState<TabKey>("all");
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [sheetType, setSheetType] = useState<"applicants" | "matching" | null>(null);
+  const selectedPost = posts.find((p) => p.id === selectedPostId) ?? null;
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     getPosts()
       .then(setPosts)
-      .catch(() => {})
+      .catch(() => setPosts(DUMMY_POSTS as Post[]))
       .finally(() => setLoading(false));
     getShelterProfile()
       .then((p) => setShelterName(p.name))
       .catch(() => {});
-    return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
+
+    const pollId = setInterval(() => {
+      getPosts().then(setPosts).catch(() => {});
+    }, 30_000);
+
+    return () => {
+      clearInterval(pollId);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
   }, []);
 
   function showToast(msg: string) {
@@ -264,7 +397,7 @@ export default function DashboardPage() {
   }
 
   function closeSheet() {
-    setSelectedPost(null);
+    setSelectedPostId(null);
     setSheetType(null);
   }
 
@@ -297,6 +430,23 @@ export default function DashboardPage() {
       );
       closeSheet();
       showToast("재매칭 요청이 접수되었습니다. 다음 배치 시 재처리됩니다.");
+    } catch {
+      showToast("처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
+    }
+  }
+
+  async function handleCancelAutoApproved() {
+    if (!selectedPost?.chain_id) {
+      showToast("매칭 정보를 불러올 수 없습니다. 페이지를 새로고침 해주세요.");
+      return;
+    }
+    try {
+      await cancelAutoApprovedMatching(selectedPost.chain_id);
+      setPosts((prev) =>
+        prev.map((p) => p.id === selectedPostId ? { ...p, status: "recruiting", chain_status: undefined } : p)
+      );
+      closeSheet();
+      showToast("자동 승인이 취소되었습니다. 재매칭 요청이 접수됩니다.");
     } catch {
       showToast("처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
     }
@@ -434,8 +584,8 @@ export default function DashboardPage() {
               <PostCard
                 key={post.id}
                 post={post}
-                onShowApplicants={(p) => { setSelectedPost(p); setSheetType("applicants"); }}
-                onShowMatching={(p)   => { setSelectedPost(p); setSheetType("matching"); }}
+                onShowApplicants={(p) => { setSelectedPostId(p.id); setSheetType("applicants"); }}
+                onShowMatching={(p)   => { setSelectedPostId(p.id); setSheetType("matching"); }}
               />
             )
           )
@@ -506,6 +656,16 @@ export default function DashboardPage() {
               </button>
             </div>
 
+            {/* 승인 기한 타이머 / 자동 승인 배너 */}
+            {selectedPost.chain_expires_at && (
+              <div className="mt-4">
+                <ChainApprovalBanner
+                  expiresAt={selectedPost.chain_expires_at}
+                  chainStatus={selectedPost.chain_status}
+                />
+              </div>
+            )}
+
             {/* 릴레이 체인 시각화 */}
             <div className="mt-5 mb-4">
               <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide mb-3">
@@ -521,14 +681,14 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <div className="pb-5">
-                      <div className="rounded-xl bg-[#FDF3EC] border border-[#EEA968]/20 px-4 py-3">
+                      <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
                         <div className="flex items-center justify-between gap-3 mb-1">
                           <p className="text-[14px] font-bold text-gray-800">{seg.volunteer}</p>
                           <span className="text-[11px] text-gray-400">{seg.time}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[12px] text-gray-500">
                           <span>{seg.from}</span>
-                          <ArrowRight size={11} className="text-[#EEA968]/60 shrink-0" />
+                          <ArrowRight size={11} className="text-gray-300 shrink-0" />
                           <span>{seg.to}</span>
                         </div>
                       </div>
@@ -539,37 +699,45 @@ export default function DashboardPage() {
                   <div className="flex flex-col items-center">
                     <div className="h-3 w-3 rounded-full bg-green-400 ring-2 ring-green-100 mt-1 shrink-0" />
                   </div>
-                  <p className="text-[13px] font-semibold text-green-600 mt-0.5">보호소 도착 🏠</p>
+                  <p className="text-[13px] font-semibold text-green-600 mt-0.5">입양처 도착 🏠</p>
                 </div>
               </div>
             </div>
 
-            {/* LLM 매칭 이유 */}
+            {/* AI 매칭 이유 */}
             {selectedPost.matchingReason && (
-              <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3.5 mb-5">
-                <p className="text-[11px] font-semibold text-gray-400 mb-1">AI 매칭 이유</p>
-                <p className="text-[13px] text-gray-600 leading-relaxed">
-                  {selectedPost.matchingReason}
-                </p>
+              <div className="mb-5">
+                <MatchingReasonBubble reason={selectedPost.matchingReason} />
               </div>
             )}
 
-            <div className="flex flex-col gap-2.5">
-              <button
-                onClick={handleApprove}
-                disabled={!selectedPost?.chain_id}
-                className="h-14 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/15 transition-all active:scale-[0.97] hover:bg-[#D99A55] disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
-              >
-                이 릴레이 팀으로 최종 승인
-              </button>
-              <button
-                onClick={handleReject}
-                disabled={!selectedPost?.chain_id}
-                className="h-12 w-full rounded-2xl border border-gray-200 text-[14px] font-semibold text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                거절 / 재매칭 요청
-              </button>
-            </div>
+            {/* 액션 버튼 */}
+            {selectedPost.chain_status === "auto_approved" ? (
+              selectedPost.chain_expires_at ? (
+                <AutoApprovedAction expiresAt={selectedPost.chain_expires_at} onCancel={handleCancelAutoApproved} />
+              ) : (
+                <div className="h-12 w-full rounded-2xl bg-gray-50 flex items-center justify-center">
+                  <span className="text-[13px] text-gray-400">승인이 최종 확정됐습니다</span>
+                </div>
+              )
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                <button
+                  onClick={handleApprove}
+                  disabled={!selectedPost?.chain_id}
+                  className="h-14 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/15 transition-all active:scale-[0.97] hover:bg-[#D99A55] disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+                >
+                  이 릴레이 팀으로 최종 승인
+                </button>
+                <button
+                  onClick={handleReject}
+                  disabled={!selectedPost?.chain_id}
+                  className="h-12 w-full rounded-2xl border border-gray-200 text-[14px] font-semibold text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  거절 / 재매칭 요청
+                </button>
+              </div>
+            )}
           </>
         )}
       </BottomSheet>

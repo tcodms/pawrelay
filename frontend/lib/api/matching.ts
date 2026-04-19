@@ -78,3 +78,9 @@ export async function rejectShelterMatching(chainId: number): Promise<void> {
     method: "PATCH",
   });
 }
+
+export async function cancelAutoApprovedMatching(chainId: number): Promise<void> {
+  await request<{ ok: boolean }>(`/matching/relay-chains/${chainId}/reject`, {
+    method: "PATCH",
+  });
+}
