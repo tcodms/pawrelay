@@ -63,6 +63,33 @@ interface DashboardPostItem {
   share_token: string;
 }
 
+export interface VolunteerPost {
+  id: number;
+  origin: string;
+  destination: string;
+  scheduled_date: string;
+  animal_size: "small" | "medium" | "large";
+  status: string;
+  animal_photo_url: string | null;
+}
+
+export interface VolunteerPostsResponse {
+  posts: VolunteerPost[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export async function getVolunteerPosts(query: PostsQuery): Promise<VolunteerPostsResponse> {
+  const params = new URLSearchParams();
+  if (query.region) params.set("region", query.region);
+  if (query.date) params.set("date", query.date);
+  if (query.animal_size) params.set("animal_size", query.animal_size);
+  params.set("page", String(query.page ?? 1));
+  params.set("limit", String(query.limit ?? 20));
+  return request<VolunteerPostsResponse>(`/posts?${params.toString()}`);
+}
+
 export async function getPosts(): Promise<Post[]> {
   const res = await request<{ posts: DashboardPostItem[] }>("/shelter/dashboard");
   return res.posts.map((item) => ({
