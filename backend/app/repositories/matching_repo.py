@@ -132,8 +132,10 @@ def _build_scheduled_time(scheduled_date, available_time: str | None) -> datetim
     return dt.replace(tzinfo=timezone.utc)
 
 
-async def get_chain_by_id(db: AsyncSession, chain_id: int) -> RelayChain | None:
-    result = await db.execute(
+async def get_chain_by_id(
+    db: AsyncSession, chain_id: int, for_update: bool = False
+) -> RelayChain | None:
+    stmt = (
         select(RelayChain)
         .where(RelayChain.id == chain_id)
         .options(
@@ -141,6 +143,9 @@ async def get_chain_by_id(db: AsyncSession, chain_id: int) -> RelayChain | None:
             selectinload(RelayChain.transport_post),
         )
     )
+    if for_update:
+        stmt = stmt.with_for_update()
+    result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
 

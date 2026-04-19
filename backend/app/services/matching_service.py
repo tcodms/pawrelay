@@ -105,7 +105,7 @@ def _build_chains(
 async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> dict:
     from fastapi import HTTPException
 
-    chain = await matching_repo.get_chain_by_id(db, chain_id)
+    chain = await matching_repo.get_chain_by_id(db, chain_id, for_update=True)
     if not chain:
         raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
     if chain.status != "proposed":
@@ -125,7 +125,7 @@ async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> d
     for conflicted in conflicting:
         await matching_repo.cancel_chain(db, conflicted)
         promoted = await matching_repo.promote_backup(
-            db, conflicted, chain.transport_post.scheduled_date if chain.transport_post else None
+            db, conflicted, conflicted.transport_post.scheduled_date if conflicted.transport_post else None
         )
         if not promoted:
             await matching_repo.restore_post_to_recruiting(db, conflicted.transport_post_id)
@@ -137,7 +137,7 @@ async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> d
 async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> dict:
     from fastapi import HTTPException
 
-    chain = await matching_repo.get_chain_by_id(db, chain_id)
+    chain = await matching_repo.get_chain_by_id(db, chain_id, for_update=True)
     if not chain:
         raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
     if chain.status != "proposed":
@@ -227,7 +227,7 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
         logger.error(f"[매칭 3단계] 공고 {post.id} LLM 실패, 스킵: {e}")
         return {"post_id": post.id, "candidate_count": len(candidates), "chain_id": None}
 
-    if not (0 <= selected_index < len(chains)):
+    if not isinstance(selected_index, int) or not (0 <= selected_index < len(chains)):
         logger.error(f"[매칭 3단계] 공고 {post.id} 잘못된 체인 인덱스: {selected_index}")
         return {"post_id": post.id, "candidate_count": len(candidates), "chain_id": None}
 
