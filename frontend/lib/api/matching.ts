@@ -48,6 +48,23 @@ export async function declineMatching(segmentId: number, reason: string): Promis
   });
 }
 
+// ── 세그먼트 상세 조회 ────────────────────────────────────────────────────────
+
+export interface SegmentDetail {
+  order: number;
+  pickup_location: { name: string; address: string };
+  dropoff_location: { name: string; address: string };
+  scheduled_time: string;
+  handover_code: string | null;
+  partner: { name: string; phone: string };
+  kakao_openchat_url: string;
+  status: string;
+}
+
+export async function getSegment(segmentId: number): Promise<{ segment: SegmentDetail }> {
+  return request<{ segment: SegmentDetail }>(`/matching/segments/${segmentId}`);
+}
+
 // ── 보호소 매칭 승인/거절 ─────────────────────────────────────────────────────
 
 export async function approveShelterMatching(chainId: number): Promise<void> {
