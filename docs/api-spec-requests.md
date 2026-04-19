@@ -148,6 +148,8 @@
 
 ## 8. `GET /posts/{id}` 응답에 `volunteers` 필드 추가 요청
 
+> **✅ 구현 완료** — role 기반 응답 분기 적용. shelter: volunteers 배열, volunteer: volunteer_count 반환.
+
 **요청:** 기존 엔드포인트 응답 확장
 
 **필요 이유:**
@@ -313,6 +315,8 @@
 ---
 
 ## 13. `GET /shelter/dashboard` 응답에 `chain_expires_at` 필드 추가 요청
+
+> **🔜 구현 예정** — `PATCH /matching/relay-chains/{chain_id}/approve` 구현 시 함께 반영.
 
 **요청:** 기존 엔드포인트 응답 확장
 
