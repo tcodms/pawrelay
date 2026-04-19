@@ -18,7 +18,8 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const id = Number(params.id);
     getPost(id)
-      .then((p) => setPost(p ?? (DUMMY_POSTS.find((d) => d.id === id) as Post | undefined) ?? null))
+      .then((p) => setPost(p))
+      .catch(() => setPost((DUMMY_POSTS.find((d) => d.id === id) as Post | undefined) ?? null))
       .finally(() => setLoading(false));
   }, [params.id]);
 

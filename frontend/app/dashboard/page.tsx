@@ -104,6 +104,30 @@ function useChainCountdown(expiresAt?: string) {
   return time;
 }
 
+// ── Auto Approved Action ───────────────────────────────────────────────────────
+
+function AutoApprovedAction({ expiresAt, onCancel }: { expiresAt: string; onCancel: () => void }) {
+  const graceExpiry = new Date(new Date(expiresAt).getTime() + 60 * 60 * 1000).toISOString();
+  const countdown = useChainCountdown(graceExpiry);
+  const inGrace = countdown && !countdown.expired;
+
+  if (inGrace) {
+    return (
+      <button
+        onClick={onCancel}
+        className="h-12 w-full rounded-2xl border border-blue-200 text-[14px] font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+      >
+        자동 승인 취소 (재매칭 요청)
+      </button>
+    );
+  }
+  return (
+    <div className="h-12 w-full rounded-2xl bg-gray-50 flex items-center justify-center">
+      <span className="text-[13px] text-gray-400">승인이 최종 확정됐습니다</span>
+    </div>
+  );
+}
+
 // ── Chain Approval Banner ──────────────────────────────────────────────────────
 
 function ChainApprovalBanner({ expiresAt, chainStatus }: { expiresAt: string; chainStatus?: "pending_shelter" | "auto_approved" }) {
@@ -341,8 +365,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [shelterName, setShelterName] = useState("행복동물 보호소");
   const [activeTab, setActiveTab] = useState<TabKey>("all");
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [sheetType, setSheetType] = useState<"applicants" | "matching" | null>(null);
+  const selectedPost = posts.find((p) => p.id === selectedPostId) ?? null;
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -372,7 +397,7 @@ export default function DashboardPage() {
   }
 
   function closeSheet() {
-    setSelectedPost(null);
+    setSelectedPostId(null);
     setSheetType(null);
   }
 
@@ -418,7 +443,7 @@ export default function DashboardPage() {
     try {
       await cancelAutoApprovedMatching(selectedPost.chain_id);
       setPosts((prev) =>
-        prev.map((p) => p.id === selectedPost.id ? { ...p, status: "recruiting", chain_status: undefined } : p)
+        prev.map((p) => p.id === selectedPostId ? { ...p, status: "recruiting", chain_status: undefined } : p)
       );
       closeSheet();
       showToast("자동 승인이 취소되었습니다. 재매칭 요청이 접수됩니다.");
@@ -559,8 +584,8 @@ export default function DashboardPage() {
               <PostCard
                 key={post.id}
                 post={post}
-                onShowApplicants={(p) => { setSelectedPost(p); setSheetType("applicants"); }}
-                onShowMatching={(p)   => { setSelectedPost(p); setSheetType("matching"); }}
+                onShowApplicants={(p) => { setSelectedPostId(p.id); setSheetType("applicants"); }}
+                onShowMatching={(p)   => { setSelectedPostId(p.id); setSheetType("matching"); }}
               />
             )
           )
@@ -688,23 +713,13 @@ export default function DashboardPage() {
 
             {/* 액션 버튼 */}
             {selectedPost.chain_status === "auto_approved" ? (
-              (() => {
-                const graceRemaining = selectedPost.chain_expires_at
-                  ? Math.max(0, new Date(selectedPost.chain_expires_at).getTime() + 60 * 60 * 1000 - Date.now())
-                  : 0;
-                return graceRemaining > 0 ? (
-                  <button
-                    onClick={handleCancelAutoApproved}
-                    className="h-12 w-full rounded-2xl border border-blue-200 text-[14px] font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
-                  >
-                    자동 승인 취소 (재매칭 요청)
-                  </button>
-                ) : (
-                  <div className="h-12 w-full rounded-2xl bg-gray-50 flex items-center justify-center">
-                    <span className="text-[13px] text-gray-400">승인이 최종 확정됐습니다</span>
-                  </div>
-                );
-              })()
+              selectedPost.chain_expires_at ? (
+                <AutoApprovedAction expiresAt={selectedPost.chain_expires_at} onCancel={handleCancelAutoApproved} />
+              ) : (
+                <div className="h-12 w-full rounded-2xl bg-gray-50 flex items-center justify-center">
+                  <span className="text-[13px] text-gray-400">승인이 최종 확정됐습니다</span>
+                </div>
+              )
             ) : (
               <div className="flex flex-col gap-2.5">
                 <button

@@ -38,6 +38,9 @@ export interface Post {
 
 export const URGENT_POST_IDS: number[] = [];
 
+// auto_approved 더미용 — 모듈 로드 시점 기준 30분 전 (만료됐지만 1시간 grace period 내)
+const AUTO_APPROVED_EXPIRES_AT = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
 export const DUMMY_POSTS: Post[] = [
   {
     id: 1,
@@ -82,7 +85,7 @@ export const DUMMY_POSTS: Post[] = [
   {
     id: 3,
     chain_id: 202,
-    chain_expires_at: "2026-04-19T06:00:00Z",
+    chain_expires_at: AUTO_APPROVED_EXPIRES_AT,
     chain_status: "auto_approved",
     animal_info: {
       name: "나비",
