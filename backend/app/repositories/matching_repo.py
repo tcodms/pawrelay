@@ -163,6 +163,10 @@ async def get_proposed_chains_with_volunteers(
                 RelaySegment.volunteer_id.in_(volunteer_ids),
             )
         )
+        .options(
+            selectinload(RelayChain.segments),
+            selectinload(RelayChain.transport_post),
+        )
         .distinct()
     )
     return list(result.scalars().all())

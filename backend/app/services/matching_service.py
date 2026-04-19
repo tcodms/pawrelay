@@ -138,8 +138,8 @@ async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> d
         raise
     except Exception as e:
         await db.rollback()
-        logger.error(f"[approve_chain] chain {chain_id} 처리 중 오류: {e}")
-        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"})
+        logger.error(f"[approve_chain] chain {chain_id} 처리 중 오류: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"}) from e
 
 
 async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> dict:
@@ -168,8 +168,8 @@ async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> di
         raise
     except Exception as e:
         await db.rollback()
-        logger.error(f"[reject_chain] chain {chain_id} 처리 중 오류: {e}")
-        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"})
+        logger.error(f"[reject_chain] chain {chain_id} 처리 중 오류: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"}) from e
 
 
 # ── 메인 실행 함수 ─────────────────────────────────────────────────────────────
