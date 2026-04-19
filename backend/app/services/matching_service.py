@@ -18,62 +18,6 @@ logger = logging.getLogger(__name__)
 
 HANDOVER_BUFFER = timedelta(minutes=30)
 
-# 시/도 단위 이동 시간 룩업 테이블 (단위: 분)
-# car: 고속도로 기준 평균, transit: KTX 기준 (무궁화/버스 이용 시 과소 추정 가능)
-# TODO: 챗봇에서 transit_type(KTX/일반기차/버스) 수집 후 세분화 필요
-_TRAVEL_TIME: dict[tuple[str, str], dict[str, int]] = {
-    ("서울특별시", "인천광역시"):      {"car": 60,  "transit": 70},
-    ("서울특별시", "경기도"):          {"car": 60,  "transit": 60},
-    ("서울특별시", "강원도"):          {"car": 120, "transit": 90},
-    ("서울특별시", "세종특별자치시"):  {"car": 110, "transit": 55},
-    ("서울특별시", "대전광역시"):      {"car": 100, "transit": 50},
-    ("서울특별시", "충청북도"):        {"car": 120, "transit": 60},
-    ("서울특별시", "충청남도"):        {"car": 120, "transit": 70},
-    ("서울특별시", "전라북도"):        {"car": 180, "transit": 80},
-    ("서울특별시", "광주광역시"):      {"car": 210, "transit": 90},
-    ("서울특별시", "전라남도"):        {"car": 230, "transit": 110},
-    ("서울특별시", "대구광역시"):      {"car": 200, "transit": 100},
-    ("서울특별시", "경상북도"):        {"car": 210, "transit": 110},
-    ("서울특별시", "부산광역시"):      {"car": 270, "transit": 155},
-    ("서울특별시", "울산광역시"):      {"car": 260, "transit": 140},
-    ("서울특별시", "경상남도"):        {"car": 260, "transit": 150},
-    ("서울특별시", "제주특별자치도"):  {"car": 480, "transit": 480},
-    ("인천광역시", "경기도"):          {"car": 40,  "transit": 50},
-    ("인천광역시", "대전광역시"):      {"car": 110, "transit": 60},
-    ("인천광역시", "광주광역시"):      {"car": 220, "transit": 100},
-    ("인천광역시", "부산광역시"):      {"car": 280, "transit": 165},
-    ("경기도", "강원도"):              {"car": 90,  "transit": 80},
-    ("경기도", "대전광역시"):          {"car": 110, "transit": 60},
-    ("경기도", "충청북도"):            {"car": 100, "transit": 70},
-    ("경기도", "충청남도"):            {"car": 110, "transit": 75},
-    ("경기도", "전라북도"):            {"car": 180, "transit": 90},
-    ("경기도", "광주광역시"):          {"car": 220, "transit": 100},
-    ("경기도", "대구광역시"):          {"car": 210, "transit": 110},
-    ("경기도", "부산광역시"):          {"car": 280, "transit": 165},
-    ("대전광역시", "세종특별자치시"):  {"car": 20,  "transit": 15},
-    ("대전광역시", "충청북도"):        {"car": 50,  "transit": 30},
-    ("대전광역시", "충청남도"):        {"car": 50,  "transit": 40},
-    ("대전광역시", "전라북도"):        {"car": 80,  "transit": 40},
-    ("대전광역시", "광주광역시"):      {"car": 130, "transit": 55},
-    ("대전광역시", "대구광역시"):      {"car": 110, "transit": 55},
-    ("대전광역시", "부산광역시"):      {"car": 180, "transit": 110},
-    ("광주광역시", "전라남도"):        {"car": 60,  "transit": 40},
-    ("광주광역시", "전라북도"):        {"car": 70,  "transit": 40},
-    ("광주광역시", "대구광역시"):      {"car": 150, "transit": 80},
-    ("광주광역시", "부산광역시"):      {"car": 200, "transit": 110},
-    ("대구광역시", "경상북도"):        {"car": 50,  "transit": 30},
-    ("대구광역시", "부산광역시"):      {"car": 80,  "transit": 45},
-    ("대구광역시", "울산광역시"):      {"car": 70,  "transit": 40},
-    ("대구광역시", "경상남도"):        {"car": 90,  "transit": 50},
-    ("부산광역시", "울산광역시"):      {"car": 60,  "transit": 35},
-    ("부산광역시", "경상남도"):        {"car": 50,  "transit": 40},
-    ("울산광역시", "경상남도"):        {"car": 60,  "transit": 45},
-    ("전라북도", "전라남도"):          {"car": 80,  "transit": 50},
-    ("충청북도", "충청남도"):          {"car": 70,  "transit": 50},
-    ("충청북도", "경상북도"):          {"car": 90,  "transit": 60},
-    ("강원도", "경상북도"):            {"car": 120, "transit": 90},
-}
-
 _SIDO_SUFFIXES = ("특별시", "광역시", "특별자치시", "특별자치도", "도")
 _SIDO_MAP = {
     "서울": "서울특별시", "부산": "부산광역시", "대구": "대구광역시",
@@ -96,14 +40,6 @@ def _normalize_sido(area: str) -> str:
     return area
 
 
-def _get_travel_minutes(origin_sido: str, dest_sido: str, mode: str) -> int | None:
-    """시/도 쌍의 이동 시간(분) 반환. 양방향 조회."""
-    times = _TRAVEL_TIME.get((origin_sido, dest_sido)) or _TRAVEL_TIME.get((dest_sido, origin_sido))
-    if not times:
-        return None
-    return times.get(mode)
-
-
 def _parse_time(time_str: str | None) -> datetime | None:
     if not time_str:
         return None
@@ -113,25 +49,11 @@ def _parse_time(time_str: str | None) -> datetime | None:
         return None
 
 
-def _estimate_arrival(vol: VolunteerSchedule) -> datetime | None:
-    """출발 시간 + 시/도 단위 룩업 테이블 기반 이동 시간으로 예상 도착 시간 계산"""
-    departure = _parse_time(vol.available_time)
-    if not departure:
-        return None
-    origin_sido = _normalize_sido(vol.origin_area)
-    dest_sido = _normalize_sido(vol.destination_area)
-    mode = "car" if vol.vehicle_available else "transit"
-    minutes = _get_travel_minutes(origin_sido, dest_sido, mode)
-    if minutes is None:
-        return None
-    return departure + timedelta(minutes=minutes)
-
-
 def _has_time_buffer(vol_a: VolunteerSchedule, vol_b: VolunteerSchedule) -> bool:
-    """A의 예상 도착 시간 + HANDOVER_BUFFER <= B의 출발 시간인지 확인
+    """A의 도착 예정 시간 + HANDOVER_BUFFER <= B의 출발 시간인지 확인
     시간 정보 없으면 통과 (MVP 한계)
     """
-    estimated_arrival_a = _estimate_arrival(vol_a)
+    estimated_arrival_a = _parse_time(vol_a.estimated_arrival_time)
     departure_b = _parse_time(vol_b.available_time)
     if not estimated_arrival_a or not departure_b:
         return True
@@ -178,6 +100,58 @@ def _build_chains(
     return valid_chains
 
 
+# ── approve / reject ──────────────────────────────────────────────────────────
+
+async def approve_chain(db: AsyncSession, chain_id: int) -> dict:
+    from fastapi import HTTPException
+
+    chain = await matching_repo.get_chain_by_id(db, chain_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
+    if chain.status != "proposed":
+        raise HTTPException(status_code=400, detail={"error": "CHAIN_NOT_PROPOSED"})
+
+    volunteer_ids = [s.volunteer_id for s in chain.segments]
+
+    await matching_repo.activate_chain(db, chain)
+    await matching_repo.mark_schedules_matched(db, volunteer_ids)
+
+    conflicting = await matching_repo.get_proposed_chains_with_volunteers(
+        db, volunteer_ids, exclude_chain_id=chain_id
+    )
+    for conflicted in conflicting:
+        await matching_repo.cancel_chain(db, conflicted)
+        promoted = await matching_repo.promote_backup(
+            db, conflicted, chain.transport_post.scheduled_date if chain.transport_post else None
+        )
+        if not promoted:
+            await matching_repo.restore_post_to_recruiting(db, conflicted.transport_post_id)
+
+    await db.commit()
+    return {"chain_id": chain_id, "status": "active", "cancelled_chains": len(conflicting)}
+
+
+async def reject_chain(db: AsyncSession, chain_id: int) -> dict:
+    from fastapi import HTTPException
+
+    chain = await matching_repo.get_chain_by_id(db, chain_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
+    if chain.status != "proposed":
+        raise HTTPException(status_code=400, detail={"error": "CHAIN_NOT_PROPOSED"})
+
+    await matching_repo.cancel_chain(db, chain)
+
+    promoted = await matching_repo.promote_backup(
+        db, chain, chain.transport_post.scheduled_date if chain.transport_post else None
+    )
+    if not promoted:
+        await matching_repo.restore_post_to_recruiting(db, chain.transport_post_id)
+
+    await db.commit()
+    return {"chain_id": chain_id, "status": "broken", "promoted": promoted is not None}
+
+
 # ── 메인 실행 함수 ─────────────────────────────────────────────────────────────
 
 async def run_matching(db: AsyncSession) -> dict:
@@ -222,7 +196,11 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
                 "origin_area": v.origin_area,
                 "destination_area": v.destination_area,
                 "available_date": str(v.available_date),
+                "available_time": v.available_time,
+                "estimated_arrival_time": v.estimated_arrival_time,
                 "vehicle_available": v.vehicle_available,
+                "max_animal_size": v.max_animal_size,
+                "is_direct_apply": v.post_id == post.id,
             }
             for v in chain
         ]

@@ -15,4 +15,22 @@ async def run_matching(
 ):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
-    return await matching_service.run_stage1_filter(db)
+    return await matching_service.run_matching(db)
+
+
+@router.patch("/relay-chains/{chain_id}/approve")
+async def approve_chain(
+    chain_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await matching_service.approve_chain(db, chain_id)
+
+
+@router.patch("/relay-chains/{chain_id}/reject")
+async def reject_chain(
+    chain_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await matching_service.reject_chain(db, chain_id)

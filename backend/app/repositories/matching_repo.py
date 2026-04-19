@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from geoalchemy2.functions import ST_DWithin, ST_EndPoint, ST_Length, ST_MakePoint, ST_SetSRID, ST_StartPoint
 from sqlalchemy import and_, case, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.post import TransportPost
@@ -102,6 +103,7 @@ async def save_relay_chain(
         backup_candidates=backup_data if backup_data else None,
         matching_reason=matching_reason,
         status="proposed",
+        chain_expires_at=datetime.now(tz=timezone.utc) + timedelta(hours=24),
     )
     db.add(chain)
     await db.flush()  # chain.id 확보
@@ -128,3 +130,107 @@ def _build_scheduled_time(scheduled_date, available_time: str | None) -> datetim
     return datetime.strptime(
         f"{scheduled_date} {time_str}", "%Y-%m-%d %H:%M"
     )
+
+
+async def get_chain_by_id(db: AsyncSession, chain_id: int) -> RelayChain | None:
+    result = await db.execute(
+        select(RelayChain)
+        .where(RelayChain.id == chain_id)
+        .options(
+            selectinload(RelayChain.segments),
+            selectinload(RelayChain.transport_post),
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_proposed_chains_with_volunteers(
+    db: AsyncSession, volunteer_ids: list[int], exclude_chain_id: int
+) -> list[RelayChain]:
+    """주어진 봉사자 중 한 명이라도 포함된 proposed 상태 chain 목록 반환 (exclude_chain_id 제외)"""
+    result = await db.execute(
+        select(RelayChain)
+        .join(RelaySegment, RelaySegment.chain_id == RelayChain.id)
+        .where(
+            and_(
+                RelayChain.status == "proposed",
+                RelayChain.id != exclude_chain_id,
+                RelaySegment.volunteer_id.in_(volunteer_ids),
+            )
+        )
+        .distinct()
+    )
+    return list(result.scalars().all())
+
+
+async def activate_chain(db: AsyncSession, chain: RelayChain) -> None:
+    chain.status = "active"
+    for segment in chain.segments:
+        segment.status = "accepted"
+    await db.flush()
+
+
+async def mark_schedules_matched(db: AsyncSession, volunteer_ids: list[int]) -> None:
+    schedules = await db.execute(
+        select(VolunteerSchedule).where(
+            and_(
+                VolunteerSchedule.volunteer_id.in_(volunteer_ids),
+                VolunteerSchedule.status == "available",
+            )
+        )
+    )
+    for schedule in schedules.scalars().all():
+        schedule.status = "matched"
+    await db.flush()
+
+
+async def cancel_chain(db: AsyncSession, chain: RelayChain) -> None:
+    chain.status = "broken"
+    await db.flush()
+
+
+async def restore_post_to_recruiting(db: AsyncSession, post_id: int) -> None:
+    result = await db.execute(
+        select(TransportPost).where(TransportPost.id == post_id)
+    )
+    post = result.scalar_one_or_none()
+    if post:
+        post.status = "recruiting"
+        await db.flush()
+
+
+async def promote_backup(
+    db: AsyncSession, broken_chain: RelayChain, scheduled_date
+) -> RelayChain | None:
+    """backup_candidates의 첫 번째 체인을 새 proposed chain으로 생성. 없으면 None 반환."""
+    backups = broken_chain.backup_candidates
+    if not backups:
+        return None
+    first_backup = backups[0]
+    remaining_backups = backups[1:] if len(backups) > 1 else None
+
+    new_chain = RelayChain(
+        transport_post_id=broken_chain.transport_post_id,
+        backup_candidates=remaining_backups,
+        matching_reason=broken_chain.matching_reason,
+        status="proposed",
+    )
+    db.add(new_chain)
+    await db.flush()
+
+    for order, vol_data in enumerate(first_backup):
+        scheduled_time = _build_scheduled_time(
+            scheduled_date, vol_data.get("available_time")
+        )
+        segment = RelaySegment(
+            chain_id=new_chain.id,
+            volunteer_id=vol_data["volunteer_id"],
+            segment_order=order,
+            pickup_location=vol_data["origin"],
+            dropoff_location=vol_data["destination"],
+            scheduled_time=scheduled_time,
+        )
+        db.add(segment)
+
+    await db.flush()
+    return new_chain
