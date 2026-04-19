@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import {
   ArrowLeft, ArrowRight, ArrowUp, MapPin, Calendar, PawPrint,
-  CheckCircle2, ExternalLink, QrCode, Users, MessageCircle,
+  CheckCircle2, ExternalLink, Users, MessageCircle,
 } from "lucide-react";
 import {
   sendChatMessage,
@@ -22,7 +22,7 @@ type Message =
   | { role: "bot"; type: "recommendation"; rec: RecommendedPost }
   | { role: "bot"; type: "matching_confirmed"; info: MatchingInfo }
   | { role: "bot"; type: "matching_reason"; reason: string; chain: ChainSegment[] }
-  | { role: "bot"; type: "handover_qr"; qr: HandoverQr };
+  | { role: "bot"; type: "ping_check"; segment_id: number; animal_name: string; depart_time: string; from: string };
 
 interface RecommendedPost {
   post_id: number;
@@ -45,6 +45,7 @@ interface ChainSegment {
 }
 
 interface MatchingInfo {
+  segment_id: number;
   animal_name: string;
   photo_url?: string;
   size: "small" | "medium" | "large";
@@ -63,7 +64,7 @@ interface HandoverCandidate {
   distance_km: number;
 }
 
-interface HandoverQr {
+interface _Unused {
   code: string;
   partner_name: string;
   partner_role: "prev" | "next";
@@ -130,7 +131,7 @@ const DEMO_MESSAGES_1_POST: Message[] = [
     role: "bot", type: "recommendation",
     rec: {
       post_id: 1,
-      segment_id: 42,
+      segment_id: 1,
       animal_name: "초코",
       photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400",
       size: "small",
@@ -153,6 +154,7 @@ const DEMO_MESSAGES_1_ACCEPT: Message[] = [
   {
     role: "bot", type: "matching_confirmed",
     info: {
+      segment_id: 42,
       animal_name: "초코",
       photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400",
       size: "small",
@@ -171,17 +173,14 @@ const DEMO_MESSAGES_1_ACCEPT: Message[] = [
   },
   {
     role: "bot", type: "text",
-    text: "출발 당일 아침에 인계 코드를 보내드릴게요. 출발 전 꼭 확인해 주세요!",
+    text: "인계 코드는 매칭 확정 페이지에서 출발 당일 00:00에 공개돼요. 확정 알림을 눌러 확인해 주세요!",
   },
   {
-    role: "bot", type: "handover_qr",
-    qr: {
-      code: "A7F3K2",
-      partner_name: "이릴레이",
-      partner_role: "next",
-      location: "천안아산역 1번 출구",
-      scheduled_time: "11:30",
-    },
+    role: "bot", type: "ping_check",
+    segment_id: 42,
+    animal_name: "초코",
+    depart_time: "09:00",
+    from: "광주광역시 북구",
   },
 ];
 
@@ -409,7 +408,7 @@ function RecommendationBubble({
 
 // ── 매칭 확정 카드 ────────────────────────────────────────────────────────────
 
-function MatchingConfirmedBubble({ info }: { info: MatchingInfo }) {
+function MatchingConfirmedBubble({ info, onViewDetail }: { info: MatchingInfo; onViewDetail: () => void }) {
   return (
     <div className="w-[260px] rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
       {/* 헤더 */}
@@ -470,56 +469,73 @@ function MatchingConfirmedBubble({ info }: { info: MatchingInfo }) {
           <span className="text-[12px] font-bold text-gray-700">카카오 오픈채팅 참여</span>
           <ExternalLink size={12} className="text-gray-400" />
         </a>
+        <button
+          onClick={onViewDetail}
+          className="w-full flex items-center justify-center gap-1 h-9 rounded-xl border border-gray-200 text-[12px] font-semibold text-gray-500 active:scale-[0.97] transition-transform"
+        >
+          <ExternalLink size={11} />
+          매칭 상세 보기
+        </button>
       </div>
     </div>
   );
 }
 
-// ── 인계 QR 카드 ──────────────────────────────────────────────────────────────
 
-function HandoverQrBubble({ qr }: { qr: HandoverQr }) {
+// ── 핑 체크 버블 ──────────────────────────────────────────────────────────────
+
+function PingCheckBubble({
+  animalName,
+  departTime,
+  from,
+  onConfirm,
+  onDelay,
+  answered,
+}: {
+  animalName: string;
+  departTime: string;
+  from: string;
+  onConfirm: () => void;
+  onDelay: () => void;
+  answered: boolean;
+}) {
   return (
     <div className="w-[260px] rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-      <div className="bg-[#A07050] px-4 py-2.5 flex items-center gap-2">
-        <QrCode size={14} className="text-white" />
-        <p className="text-[12px] font-bold text-white">
-          {qr.partner_role === "next" ? "다음 봉사자 인계 코드" : "이전 봉사자 인수 코드"}
-        </p>
+      <div className="bg-orange-50 px-4 py-2.5 flex items-center gap-2">
+        <div className="h-2 w-2 rounded-full bg-orange-400 animate-pulse shrink-0" />
+        <p className="text-[12px] font-bold text-orange-500">출발 확인 요청</p>
       </div>
-      <div className="px-4 py-4 flex flex-col items-center gap-3">
-        {/* QR 코드 플레이스홀더 */}
-        <div className="relative h-[120px] w-[120px] rounded-xl overflow-hidden bg-gray-50 border border-gray-100">
-          <Image
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=PAWRELAY-${qr.code}&bgcolor=FAFAFA`}
-            alt="QR Code"
-            fill
-            className="object-contain p-2"
-            unoptimized
-          />
+      <div className="px-4 py-3.5 space-y-3">
+        <div className="space-y-1">
+          <p className="text-[13px] font-semibold text-gray-800">
+            [{animalName}] 출발 2시간 전이에요!
+          </p>
+          <p className="text-[12px] text-gray-500 leading-relaxed">
+            {from} → {departTime} 출발<br />
+            정상 출발하실 수 있나요?
+          </p>
         </div>
-        {/* 6자리 코드 */}
-        <div className="flex gap-1.5 w-full px-2">
-          {qr.code.split("").map((c, i) => (
-            <div key={i} className="flex-1 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-[18px] font-bold text-[#EEA968]">
-              {c}
-            </div>
-          ))}
-        </div>
-        {/* 인계 정보 */}
-        <div className="w-full rounded-xl bg-gray-50 px-3 py-2.5 space-y-1.5 text-[12px]">
-          <div className="flex justify-between">
-            <span className="text-gray-400">{qr.partner_role === "next" ? "다음 봉사자" : "이전 봉사자"}</span>
-            <span className="font-semibold text-gray-700">{qr.partner_name}</span>
+        {answered ? (
+          <div className="flex items-center gap-1.5 rounded-xl bg-green-50 px-3 py-2">
+            <CheckCircle2 size={13} className="text-green-500 shrink-0" />
+            <p className="text-[12px] font-semibold text-green-600">출발 확인 완료</p>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">인계 장소</span>
-            <span className="font-semibold text-gray-700">{qr.location}</span>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={onConfirm}
+              className="w-full h-10 rounded-xl bg-[#EEA968] text-[13px] font-bold text-white active:scale-[0.98] transition-transform"
+            >
+              네, 출발할게요!
+            </button>
+            <button
+              onClick={onDelay}
+              className="w-full h-10 rounded-xl bg-gray-100 text-[13px] font-semibold text-gray-600 active:scale-[0.98] transition-transform"
+            >
+              지연될 것 같아요
+            </button>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">예정 시각</span>
-            <span className="font-semibold text-gray-700">{qr.scheduled_time}</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -582,14 +598,54 @@ export default function ChatRoomPage() {
   const [confirmOptions, setConfirmOptions] = useState<string[] | null>(null);
   const [registeredFields, setRegisteredFields] = useState<RegisteredFields | undefined>(undefined);
   const [matchingDecided, setMatchingDecided] = useState(false);
+  const [pingAnswered, setPingAnswered] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const DEMO_CACHE_KEY = `demoChat_${sessionId}`;
+
+  function saveDemoState() {
+    if (!(isDemo || isDemo2) || messages.length === 0) return;
+    sessionStorage.setItem(DEMO_CACHE_KEY, JSON.stringify({
+      messages, matchingDecided, pingAnswered, registeredFields, confirmOptions,
+    }));
+  }
 
   useEffect(() => {
     const raw = sessionStorage.getItem(CHATBOT_POST_CONTEXT_KEY);
     const context: PostContext | null = raw ? JSON.parse(raw) : null;
     setPostContext(context);
+
+    // 캐시된 상태 복원 (매칭 상세 다녀온 경우)
+    const raw2 = sessionStorage.getItem(DEMO_CACHE_KEY);
+    if (raw2 && (isDemo || isDemo2)) {
+      const s = JSON.parse(raw2);
+      setMessages(s.messages ?? []);
+      setMatchingDecided(s.matchingDecided ?? false);
+      setPingAnswered(s.pingAnswered ?? false);
+      setRegisteredFields(s.registeredFields);
+      setConfirmOptions(s.confirmOptions ?? null);
+      setInitializing(false);
+      // StrictMode 이중 마운트 대응: 즉시 삭제 대신 지연 삭제
+      setTimeout(() => sessionStorage.removeItem(DEMO_CACHE_KEY), 500);
+      // 수락/거절 결과 처리
+      const action = sessionStorage.getItem("matchingAction");
+      if (action) {
+        sessionStorage.removeItem("matchingAction");
+        setTimeout(() => {
+          if (action === "accepted") {
+            setMatchingDecided(true);
+            showSequential(DEMO_MESSAGES_1_ACCEPT, 500);
+          } else if (action === "declined") {
+            setMatchingDecided(true);
+            setCompleted(true);
+            setMessages((prev) => [...prev, { role: "bot", type: "text", text: "알겠어요. 다른 기회에 또 연락드릴게요! 🐾" }]);
+          }
+        }, 600);
+      }
+      return;
+    }
 
     if (isDemo) {
       // PRE 메시지 순차 표시 후 CONFIRM 버튼
@@ -799,16 +855,40 @@ export default function ChatRoomPage() {
                 rec={msg.rec}
                 onAccept={() => handleUserInput("수락할게요")}
                 onReject={() => handleUserInput("거절할게요")}
-                onViewDetail={() => router.push(`/volunteer/matching/${msg.rec.segment_id}`)}
+                onViewDetail={() => { saveDemoState(); router.push(`/volunteer/matching/${msg.rec.segment_id}`); }}
                 decided={matchingDecided}
               />
             </BotRow>
           );
           if (msg.type === "matching_confirmed") return (
-            <BotRow key={i}><MatchingConfirmedBubble info={msg.info} /></BotRow>
+            <BotRow key={i}>
+              <MatchingConfirmedBubble
+                info={msg.info}
+                onViewDetail={() => { saveDemoState(); router.push(`/volunteer/matching/${msg.info.segment_id}`); }}
+              />
+            </BotRow>
           );
-          if (msg.type === "handover_qr") return (
-            <BotRow key={i}><HandoverQrBubble qr={msg.qr} /></BotRow>
+          if (msg.type === "ping_check") return (
+            <BotRow key={i}>
+              <PingCheckBubble
+                animalName={msg.animal_name}
+                departTime={msg.depart_time}
+                from={msg.from}
+                answered={pingAnswered}
+                onConfirm={() => {
+                  setPingAnswered(true);
+                  setMessages((prev) => [...prev,
+                    { role: "bot", type: "text", text: "출발 확인 완료! 안전하게 출발하세요. 🐾\n이동 중 체크포인트를 눌러 진행 상황을 기록해 주세요." },
+                  ]);
+                }}
+                onDelay={() => {
+                  setPingAnswered(true);
+                  setMessages((prev) => [...prev,
+                    { role: "bot", type: "text", text: "알겠어요. 지연 사유를 입력해 주시면 보호소와 다음 봉사자에게 안내해 드릴게요." },
+                  ]);
+                }}
+              />
+            </BotRow>
           );
           // text
           return (
