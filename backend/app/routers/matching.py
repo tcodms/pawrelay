@@ -24,7 +24,9 @@ async def approve_chain(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await matching_service.approve_chain(db, chain_id)
+    if current_user.role != "volunteer":
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+    return await matching_service.approve_chain(db, chain_id, current_user.id)
 
 
 @router.patch("/relay-chains/{chain_id}/reject")
@@ -33,4 +35,6 @@ async def reject_chain(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await matching_service.reject_chain(db, chain_id)
+    if current_user.role != "volunteer":
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+    return await matching_service.reject_chain(db, chain_id, current_user.id)

@@ -102,7 +102,7 @@ def _build_chains(
 
 # ── approve / reject ──────────────────────────────────────────────────────────
 
-async def approve_chain(db: AsyncSession, chain_id: int) -> dict:
+async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> dict:
     from fastapi import HTTPException
 
     chain = await matching_repo.get_chain_by_id(db, chain_id)
@@ -110,11 +110,14 @@ async def approve_chain(db: AsyncSession, chain_id: int) -> dict:
         raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
     if chain.status != "proposed":
         raise HTTPException(status_code=400, detail={"error": "CHAIN_NOT_PROPOSED"})
+    if volunteer_id not in [s.volunteer_id for s in chain.segments]:
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
     volunteer_ids = [s.volunteer_id for s in chain.segments]
 
+    scheduled_date = chain.transport_post.scheduled_date if chain.transport_post else None
     await matching_repo.activate_chain(db, chain)
-    await matching_repo.mark_schedules_matched(db, volunteer_ids)
+    await matching_repo.mark_schedules_matched(db, volunteer_ids, scheduled_date)
 
     conflicting = await matching_repo.get_proposed_chains_with_volunteers(
         db, volunteer_ids, exclude_chain_id=chain_id
@@ -131,7 +134,7 @@ async def approve_chain(db: AsyncSession, chain_id: int) -> dict:
     return {"chain_id": chain_id, "status": "active", "cancelled_chains": len(conflicting)}
 
 
-async def reject_chain(db: AsyncSession, chain_id: int) -> dict:
+async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> dict:
     from fastapi import HTTPException
 
     chain = await matching_repo.get_chain_by_id(db, chain_id)
@@ -139,6 +142,8 @@ async def reject_chain(db: AsyncSession, chain_id: int) -> dict:
         raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
     if chain.status != "proposed":
         raise HTTPException(status_code=400, detail={"error": "CHAIN_NOT_PROPOSED"})
+    if volunteer_id not in [s.volunteer_id for s in chain.segments]:
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
     await matching_repo.cancel_chain(db, chain)
 
@@ -220,6 +225,10 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
         matching_reason = llm_result["matching_reason"]
     except ValueError as e:
         logger.error(f"[매칭 3단계] 공고 {post.id} LLM 실패, 스킵: {e}")
+        return {"post_id": post.id, "candidate_count": len(candidates), "chain_id": None}
+
+    if not (0 <= selected_index < len(chains)):
+        logger.error(f"[매칭 3단계] 공고 {post.id} 잘못된 체인 인덱스: {selected_index}")
         return {"post_id": post.id, "candidate_count": len(candidates), "chain_id": None}
 
     logger.info(f"[매칭 3단계] 공고 {post.id} → 체인 {selected_index} 선택")

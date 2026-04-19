@@ -93,7 +93,8 @@ async def save_relay_chain(
     """최적 체인을 relay_chains + relay_segments에 저장"""
     backup_data = [
         [{"schedule_id": v.id, "volunteer_id": v.volunteer_id,
-          "origin": v.origin_area, "destination": v.destination_area}
+          "origin": v.origin_area, "destination": v.destination_area,
+          "available_time": v.available_time}
          for v in chain]
         for chain in backup_chains
     ]
@@ -127,9 +128,8 @@ async def save_relay_chain(
 def _build_scheduled_time(scheduled_date, available_time: str | None) -> datetime:
     """날짜 + 시간 문자열(HH:MM)을 datetime으로 변환. 시간 없으면 00:00"""
     time_str = available_time or "00:00"
-    return datetime.strptime(
-        f"{scheduled_date} {time_str}", "%Y-%m-%d %H:%M"
-    )
+    dt = datetime.strptime(f"{scheduled_date} {time_str}", "%Y-%m-%d %H:%M")
+    return dt.replace(tzinfo=timezone.utc)
 
 
 async def get_chain_by_id(db: AsyncSession, chain_id: int) -> RelayChain | None:
@@ -170,12 +170,15 @@ async def activate_chain(db: AsyncSession, chain: RelayChain) -> None:
     await db.flush()
 
 
-async def mark_schedules_matched(db: AsyncSession, volunteer_ids: list[int]) -> None:
+async def mark_schedules_matched(
+    db: AsyncSession, volunteer_ids: list[int], scheduled_date
+) -> None:
     schedules = await db.execute(
         select(VolunteerSchedule).where(
             and_(
                 VolunteerSchedule.volunteer_id.in_(volunteer_ids),
                 VolunteerSchedule.status == "available",
+                VolunteerSchedule.available_date == scheduled_date,
             )
         )
     )
@@ -214,6 +217,7 @@ async def promote_backup(
         backup_candidates=remaining_backups,
         matching_reason=broken_chain.matching_reason,
         status="proposed",
+        chain_expires_at=datetime.now(tz=timezone.utc) + timedelta(hours=24),
     )
     db.add(new_chain)
     await db.flush()
