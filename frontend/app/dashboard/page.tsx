@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { User, Users, Plus, X, ChevronRight, ArrowRight, CheckCircle2 } from "lucide-react";
-import { getPosts, Post } from "@/lib/api/posts";
+import { getPosts, getPost, Post } from "@/lib/api/posts";
 import { DUMMY_POSTS } from "@/lib/dummy-posts";
 import { approveShelterMatching, rejectShelterMatching, cancelAutoApprovedMatching } from "@/lib/api/matching";
 import { getShelterProfile } from "@/lib/api/shelter";
@@ -368,6 +368,8 @@ export default function DashboardPage() {
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [sheetType, setSheetType] = useState<"applicants" | "matching" | null>(null);
   const selectedPost = posts.find((p) => p.id === selectedPostId) ?? null;
+  const [applicants, setApplicants] = useState<Post["volunteers"]>([]);
+  const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -399,6 +401,21 @@ export default function DashboardPage() {
   function closeSheet() {
     setSelectedPostId(null);
     setSheetType(null);
+    setApplicants([]);
+  }
+
+  async function openApplicants(post: Post) {
+    setSelectedPostId(post.id);
+    setSheetType("applicants");
+    setApplicantsLoading(true);
+    try {
+      const detail = await getPost(post.id);
+      setApplicants(detail?.volunteers ?? []);
+    } catch {
+      setApplicants([]);
+    } finally {
+      setApplicantsLoading(false);
+    }
   }
 
   async function handleApprove() {
@@ -584,7 +601,7 @@ export default function DashboardPage() {
               <PostCard
                 key={post.id}
                 post={post}
-                onShowApplicants={(p) => { setSelectedPostId(p.id); setSheetType("applicants"); }}
+                onShowApplicants={(p) => openApplicants(p)}
                 onShowMatching={(p)   => { setSelectedPostId(p.id); setSheetType("matching"); }}
               />
             )
@@ -611,7 +628,7 @@ export default function DashboardPage() {
                   {selectedPost.animal_info.name} 공고 지원자
                 </h3>
                 <p className="text-[12px] text-gray-400 mt-0.5">
-                  총 {selectedPost.volunteers.length}명 지원
+                  총 {applicants.length}명 지원
                 </p>
               </div>
               <button onClick={closeSheet} aria-label="닫기" className="text-gray-400 hover:text-gray-600">
@@ -620,21 +637,29 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex flex-col gap-2.5 mt-4">
-              {selectedPost.volunteers.map((v) => (
-                <div key={v.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3.5">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
-                    <span className="text-[13px] font-bold text-[#7A4A28]">{v.name[0]}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-gray-800">{v.name}</p>
-                    <div className="flex items-center gap-1 text-[12px] text-gray-400">
-                      <span>{v.from}</span>
-                      <ArrowRight size={11} />
-                      <span>{v.to}</span>
+              {applicantsLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
+                </div>
+              ) : applicants.length === 0 ? (
+                <p className="text-center text-[13px] text-gray-400 py-8">지원자가 없습니다.</p>
+              ) : (
+                applicants.map((v) => (
+                  <div key={v.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
+                      <span className="text-[13px] font-bold text-[#7A4A28]">{v.name[0]}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-semibold text-gray-800">{v.name}</p>
+                      <div className="flex items-center gap-1 text-[12px] text-gray-400">
+                        <span>{v.from}</span>
+                        <ArrowRight size={11} />
+                        <span>{v.to}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </>
         )}

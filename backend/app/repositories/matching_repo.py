@@ -201,14 +201,18 @@ async def cancel_chain(db: AsyncSession, chain: RelayChain) -> None:
     await db.flush()
 
 
-async def restore_post_to_recruiting(db: AsyncSession, post_id: int) -> None:
+async def update_post_status(db: AsyncSession, post_id: int, status: str) -> None:
     result = await db.execute(
         select(TransportPost).where(TransportPost.id == post_id)
     )
     post = result.scalar_one_or_none()
     if post:
-        post.status = "recruiting"
+        post.status = status
         await db.flush()
+
+
+async def restore_post_to_recruiting(db: AsyncSession, post_id: int) -> None:
+    await update_post_status(db, post_id, "recruiting")
 
 
 async def promote_backup(
@@ -253,7 +257,13 @@ async def get_segment_by_id(db: AsyncSession, segment_id: int) -> RelaySegment |
     result = await db.execute(
         select(RelaySegment)
         .where(RelaySegment.id == segment_id)
-        .options(selectinload(RelaySegment.volunteer))
+        .options(
+            selectinload(RelaySegment.volunteer),
+            selectinload(RelaySegment.chain).selectinload(RelayChain.transport_post),
+            selectinload(RelaySegment.chain)
+                .selectinload(RelayChain.segments)
+                .selectinload(RelaySegment.volunteer),
+        )
     )
     return result.scalar_one_or_none()
 

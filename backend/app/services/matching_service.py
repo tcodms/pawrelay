@@ -184,20 +184,40 @@ async def get_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> d
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
     partner = await matching_repo.get_partner_segment(db, segment)
+    chain = segment.chain
+    post = chain.transport_post if chain else None
+    chain_segments = sorted(chain.segments, key=lambda s: s.segment_order) if chain else []
 
     return {
         "segment": {
             "order": segment.segment_order,
             "status": segment.status,
+            "animal_name": post.animal_name if post else "",
+            "animal_photo_url": post.animal_photo_url if post else None,
+            "animal_size": post.animal_size if post else "small",
+            "scheduled_date": post.scheduled_date.isoformat() if post else None,
             "pickup_location": {"name": segment.pickup_location, "address": segment.pickup_location},
             "dropoff_location": {"name": segment.dropoff_location, "address": segment.dropoff_location},
             "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
+            "depart_time": segment.scheduled_time.strftime("%H:%M") if segment.scheduled_time else None,
+            "estimated_arrival_time": segment.estimated_arrival.strftime("%H:%M") if segment.estimated_arrival else None,
             "handover_code": segment.handover_code,
+            "matching_reason": chain.matching_reason if chain else None,
+            "notified_at": chain.created_at.isoformat() if chain else None,
             "partner": {
                 "name": partner.volunteer.name if partner and partner.volunteer else "",
                 "phone": "",
             },
             "kakao_openchat_url": "",
+            "chain_segments": [
+                {
+                    "volunteer": seg.volunteer.name if seg.volunteer else "",
+                    "from": seg.pickup_location,
+                    "to": seg.dropoff_location,
+                    "is_me": seg.volunteer_id == volunteer_id,
+                }
+                for seg in chain_segments
+            ],
         }
     }
 
@@ -246,9 +266,20 @@ async def decline_segment(db: AsyncSession, segment_id: int, volunteer_id: int, 
     segment.status = "no_show"
     segment.declined_at = datetime.now(tz=timezone.utc)
     segment.decline_reason = reason
-    await db.commit()
 
-    return {"status": "declined"}
+    chain = segment.chain
+    try:
+        await matching_repo.cancel_chain(db, chain)
+        scheduled_date = chain.transport_post.scheduled_date if chain.transport_post else None
+        promoted = await matching_repo.promote_backup(db, chain, scheduled_date)
+        if not promoted:
+            await matching_repo.restore_post_to_recruiting(db, chain.transport_post_id)
+        await db.commit()
+        return {"status": "declined", "promoted": promoted is not None}
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"[decline_segment] segment {segment_id} 처리 중 오류: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"}) from e
 
 
 # ── 메인 실행 함수 ─────────────────────────────────────────────────────────────
@@ -332,6 +363,7 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
     saved_chain = await matching_repo.save_relay_chain(
         db, post.id, primary, backups, post.scheduled_date, matching_reason
     )
+    await matching_repo.update_post_status(db, post.id, "waiting")
     await db.commit()
     logger.info(f"[매칭] 공고 {post.id} → relay_chain {saved_chain.id} 저장 완료")
 

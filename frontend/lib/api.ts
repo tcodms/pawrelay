@@ -75,6 +75,7 @@ export interface User {
   id: number;
   email: string;
   role: UserRole;
+  name: string;
 }
 
 export interface LoginResponse {

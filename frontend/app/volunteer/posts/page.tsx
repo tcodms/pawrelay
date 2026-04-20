@@ -61,6 +61,7 @@ function PostsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [userName, setUserName] = useState("");
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -83,6 +84,9 @@ function PostsPage() {
   }, [region, search, date, size, page]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
+  useEffect(() => {
+    setUserName(localStorage.getItem("user_name") ?? "");
+  }, []);
 
   const urgentPosts = posts.slice(0, 3);
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -136,7 +140,7 @@ function PostsPage() {
           <div className="mx-auto w-full max-w-2xl px-5 pt-5 pb-4 flex flex-col justify-between h-full">
             <div>
               <p className="text-[21px] font-bold text-[#5C3317] leading-snug">
-                안녕하세요, 김봉사님
+                안녕하세요{userName ? `, ${userName}님` : "!"}
               </p>
               <p className="text-[13px] text-[#7A4A28]/70 mt-0.5">오늘도 따뜻한 손길을 기다리고 있어요.</p>
             </div>

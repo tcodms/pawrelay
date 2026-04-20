@@ -1,5 +1,7 @@
 from datetime import date
 
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.volunteer import VolunteerSchedule
@@ -36,3 +38,13 @@ async def create_schedule(
     await db.commit()
     await db.refresh(schedule)
     return schedule
+
+
+async def get_schedules_by_volunteer(db: AsyncSession, volunteer_id: int) -> list[VolunteerSchedule]:
+    result = await db.execute(
+        select(VolunteerSchedule)
+        .where(VolunteerSchedule.volunteer_id == volunteer_id)
+        .options(selectinload(VolunteerSchedule.post))
+        .order_by(VolunteerSchedule.available_date.desc())
+    )
+    return list(result.scalars().all())

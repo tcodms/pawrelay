@@ -13,7 +13,7 @@ import {
   CHATBOT_POST_CONTEXT_KEY,
 } from "@/lib/api/chatbot";
 import type { PostContext, PostSuggestion } from "@/lib/api/chatbot";
-import { getUnreadNotifications, markNotificationRead } from "@/lib/api/notifications";
+// import { getUnreadNotifications, markNotificationRead } from "@/lib/api/notifications"; // TODO: notifications 백엔드 구현 후 활성화
 import type { AppNotification } from "@/lib/api/notifications";
 
 // ── 메시지 타입 ───────────────────────────────────────────────────────────────
@@ -123,7 +123,7 @@ const DEMO_MESSAGES_1_POST: Message[] = [
     role: "bot", type: "matching_reason",
     reason: "출발지(광주광역시 북구)가 공고 출발지와 일치하고, 차량이 있어 소형 동물 수송에 최적입니다. 천안역에서 다음 봉사자와 인계가 원활하게 이루어질 수 있어 이 구간을 추천드려요.",
     chain: [
-      { volunteer: "나 (김봉사)", from: "광주광역시 북구", to: "천안역", isMe: true },
+      { volunteer: `나 (${typeof window !== "undefined" ? localStorage.getItem("user_name") ?? "나" : "나"})`, from: "광주광역시 북구", to: "천안역", isMe: true },
       { volunteer: "이릴레이", from: "천안역", to: "수원역" },
       { volunteer: "박도움", from: "수원역", to: "서울 강남구" },
     ],
@@ -691,16 +691,7 @@ export default function ChatRoomPage() {
   }
 
   async function appendUnreadNotifications() {
-    try {
-      const notifs = await getUnreadNotifications();
-      const msgs = notifsToMessages(notifs);
-      if (msgs.length > 0) {
-        setMessages((prev) => [...prev, ...msgs]);
-        notifs.forEach((n) => markNotificationRead(n.id).catch((err) => {
-          console.error(`알림 읽음 처리 실패 (id: ${n.id})`, err);
-        }));
-      }
-    } catch {}
+    // TODO: notifications 백엔드 구현 후 활성화
   }
 
   const DEMO_CACHE_KEY = `demoChat_${sessionId}`;
@@ -856,7 +847,7 @@ export default function ChatRoomPage() {
         await appendUnreadNotifications();
         return;
       }
-      const res = await sendChatMessage(null, context?.post_id ?? null, null);
+      const res = await sendChatMessage(sessionId, context?.post_id ?? null, null);
       setBeSessionId(res.session_id);
       setMessages([{ role: "bot", type: "text", text: res.message }]);
       setConfirmOptions(res.options);

@@ -375,12 +375,23 @@ export default function MatchingDetailPage() {
         setSeg((prev) => ({
           ...prev,
           order: segment.order,
+          animal_name: segment.animal_name || prev.animal_name,
+          animal_photo_url: segment.animal_photo_url ?? prev.animal_photo_url,
+          animal_size: segment.animal_size || prev.animal_size,
+          scheduled_date: segment.scheduled_date || prev.scheduled_date,
           pickup_location: { ...prev.pickup_location, ...segment.pickup_location },
           dropoff_location: { ...prev.dropoff_location, ...segment.dropoff_location },
           scheduled_time: segment.scheduled_time,
+          depart_time: segment.depart_time || prev.depart_time,
+          estimated_arrival_time: segment.estimated_arrival_time || prev.estimated_arrival_time,
           handover_code: segment.handover_code,
+          matching_reason: segment.matching_reason || prev.matching_reason,
+          notified_at: segment.notified_at || prev.notified_at,
           partner: segment.partner,
           kakao_openchat_url: segment.kakao_openchat_url,
+          ...(segment.chain_segments?.length
+            ? { chain_segments: segment.chain_segments }
+            : {}),
         }));
         setStatus(segment.status);
       })
