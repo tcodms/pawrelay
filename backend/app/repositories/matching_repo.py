@@ -247,3 +247,27 @@ async def promote_backup(
 
     await db.flush()
     return new_chain
+
+
+async def get_segment_by_id(db: AsyncSession, segment_id: int) -> RelaySegment | None:
+    result = await db.execute(
+        select(RelaySegment)
+        .where(RelaySegment.id == segment_id)
+        .options(selectinload(RelaySegment.volunteer))
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_partner_segment(db: AsyncSession, segment: RelaySegment) -> RelaySegment | None:
+    """인접 구간 봉사자 조회 (인계 파트너)"""
+    result = await db.execute(
+        select(RelaySegment)
+        .where(
+            and_(
+                RelaySegment.chain_id == segment.chain_id,
+                RelaySegment.segment_order == segment.segment_order + 1,
+            )
+        )
+        .options(selectinload(RelaySegment.volunteer))
+    )
+    return result.scalar_one_or_none()

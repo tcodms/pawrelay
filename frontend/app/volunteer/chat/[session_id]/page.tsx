@@ -844,12 +844,23 @@ export default function ChatRoomPage() {
   async function initConversation(context: PostContext | null) {
     setInitializing(true);
     try {
+      // 채팅 목록에서 새 세션 시작 시 이미 초기화된 응답이 있으면 재사용
+      const cached = sessionStorage.getItem(`chatbot_init_${sessionId}`);
+      if (cached) {
+        sessionStorage.removeItem(`chatbot_init_${sessionId}`);
+        const res = JSON.parse(cached);
+        setBeSessionId(res.session_id);
+        setMessages([{ role: "bot", type: "text", text: res.message }]);
+        setConfirmOptions(res.options);
+        if (!res.input_type) setTimeout(() => textareaRef.current?.focus(), 100);
+        await appendUnreadNotifications();
+        return;
+      }
       const res = await sendChatMessage(null, context?.post_id ?? null, null);
       setBeSessionId(res.session_id);
       setMessages([{ role: "bot", type: "text", text: res.message }]);
       setConfirmOptions(res.options);
       if (!res.input_type) setTimeout(() => textareaRef.current?.focus(), 100);
-      // 채팅 시작 후 미읽은 매칭 알림 표시
       await appendUnreadNotifications();
     } catch {
       setMessages([{ role: "bot", type: "text", text: "채팅을 시작할 수 없습니다. 다시 시도해 주세요." }]);

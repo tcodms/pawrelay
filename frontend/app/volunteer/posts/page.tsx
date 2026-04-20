@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -134,10 +135,10 @@ function PostsPage() {
         <div className="absolute inset-0 flex flex-col justify-between">
           <div className="mx-auto w-full max-w-2xl px-5 pt-5 pb-4 flex flex-col justify-between h-full">
             <div>
-              <p className="text-[13px] text-[#7A4A28]/70 mb-0.5">오늘도 따뜻한 손길을 기다리고 있어요.</p>
               <p className="text-[21px] font-bold text-[#5C3317] leading-snug">
-                릴레이 공고 목록
+                안녕하세요, 김봉사님
               </p>
+              <p className="text-[13px] text-[#7A4A28]/70 mt-0.5">오늘도 따뜻한 손길을 기다리고 있어요.</p>
             </div>
             <div className="flex items-center gap-2 w-full rounded-2xl bg-white/80 backdrop-blur-sm border border-white/60 shadow-sm px-4 py-2.5">
               <Search size={16} className="text-gray-400 shrink-0" />
@@ -442,10 +443,24 @@ function PostsPage() {
   );
 }
 
-export default function PostsPageWrapper() {
+function PostsPageSkeleton() {
   return (
-    <Suspense>
-      <PostsPage />
-    </Suspense>
+    <main className="min-h-screen bg-gray-50">
+      <div className="h-[155px] w-full bg-[#EEA968]/20 animate-pulse" />
+      <div className="mx-auto max-w-2xl px-4 pt-4 space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-24 rounded-2xl bg-gray-100 animate-pulse" />
+        ))}
+      </div>
+    </main>
   );
+}
+
+const PostsPageClient = dynamic(() => Promise.resolve(PostsPage), {
+  ssr: false,
+  loading: PostsPageSkeleton,
+});
+
+export default function PostsPageWrapper() {
+  return <PostsPageClient />;
 }

@@ -104,7 +104,7 @@ def _build_chains(
 
 # ── approve / reject ──────────────────────────────────────────────────────────
 
-async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> dict:
+async def approve_chain(db: AsyncSession, chain_id: int, user_id: int, role: str) -> dict:
     from fastapi import HTTPException
 
     chain = await matching_repo.get_chain_by_id(db, chain_id, for_update=True)
@@ -112,7 +112,7 @@ async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> d
         raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
     if chain.status != "proposed":
         raise HTTPException(status_code=400, detail={"error": "CHAIN_NOT_PROPOSED"})
-    if volunteer_id not in [s.volunteer_id for s in chain.segments]:
+    if role == "volunteer" and user_id not in [s.volunteer_id for s in chain.segments]:
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
     try:
@@ -142,7 +142,7 @@ async def approve_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> d
         raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"}) from e
 
 
-async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> dict:
+async def reject_chain(db: AsyncSession, chain_id: int, user_id: int, role: str) -> dict:
     from fastapi import HTTPException
 
     chain = await matching_repo.get_chain_by_id(db, chain_id, for_update=True)
@@ -150,7 +150,7 @@ async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> di
         raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
     if chain.status != "proposed":
         raise HTTPException(status_code=400, detail={"error": "CHAIN_NOT_PROPOSED"})
-    if volunteer_id not in [s.volunteer_id for s in chain.segments]:
+    if role == "volunteer" and user_id not in [s.volunteer_id for s in chain.segments]:
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
     try:
@@ -170,6 +170,85 @@ async def reject_chain(db: AsyncSession, chain_id: int, volunteer_id: int) -> di
         await db.rollback()
         logger.error(f"[reject_chain] chain {chain_id} 처리 중 오류: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"}) from e
+
+
+# ── 봉사자 segment 조회 / 수락 / 거절 ───────────────────────────────────────────
+
+async def get_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> dict:
+    from fastapi import HTTPException
+
+    segment = await matching_repo.get_segment_by_id(db, segment_id)
+    if not segment:
+        raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
+    if segment.volunteer_id != volunteer_id:
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+
+    partner = await matching_repo.get_partner_segment(db, segment)
+
+    return {
+        "segment": {
+            "order": segment.segment_order,
+            "status": segment.status,
+            "pickup_location": {"name": segment.pickup_location, "address": segment.pickup_location},
+            "dropoff_location": {"name": segment.dropoff_location, "address": segment.dropoff_location},
+            "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
+            "handover_code": segment.handover_code,
+            "partner": {
+                "name": partner.volunteer.name if partner and partner.volunteer else "",
+                "phone": "",
+            },
+            "kakao_openchat_url": "",
+        }
+    }
+
+
+async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> dict:
+    from fastapi import HTTPException
+
+    segment = await matching_repo.get_segment_by_id(db, segment_id)
+    if not segment:
+        raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
+    if segment.volunteer_id != volunteer_id:
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+    if segment.status != "pending":
+        raise HTTPException(status_code=400, detail={"error": "SEGMENT_NOT_PENDING"})
+
+    segment.status = "accepted"
+    segment.accepted_at = datetime.now(tz=timezone.utc)
+    await db.commit()
+
+    return {
+        "segment": {
+            "order": segment.segment_order,
+            "status": segment.status,
+            "pickup_location": {"name": segment.pickup_location, "address": segment.pickup_location},
+            "dropoff_location": {"name": segment.dropoff_location, "address": segment.dropoff_location},
+            "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
+            "handover_code": segment.handover_code,
+            "partner": {"name": "", "phone": ""},
+            "kakao_openchat_url": "",
+            "waypoints": {"train": [], "bus": [], "rest_area": []},
+        }
+    }
+
+
+async def decline_segment(db: AsyncSession, segment_id: int, volunteer_id: int, reason: str) -> dict:
+    from fastapi import HTTPException
+
+    segment = await matching_repo.get_segment_by_id(db, segment_id)
+    if not segment:
+        raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
+    if segment.volunteer_id != volunteer_id:
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+    if segment.status != "pending":
+        raise HTTPException(status_code=400, detail={"error": "SEGMENT_NOT_PENDING"})
+
+    segment.status = "no_show"
+    segment.declined_at = datetime.now(tz=timezone.utc)
+    segment.decline_reason = reason
+    await db.commit()
+
+    return {"status": "declined"}
 
 
 # ── 메인 실행 함수 ─────────────────────────────────────────────────────────────
