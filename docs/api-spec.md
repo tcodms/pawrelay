@@ -302,6 +302,8 @@ Request:
   "origin": "광주광역시 서구",
   "destination": "충남 천안시 서북구",
   "available_date": "2026-04-10",
+  "available_time": "09:00",
+  "estimated_arrival_time": "10:40",
   "vehicle_available": true,
   "max_animal_size": "medium"
 }
@@ -314,6 +316,8 @@ Response 200:
 ```
 
 > `post_id`: nullable. 게시판 진입 시 포함, 챗봇 직접 진입 시 null.
+> `available_time`: 출발 예정 시간 (HH:MM). 챗봇에서 필수 수집.
+> `estimated_arrival_time`: 목적지 도착 예정 시간 (HH:MM). 봉사자 직접 입력. 매칭 체인 시간 검증에 사용.
 > BE: origin/destination 텍스트 수신 후 Geocoding → geometry 저장.
 
 | 에러 코드 | 조건 |

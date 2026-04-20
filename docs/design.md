@@ -197,66 +197,102 @@ DB 저장 가능한 형태로 변환
 
 ### 5-1. Matching Engine (자정 배치) — 3단계 구조
 
-[챗봇 필수 입력 정보](https://www.notion.so/3303b309eb54814cb445f059a3d516cd?pvs=21)
-
 전체 데이터를 LLM에 직접 전달하면 컨텍스트 윈도우 초과 및 비용 문제가 발생하므로, 단계별로 후보를 압축한 뒤 LLM은 정성적 판단과 이유 생성에만 집중하는 3단계 구조를 사용한다.
 
 > **역할 분리 원칙**
 >
 > - SQL: 조건에 맞는가? (이진 필터, DB 인덱스 활용)
-> - 알고리즘: 체인 연결이 현실적으로 가능한가? (시간 계산, 그래프 탐색)
+> - 알고리즘: 체인 연결이 현실적으로 가능한가? (지역 연결성 + 시간 검증)
 > - LLM: 가능한 체인 중 어떤 게 더 나은가? + 왜 이 조합인가? (정성적 판단 + 한국어 이유 생성)
 
 **1단계: SQL 필터링 (PostGIS)**
 
-- PostGIS로 경로 근접성, 날짜, 동물 크기, 차량 유무 조건을 한 번에 쿼리
-- 수백 건 → 수십 건으로 압축
+- 날짜, 동물 크기, 지리 조건을 한 번에 쿼리해 수백 건 → 수십 건으로 압축
+- 차량/대중교통 분기 적용
+  - 차량: 전체 route LineString이 공고 출발지 또는 도착지 50km 이내
+  - 대중교통: ST_StartPoint/ST_EndPoint가 공고 출발지 또는 도착지 50km 이내 (정차역 기준)
 
 ```sql
-WHERE ST_DWithin(route, post.route, 50000)  -- 50km 이내 경로
-  AND available_date = :date
-  AND (vehicle = true OR animal_size = 'small')
+WHERE available_date = :scheduled_date
   AND status = 'available'
+  AND max_animal_size_rank >= :post_animal_size_rank
+  AND route IS NOT NULL
+  AND (
+    -- 차량: 전체 경로 기준
+    CASE WHEN vehicle_available THEN
+      ST_DWithin(route, :origin_point, 50000) OR ST_DWithin(route, :dest_point, 50000)
+    -- 대중교통: 출발/도착 포인트 기준
+    ELSE
+      ST_DWithin(ST_StartPoint(route), :origin_point, 50000) OR
+      ST_DWithin(ST_EndPoint(route), :origin_point, 50000) OR
+      ST_DWithin(ST_StartPoint(route), :dest_point, 50000) OR
+      ST_DWithin(ST_EndPoint(route), :dest_point, 50000)
+    END
+  )
 ```
 
-**2단계: Python 알고리즘 — 체인 연결 가능성 검증**
+**2단계: Python 알고리즘 — 체인 구성**
 
-- LLM은 시간 계산(수학)에 오류가 발생할 수 있으므로 알고리즘이 먼저 처리
-- 인계 시간 간격이 현실적으로 가능한 체인만 남김 (이진 판단 Yes/No)
-- 수십 건 → 5~10건으로 압축
+- 연결 불가능한 조합을 제거하고 유효한 릴레이 체인 목록을 구성
+- 봉사자가 챗봇에서 직접 입력한 `estimated_arrival_time`을 사용 (본인이 가장 정확히 앎)
+- LLM에게 시간 계산을 시키지 않기 위해 Python이 미리 검증
 
 ```python
-HANDOVER_BUFFER = timedelta(minutes=30)  # 최소 인계 대기 시간
+HANDOVER_BUFFER = timedelta(minutes=30)
 
-def can_chain(prev_segment, next_segment) -> bool:
-    return prev_segment.estimated_arrival + HANDOVER_BUFFER <= next_segment.departure_time
-
-def build_valid_chains(candidates) -> list:
-    # 그래프 탐색으로 연결 가능한 체인 조합만 반환
+def _normalize_sido(area: str) -> str:
+    # 지역명을 시/도 단위로 정규화 (예: "광주광역시 북구" → "광주광역시")
     ...
+
+def _can_connect(vol_a, vol_b) -> bool:
+    region_ok = _normalize_sido(vol_a.destination_area) == _normalize_sido(vol_b.origin_area)
+    time_ok   = vol_b.available_time >= vol_a.estimated_arrival_time + HANDOVER_BUFFER
+    return region_ok and time_ok
 ```
+
+> **설계 결정:** 이동 시간을 직선 거리나 룩업 테이블로 계산하지 않고 봉사자 직접 입력값을 사용.
+> 추후 챗봇에서 transit_type(KTX/일반기차/버스)을 수집하면 이동 시간 검증을 추가 고도화 가능.
 
 **3단계: LLM 최적 체인 선택 + 이유 생성**
 
-- 연결 가능한 체인 5~10개 중 최적 1개 선택
-- LLM이 잘하는 것에만 집중: 정성적 판단(동선 이탈, 봉사자 경험) + 한국어 이유 생성
-- **입력:** 알고리즘이 검증한 후보 체인 목록 JSON
+- 연결 가능한 체인 목록 중 최적 1개 선택
+- LLM 판단 근거 데이터 (현재):
+
+```json
+{
+  "volunteer_id": 101,
+  "origin": "광주광역시",
+  "destination": "대전광역시",
+  "departure_time": "09:00",
+  "estimated_arrival_time": "10:40",
+  "vehicle_available": true,
+  "max_animal_size": "large",
+  "is_direct_apply": true
+}
+```
+
+> **추후 추가 예정 (Week 7):** `completed_relays`, `broken_relays` — 봉사 이력 기반 신뢰도 판단
+
 - **출력 예시:**
 
 ```json
 {
-  "chain": [
-    { "volunteer_id": 1, "segment": "천안→수원", "handover_time": "14:30" },
-    { "volunteer_id": 2, "segment": "수원→서울", "handover_time": "16:00" }
-  ],
-  "backup_candidates": { "segment_2": [5, 7] },
-  "matching_reason": "두 봉사자의 동선이 수원에서 자연스럽게 이어져 대기 시간이 15분으로 최소화되었으며, 동선 이탈 없이 각자의 이동 경로 내에서 처리 가능한 최적 조합입니다."
+  "selected_chain_index": 0,
+  "matching_reason": "두 봉사자의 동선이 대전에서 자연스럽게 이어지며, A 봉사자는 직접 지원한 공고로 의지가 높고 차량 보유로 대형견 운송에 적합합니다."
 }
 ```
 
 - `matching_reason`은 보호소 대시보드 및 봉사자 매칭 상세 페이지에 노출
 - **공고 1건씩 순차 처리** (전체 일괄 전송 금지)
 - **안전장치:** JSON 파싱 실패 시 재시도 최대 2회 → 실패 시 관리자 알림
+
+**배치 중복 매칭 처리**
+
+같은 배치에서 봉사자가 여러 공고에 `proposed`로 매칭될 수 있다 (허용).
+봉사자가 한 공고를 수락하면:
+1. 해당 봉사자가 포함된 다른 모든 `proposed` chain 자동 취소
+2. 취소된 chain의 `backup_candidates`에서 다음 체인 승격 → 백업 봉사자 알림
+3. `backup_candidates` 소진 시 해당 공고 `recruiting` 복귀 → 다음 배치 재처리
 
 ### 5-2. Geocoding 처리 (챗봇 동선 등록 시)
 

@@ -19,6 +19,8 @@ FIELD_STATE_MAP: dict[str, tuple[str, str | None, list[str] | None]] = {
         "buttons",
         ["소형 (5kg 이하)", "중형 (5~15kg)", "대형 (15kg 이상)"],
     ),
+    "available_time": ("ASK_AVAILABLE_TIME", "text", None),
+    "estimated_arrival_time": ("ASK_ESTIMATED_ARRIVAL_TIME", "text", None),
 }
 
 _CONFIRM_OPTIONS = ["등록하기", "처음부터 다시"]

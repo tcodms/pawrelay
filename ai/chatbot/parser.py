@@ -10,10 +10,11 @@ REQUIRED_FIELDS = [
     "available_date",
     "vehicle_available",
     "max_animal_size",
+    "available_time",
+    "estimated_arrival_time",
 ]
 
 OPTIONAL_FIELDS = [
-    "available_time",
     "waypoint",
 ]
 
@@ -97,6 +98,7 @@ def format_confirm_message(collected_data: dict) -> str:
     vehicle = VEHICLE_DISPLAY.get(collected_data.get("vehicle_available"), "미입력")
     animal = ANIMAL_SIZE_DISPLAY.get(collected_data.get("max_animal_size"), "미입력")
     time_info = collected_data.get("available_time", "")
+    arrival_info = collected_data.get("estimated_arrival_time", "")
     waypoint_info = collected_data.get("waypoint", "")
 
     msg = (
@@ -109,7 +111,9 @@ def format_confirm_message(collected_data: dict) -> str:
     )
 
     if time_info:
-        msg += f"\n가용 시간: {time_info}"
+        msg += f"\n출발 시간: {time_info}"
+    if arrival_info:
+        msg += f"\n도착 예정 시간: {arrival_info}"
     if waypoint_info:
         msg += f"\n환승 장소: {waypoint_info}"
 

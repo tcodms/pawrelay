@@ -26,6 +26,8 @@ _STATE_WELCOME = {
         ["소형 (5kg 이하)", "중형 (5~15kg)", "대형 (15kg 이상)"],
         "이동 가능한 동물 크기를 선택해주세요.",
     ),
+    "ASK_AVAILABLE_TIME": ("text", None, "출발 예정 시간이 어떻게 되시나요? (예: 09:00)"),
+    "ASK_ESTIMATED_ARRIVAL_TIME": ("text", None, "목적지 도착 예정 시간이 어떻게 되시나요? (예: 10:40)"),
 }
 
 
@@ -93,7 +95,7 @@ def _validate_available_time(value: str | None) -> str | None:
     return None
 
 
-_SCHEDULE_REQUIRED_KEYS = ("origin", "destination", "available_date", "vehicle_available", "max_animal_size")
+_SCHEDULE_REQUIRED_KEYS = ("origin", "destination", "available_date", "vehicle_available", "max_animal_size", "available_time", "estimated_arrival_time")
 
 
 def _validate_schedule_data(data: dict) -> date:
@@ -119,6 +121,7 @@ def _build_schedule_kwargs(
         "destination_area": data["destination"],
         "available_date": avail_date,
         "available_time": _validate_available_time(data.get("available_time")),
+        "estimated_arrival_time": _validate_available_time(data.get("estimated_arrival_time")),
         "vehicle_available": data["vehicle_available"],
         "max_animal_size": data["max_animal_size"],
         "route_wkt": route_wkt,
