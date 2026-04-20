@@ -14,6 +14,10 @@ class ScheduleCreateRequest(BaseModel):
         default=None,
         pattern=r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
     )
+    estimated_arrival_time: str | None = Field(
+        default=None,
+        pattern=r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+    )
     vehicle_available: bool
     max_animal_size: Literal["small", "medium", "large"]
 

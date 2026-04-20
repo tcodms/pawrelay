@@ -30,6 +30,7 @@ async def create_schedule(
         destination_area=data.destination,
         available_date=data.available_date,
         available_time=data.available_time,
+        estimated_arrival_time=data.estimated_arrival_time,
         vehicle_available=data.vehicle_available,
         max_animal_size=data.max_animal_size,
         route_wkt=route_wkt,
