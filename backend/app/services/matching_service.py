@@ -176,7 +176,6 @@ async def reject_chain(db: AsyncSession, chain_id: int, user_id: int, role: str)
 
 async def get_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> dict:
     from fastapi import HTTPException
-    from app.repositories import matching_repo
 
     segment = await matching_repo.get_segment_by_id(db, segment_id)
     if not segment:
@@ -205,8 +204,6 @@ async def get_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> d
 
 async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> dict:
     from fastapi import HTTPException
-    from datetime import datetime, timezone
-    from app.repositories import matching_repo
 
     segment = await matching_repo.get_segment_by_id(db, segment_id)
     if not segment:
@@ -237,8 +234,6 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
 
 async def decline_segment(db: AsyncSession, segment_id: int, volunteer_id: int, reason: str) -> dict:
     from fastapi import HTTPException
-    from datetime import datetime, timezone
-    from app.repositories import matching_repo
 
     segment = await matching_repo.get_segment_by_id(db, segment_id)
     if not segment:
