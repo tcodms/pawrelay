@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { MessageCircle, Plus, Bell, CheckCircle2, X } from "lucide-react";
-import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY } from "@/lib/api/chatbot";
+import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY, sendChatMessage } from "@/lib/api/chatbot";
 import type { PostContext } from "@/lib/api/chatbot";
 import type { AppNotification } from "@/lib/api/notifications";
 
@@ -129,10 +129,21 @@ export default function ChatPage() {
     }
   }, [router]);
 
-  function startNewChat() {
-    const sessionId = crypto.randomUUID();
-    sessionStorage.removeItem(CHATBOT_POST_CONTEXT_KEY);
-    router.push(`/volunteer/chat/${sessionId}`);
+  const [starting, setStarting] = useState(false);
+
+  async function startNewChat() {
+    if (starting) return;
+    setStarting(true);
+    try {
+      sessionStorage.removeItem(CHATBOT_POST_CONTEXT_KEY);
+      const res = await sendChatMessage(null, null, null);
+      sessionStorage.setItem(`chatbot_init_${res.session_id}`, JSON.stringify(res));
+      router.push(`/volunteer/chat/${res.session_id}`);
+    } catch {
+      alert("채팅을 시작할 수 없습니다. 다시 시도해 주세요.");
+    } finally {
+      setStarting(false);
+    }
   }
 
   return (
@@ -298,9 +309,14 @@ export default function ChatPage() {
       <div className="fixed bottom-20 left-0 right-0 flex justify-center z-20 pointer-events-none">
         <button
           onClick={startNewChat}
-          className="pointer-events-auto flex items-center gap-2 h-12 px-6 rounded-full bg-[#EEA968] text-white text-[14px] font-bold shadow-lg shadow-[#EEA968]/30 active:scale-95 transition-transform"
+          disabled={starting}
+          className="pointer-events-auto flex items-center gap-2 h-12 px-6 rounded-full bg-[#EEA968] text-white text-[14px] font-bold shadow-lg shadow-[#EEA968]/30 active:scale-95 transition-transform disabled:opacity-60"
         >
-          <Plus size={18} strokeWidth={3} />
+          {starting ? (
+            <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+          ) : (
+            <Plus size={18} strokeWidth={3} />
+          )}
           봉사 시작하기
         </button>
       </div>
