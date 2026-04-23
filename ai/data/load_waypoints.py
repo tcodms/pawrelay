@@ -39,16 +39,8 @@ def _get_connection(database_url: str) -> psycopg2.extensions.connection:
     return psycopg2.connect(database_url)
 
 
-def _ensure_postgis(conn: psycopg2.extensions.connection) -> None:
-    """PostGIS 익스텐션 활성화 (없을 경우에만)."""
-    with conn.cursor() as cur:
-        cur.execute("CREATE EXTENSION IF NOT EXISTS postgis")
-    conn.commit()
-
-
 def _ensure_table(conn: psycopg2.extensions.connection) -> None:
     """waypoints 테이블 및 인덱스 생성 (없을 경우에만)."""
-    _ensure_postgis(conn)
     with conn.cursor() as cur:
         cur.execute(WAYPOINT_TABLE_SQL)
     conn.commit()
