@@ -1,7 +1,10 @@
+import zoneinfo
 from uuid import UUID
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+_KST = zoneinfo.ZoneInfo("Asia/Seoul")
 
 from app.models.post import TransportPost
 from app.models.relay import Checkpoint, RelayChain, RelaySegment
@@ -62,7 +65,7 @@ async def get_segments_for_chains(db: AsyncSession, chain_ids: list[int]) -> dic
             "volunteer_name": volunteer_name,
             "from_area": segment.pickup_location,
             "to_area": segment.dropoff_location,
-            "depart_time": segment.scheduled_time.strftime("%H:%M") if segment.scheduled_time else None,
+            "depart_time": segment.scheduled_time.astimezone(_KST).strftime("%H:%M") if segment.scheduled_time else None,
         })
     return segments_by_chain
 
