@@ -6,7 +6,7 @@ from ai.providers import get_llm_provider
 
 logger = logging.getLogger(__name__)
 
-_MAX_RETRIES = 2
+_MAX_RETRIES = 1
 _REQUIRED_KEYS = {"selected_chain_index", "matching_reason"}
 
 
@@ -15,7 +15,8 @@ def _format_segment(seg: dict) -> str:
     direct = " [직접지원]" if seg.get("is_direct_apply") else ""
     return (
         f"  • {seg.get('origin_area', '?')} → {seg.get('destination_area', '?')}, "
-        f"{seg.get('available_date', '?')}, {vehicle}{direct}"
+        f"{seg.get('available_time', '?')}~{seg.get('estimated_arrival_time', '?')}, "
+        f"{vehicle}, 최대 {seg.get('max_animal_size', '?')} 크기{direct}"
     )
 
 
