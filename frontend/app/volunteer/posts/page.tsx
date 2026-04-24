@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Bell, Search } from "lucide-react";
 import { getVolunteerPosts } from "@/lib/api/posts";
 import type { VolunteerPost } from "@/lib/api/posts";
+import { getMe } from "@/lib/api";
 
 // ── 옵션 ──────────────────────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ function PostsPage() {
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
   useEffect(() => {
-    setUserName(localStorage.getItem("user_name") ?? "");
+    getMe().then((user) => setUserName(user.name)).catch(() => {});
   }, []);
 
   const urgentPosts = posts.slice(0, 3);

@@ -25,7 +25,7 @@ async def get_dashboard_posts(db: AsyncSession, shelter_id: int) -> list[tuple]:
             RelayChain.transport_post_id,
             func.max(RelayChain.id).label("chain_id"),
         )
-        .where(RelayChain.status == "proposed")
+        .where(RelayChain.status.in_(["proposed", "active"]))
         .group_by(RelayChain.transport_post_id)
         .subquery()
     )
@@ -45,6 +45,26 @@ async def get_dashboard_posts(db: AsyncSession, shelter_id: int) -> list[tuple]:
         .order_by(TransportPost.scheduled_date.desc())
     )
     return result.all()
+
+
+async def get_segments_for_chains(db: AsyncSession, chain_ids: list[int]) -> dict[int, list]:
+    if not chain_ids:
+        return {}
+    result = await db.execute(
+        select(RelaySegment, User.name)
+        .join(User, RelaySegment.volunteer_id == User.id)
+        .where(RelaySegment.chain_id.in_(chain_ids))
+        .order_by(RelaySegment.chain_id, RelaySegment.segment_order)
+    )
+    segments_by_chain: dict[int, list] = {}
+    for segment, volunteer_name in result.all():
+        segments_by_chain.setdefault(segment.chain_id, []).append({
+            "volunteer_name": volunteer_name,
+            "from_area": segment.pickup_location,
+            "to_area": segment.dropoff_location,
+            "depart_time": segment.scheduled_time.strftime("%H:%M") if segment.scheduled_time else None,
+        })
+    return segments_by_chain
 
 
 async def create_post(

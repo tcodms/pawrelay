@@ -209,7 +209,7 @@ function StatusBadge({ status }: { status: string }) {
     proposed:    { label: "수락 대기 중", className: "bg-orange-50 text-orange-500" },
     accepted:    { label: "수락 완료",    className: "bg-green-50 text-green-600" },
     confirmed:   { label: "매칭 확정",    className: "bg-green-50 text-green-600" },
-    in_progress: { label: "이동 중",      className: "bg-blue-50 text-blue-600" },
+    in_transit: { label: "이동 중",      className: "bg-blue-50 text-blue-600" },
     completed:   { label: "완료",         className: "bg-gray-100 text-gray-500" },
     declined:    { label: "거절됨",       className: "bg-red-50 text-red-400" },
   };
@@ -408,9 +408,9 @@ export default function MatchingDetailPage() {
     if (window.kakao?.maps) window.kakao.maps.load(() => setMapReady(true));
   }, []);
 
-  const isProposed  = status === "proposed";
+  const isProposed  = status === "proposed" || status === "pending";
   const isAccepted  = status === "accepted";
-  const isConfirmed = status === "confirmed" || status === "in_progress";
+  const isConfirmed = status === "confirmed" || status === "in_transit";
   const isDeclined  = status === "declined";
 
   const allWaypoints: LatLng[] = [
@@ -572,12 +572,13 @@ export default function MatchingDetailPage() {
         <MatchingReasonBubble reason={seg.matching_reason} />
 
         {/* 인계 후보지 + 오픈채팅 버튼 */}
+        {/* TODO: waypoint DB 적재 및 백엔드 연결 완료 후 활성화
         <WaypointsCard
           waypoints={seg.waypoints}
           confirmed={isConfirmed}
           openchatUrl={seg.kakao_openchat_url}
           partnerName={seg.partner.name}
-        />
+        /> */}
 
         {/* 인계 코드 */}
         {isConfirmed && (

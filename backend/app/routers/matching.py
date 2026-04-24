@@ -45,6 +45,16 @@ async def reject_chain(
     return await matching_service.reject_chain(db, chain_id, current_user.id, current_user.role)
 
 
+@router.get("/my-segments")
+async def get_my_segments(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if current_user.role != "volunteer":
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+    return await matching_service.get_my_segments(db, current_user.id)
+
+
 @router.get("/segments/{segment_id}")
 async def get_segment(
     segment_id: int,

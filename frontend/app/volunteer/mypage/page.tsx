@@ -3,10 +3,27 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Calendar, MapPin, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Calendar, MapPin, CheckCircle2, ChevronRight } from "lucide-react";
 import VolunteerHeader from "@/components/VolunteerHeader";
 import { getMySchedules } from "@/lib/api/chatbot";
 import type { ScheduleItem } from "@/lib/api/chatbot";
+import { request } from "@/lib/api";
+
+interface MySegment {
+  segment_id: number;
+  status: string;
+  animal_name: string;
+  animal_photo_url: string | null;
+  scheduled_date: string | null;
+  pickup_location: string;
+  dropoff_location: string;
+  depart_time: string | null;
+}
+
+async function getMySegments(): Promise<MySegment[]> {
+  const res = await request<{ segments: MySegment[] }>("/matching/my-segments");
+  return res.segments;
+}
 
 const SIZE_LABEL: Record<string, string> = {
   small: "소형",
@@ -22,13 +39,17 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
 
 export default function MyPage() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+  const [mySegments, setMySegments] = useState<MySegment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMySchedules()
-      .then(setSchedules)
-      .catch(() => setSchedules([]))
-      .finally(() => setLoading(false));
+    Promise.all([
+      getMySchedules().catch(() => []),
+      getMySegments().catch(() => []),
+    ]).then(([s, segs]) => {
+      setSchedules(s);
+      setMySegments(segs);
+    }).finally(() => setLoading(false));
   }, []);
 
   const applied = schedules.filter((s) => s.post_id !== null);
@@ -44,6 +65,50 @@ export default function MyPage() {
         </div>
       ) : (
         <div className="mx-auto max-w-2xl px-4 pt-4 pb-24 space-y-6">
+
+          {/* 매칭 제안 */}
+          {mySegments.length > 0 && (
+            <section>
+              <h2 className="text-[13px] font-bold text-gray-400 mb-2.5 px-1">매칭 제안</h2>
+              <div className="space-y-2.5">
+                {mySegments.map((seg) => (
+                  <Link
+                    key={seg.segment_id}
+                    href={`/volunteer/matching/${seg.segment_id}`}
+                    className="flex items-center gap-3.5 rounded-2xl bg-white border border-[#EEA968]/30 shadow-sm px-4 py-3.5 active:scale-[0.98] transition-transform"
+                  >
+                    <div className="relative h-12 w-12 shrink-0 rounded-xl overflow-hidden bg-gray-100">
+                      {seg.animal_photo_url ? (
+                        <Image src={seg.animal_photo_url} alt={seg.animal_name} fill className="object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-xl">🐾</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[15px] font-bold text-gray-900">{seg.animal_name}</span>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${seg.status === "pending" ? "bg-orange-50 text-orange-500" : "bg-green-50 text-green-600"}`}>
+                          {seg.status === "pending" ? "수락 대기 중" : "수락 완료"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[12px] text-gray-500">
+                        <span>{seg.pickup_location}</span>
+                        <ArrowRight size={10} className="text-gray-300 shrink-0" />
+                        <span>{seg.dropoff_location}</span>
+                      </div>
+                      {seg.scheduled_date && (
+                        <div className="flex items-center gap-1 text-[11px] text-gray-400 mt-0.5">
+                          <Calendar size={10} />
+                          <span>{seg.scheduled_date}{seg.depart_time && ` · ${seg.depart_time} 출발`}</span>
+                        </div>
+                      )}
+                    </div>
+                    <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* 직접 지원한 공고 */}
           <section>

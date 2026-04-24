@@ -139,6 +139,10 @@ export async function getChatSessions(): Promise<ChatSessionListItem[]> {
   return request<ChatSessionListItem[]>("/chatbot/sessions");
 }
 
+export async function deleteChatSession(sessionId: string): Promise<void> {
+  await request<void>(`/chatbot/session/${sessionId}`, { method: "DELETE" });
+}
+
 export async function sendChatMessage(
   sessionId: string | null,
   postId: number | null,

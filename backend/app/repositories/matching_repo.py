@@ -174,8 +174,6 @@ async def get_proposed_chains_with_volunteers(
 
 async def activate_chain(db: AsyncSession, chain: RelayChain) -> None:
     chain.status = "active"
-    for segment in chain.segments:
-        segment.status = "accepted"
     await db.flush()
 
 
@@ -251,6 +249,25 @@ async def promote_backup(
 
     await db.flush()
     return new_chain
+
+
+async def get_segments_for_volunteer(db: AsyncSession, volunteer_id: int) -> list[RelaySegment]:
+    result = await db.execute(
+        select(RelaySegment)
+        .join(RelayChain, RelaySegment.chain_id == RelayChain.id)
+        .where(
+            and_(
+                RelaySegment.volunteer_id == volunteer_id,
+                RelaySegment.status.in_(["pending", "accepted"]),
+                RelayChain.status == "active",
+            )
+        )
+        .options(
+            selectinload(RelaySegment.chain).selectinload(RelayChain.transport_post),
+        )
+        .order_by(RelaySegment.id.desc())
+    )
+    return list(result.scalars().all())
 
 
 async def get_segment_by_id(db: AsyncSession, segment_id: int) -> RelaySegment | None:

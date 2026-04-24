@@ -39,7 +39,7 @@ from app.models.post import TransportPost
 
 DEMO_DATE = date(2026, 5, 10)
 
-engine = create_async_engine(settings.database_url, echo=False, connect_args={"ssl": "require"})
+engine = create_async_engine(settings.database_url, echo=False)
 AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 # ── 프론트 dummy-posts.ts 에서 가져온 Unsplash 사진 ────────────────────────────
@@ -94,7 +94,8 @@ async def wipe_all(db: AsyncSession) -> None:
     demo_emails = (
         ["admin@pawrelay.com"]
         + [f"shelter{i}@test.com" for i in range(1, 5)]
-        + [f"vol{i}@test.com" for i in range(1, 21)]
+        + [f"vol{i}@test.com" for i in range(1, 30)]
+        + ["direct@demo.com"]
     )
     result = await db.execute(
         text("SELECT id FROM users WHERE email = ANY(:emails)"),
@@ -102,6 +103,13 @@ async def wipe_all(db: AsyncSession) -> None:
     )
     ids = [row[0] for row in result.fetchall()]
     if ids:
+        await db.execute(text("""
+            DELETE FROM relay_segments WHERE chain_id IN (
+                SELECT id FROM relay_chains WHERE transport_post_id IN (
+                    SELECT id FROM transport_posts WHERE shelter_id = ANY(:ids)
+                )
+            )
+        """), {"ids": ids})
         await db.execute(text("DELETE FROM relay_segments WHERE volunteer_id = ANY(:ids)"), {"ids": ids})
         await db.execute(text("""
             DELETE FROM relay_chains WHERE transport_post_id IN (
@@ -109,6 +117,11 @@ async def wipe_all(db: AsyncSession) -> None:
             )
         """), {"ids": ids})
         await db.execute(text("DELETE FROM volunteer_schedules WHERE volunteer_id = ANY(:ids)"), {"ids": ids})
+        await db.execute(text("""
+            DELETE FROM volunteer_schedules WHERE post_id IN (
+                SELECT id FROM transport_posts WHERE shelter_id = ANY(:ids)
+            )
+        """), {"ids": ids})
         await db.execute(text("DELETE FROM transport_posts WHERE shelter_id = ANY(:ids)"), {"ids": ids})
         await db.execute(text("DELETE FROM shelter_profiles WHERE user_id = ANY(:ids)"), {"ids": ids})
         await db.execute(text("DELETE FROM volunteer_profiles WHERE user_id = ANY(:ids)"), {"ids": ids})
@@ -132,6 +145,9 @@ VOL_NAMES = [
     "홍길동", "황봉사", "윤릴레이", "신봉사", "오릴레이",
     "장도움", "임봉사", "한릴레이", "조서울", "송봉사",
     "권도움", "민릴레이", "유봉사", "나릴레이", "강서울",
+    # 21-29: 백업 체인용 추가 봉사자
+    "나봉사", "도봉사", "로봉사", "모봉사", "보봉사",
+    "소봉사", "우봉사", "주봉사", "츄봉사",
 ]
 
 
@@ -202,6 +218,16 @@ async def seed():
             (True,  "medium", ["충청북도", "경기도"]),            # 18 유봉사
             (False, "small",  ["경기도", "서울특별시"]),          # 19 나릴레이
             (True,  "large",  ["대전광역시", "서울특별시"]),      # 20 강서울
+            # ── 백업 체인용 추가 봉사자 ──────────────────────────────────────────
+            (True,  "medium", ["광주광역시", "충청남도"]),        # 21 나봉사 (초코 1구간 backup)
+            (True,  "medium", ["충청남도", "경기도"]),            # 22 도봉사 (충남→경기 backup)
+            (True,  "medium", ["부산광역시", "대구광역시"]),      # 23 로봉사 (뽀삐 backup)
+            (True,  "small",  ["부산광역시", "충청북도"]),        # 24 모봉사 (루나 backup)
+            (True,  "large",  ["대전광역시", "충청남도"]),        # 25 보봉사 (까미 1구간 backup)
+            (True,  "medium", ["충청남도", "서울특별시"]),        # 26 소봉사 (충남→서울 backup)
+            (True,  "large",  ["대전광역시", "서울특별시"]),      # 27 우봉사 (까미 직행 backup)
+            (True,  "medium", ["전라북도", "충청남도"]),          # 28 주봉사 (몽이 1구간 backup)
+            (True,  "medium", ["충청남도", "경기도"]),            # 29 츄봉사 (충남→경기 extra)
         ]
         for vol, (vehicle, size, regions) in zip(vols, vol_profiles):
             db.add(VolunteerProfile(
@@ -374,7 +400,52 @@ async def seed():
               -- ⑳ 강서울: 대전→서울 직행 [독립]
               (:v20, NULL, '대전에서 서울까지 차량 직행',
                '대전광역시', '서울특별시', :dt, '09:00', '14:00', true, 'large', 'available',
-               ST_GeomFromText('LINESTRING(127.39 36.35, 127.02 37.54)', 4326))
+               ST_GeomFromText('LINESTRING(127.39 36.35, 127.02 37.54)', 4326)),
+
+              -- ㉑ 나봉사: 광주→충남 [초코 1구간 backup]
+              (:v21, NULL, '광주에서 천안까지 차량',
+               '광주광역시', '충청남도', :dt, '09:30', '13:30', true, 'medium', 'available',
+               ST_GeomFromText('LINESTRING(126.85 35.16, 127.15 36.81)', 4326)),
+
+              -- ㉒ 도봉사: 충남→경기 [충남→경기 backup]
+              (:v22, NULL, '천안에서 수원까지 차량',
+               '충청남도', '경기도', :dt, '14:30', '17:30', true, 'medium', 'available',
+               ST_GeomFromText('LINESTRING(127.15 36.81, 127.01 37.26)', 4326)),
+
+              -- ㉓ 로봉사: 부산→대구 [뽀삐 backup]
+              (:v23, NULL, '부산에서 대구까지 차량',
+               '부산광역시', '대구광역시', :dt, '09:30', '11:30', true, 'medium', 'available',
+               ST_GeomFromText('LINESTRING(129.07 35.18, 128.60 35.87)', 4326)),
+
+              -- ㉔ 모봉사: 부산→충북 [루나 backup]
+              (:v24, NULL, '부산에서 청주까지 차량',
+               '부산광역시', '충청북도', :dt, '07:30', '12:30', true, 'small', 'available',
+               ST_GeomFromText('LINESTRING(129.07 35.18, 127.49 36.64)', 4326)),
+
+              -- ㉕ 보봉사: 대전→충남 [까미 1구간 backup]
+              (:v25, NULL, '대전에서 천안까지 차량',
+               '대전광역시', '충청남도', :dt, '09:30', '11:30', true, 'large', 'available',
+               ST_GeomFromText('LINESTRING(127.39 36.35, 127.15 36.81)', 4326)),
+
+              -- ㉖ 소봉사: 충남→서울 [충남→서울 backup]
+              (:v26, NULL, '천안에서 서울까지 차량',
+               '충청남도', '서울특별시', :dt, '13:30', '16:30', true, 'medium', 'available',
+               ST_GeomFromText('LINESTRING(127.15 36.81, 127.02 37.54)', 4326)),
+
+              -- ㉗ 우봉사: 대전→서울 직행 [까미 backup]
+              (:v27, NULL, '대전에서 서울까지 차량 직행',
+               '대전광역시', '서울특별시', :dt, '10:00', '15:00', true, 'large', 'available',
+               ST_GeomFromText('LINESTRING(127.39 36.35, 127.02 37.54)', 4326)),
+
+              -- ㉘ 주봉사: 전북→충남 [몽이 1구간 backup]
+              (:v28, NULL, '전주에서 천안까지 차량',
+               '전라북도', '충청남도', :dt, '09:00', '12:00', true, 'medium', 'available',
+               ST_GeomFromText('LINESTRING(127.15 35.82, 127.15 36.81)', 4326)),
+
+              -- ㉙ 츄봉사: 충남→경기 [extra backup]
+              (:v29, NULL, '천안에서 고양까지 차량',
+               '충청남도', '경기도', :dt, '13:00', '16:30', true, 'medium', 'available',
+               ST_GeomFromText('LINESTRING(127.15 36.81, 126.83 37.66)', 4326))
         """), {
             "v1": vols[0].id, "v2": vols[1].id, "v3": vols[2].id,
             "v4": vols[3].id, "v5": vols[4].id, "v6": vols[5].id,
@@ -383,10 +454,25 @@ async def seed():
             "v13": vols[12].id, "v14": vols[13].id, "v15": vols[14].id,
             "v16": vols[15].id, "v17": vols[16].id, "v18": vols[17].id,
             "v19": vols[18].id, "v20": vols[19].id,
+            "v21": vols[20].id, "v22": vols[21].id, "v23": vols[22].id,
+            "v24": vols[23].id, "v25": vols[24].id, "v26": vols[25].id,
+            "v27": vols[26].id, "v28": vols[27].id, "v29": vols[28].id,
             "p_choco": p_choco.id, "p_bboppi": p_bboppi.id,
             "p_luna": p_luna.id, "p_mongyi": p_mongyi.id, "p_kkami": p_kkami.id,
             "dt": DEMO_DATE,
         })
+
+        # ── 시연용 계정 (스케줄 없음) ──────────────────────────────────────────────
+        # direct@demo.com: 공고 직접 지원 방식 시연 (공고 상세 → 챗봇 → post_id 연결)
+        direct_user = make_user("direct@demo.com", "Direct1234!", "직접지원자", "volunteer")
+        db.add(direct_user)
+        await db.flush()
+        db.add(VolunteerProfile(
+            user_id=direct_user.id,
+            vehicle_available=True,
+            max_animal_size="large",
+            activity_regions=["대전광역시", "서울특별시"],
+        ))
 
         await db.commit()
 
@@ -402,22 +488,37 @@ async def seed():
     print("  보호소 4 (대전) : shelter4@test.com  / Shelter4!")
     for i, name in enumerate(VOL_NAMES, 1):
         direct = " ← 직접지원" if i in (1, 4, 5, 7, 10) else ""
-        print(f"  봉사자 {i:2d} {name:6s} : vol{i}@test.com / Vol{i:02d}11!{direct}")
+        backup = " ← backup" if i in range(21, 30) else ""
+        print(f"  봉사자 {i:2d} {name:6s} : vol{i}@test.com / Vol{i:02d}11!{direct}{backup}")
     print()
-    print("── 예상 매칭 체인 ────────────────────────────────────")
-    print("  초코 (광주→서울) : 김봉사 → 이릴레이 → 박서울")
-    print("  뽀삐 (부산→대구) : 최자원 (단일 구간)")
-    print("  루나 (부산→서울) : 정봉사 → 홍길동")
-    print("  몽이 (전주→고양) : 황봉사 → 윤릴레이")
-    print("  까미 (대전→서울) : 오릴레이 → 장도움")
+    print("── 예상 매칭 체인 (primary / backup) ────────────────")
+    print("  초코 (광주→서울)  : 김봉사→이릴레이→박서울 / 나봉사→도봉사→박서울 등")
+    print("  뽀삐 (부산→대구)  : 최자원 / 로봉사")
+    print("  루나 (부산→서울)  : 정봉사→홍길동 / 모봉사→홍길동 등")
+    print("  몽이 (전주→고양)  : 황봉사→윤릴레이 / 주봉사→윤릴레이 등")
+    print("  까미 (대전→서울)  : 강서울 or 오릴레이→장도움 / 우봉사 등")
     print()
-    print("── 테스트 순서 ───────────────────────────────────────")
-    print("  1. POST /auth/login              { admin@pawrelay.com / Admin1234! }")
-    print("  2. POST /matching/run            (admin 토큰)")
-    print("  3. GET  /shelter/dashboard       (각 보호소 토큰)")
-    print("  4. PATCH /matching/relay-chains/{id}/approve  (보호소 승인)")
-    print("  5. POST  /matching/accept/{id}   (봉사자 수락)")
-    print("  6. POST  /matching/decline/{id}  (봉사자 거절 → backup promote 자동)")
+    print("── 발표용 시나리오 ───────────────────────────────────")
+    print()
+    print("  [시나리오 A - 챗봇 독립 동선 등록]")
+    print("  1. 회원가입 (이메일/비밀번호 자유입력 - 라이브)")
+    print("  2. 챗봇 독립 동선: '광주에서 천안, 5월 10일, 차량, 소형, 오전 8시'")
+    print("     → post_id=NULL 스케줄 생성")
+    print()
+    print("  [시나리오 B - 공고 직접 지원 (챗봇)]")
+    print("  3. direct@demo.com / Direct1234! 로그인")
+    print("  4. 까미 공고 (대전→서울) 상세 → 챗봇 열기")
+    print("     입력: '대전에서 서울까지 갈게요, 5월 10일, 차량 있어요, 대형 동물도 가능해요, 오전 9시 출발'")
+    print("     → post_id=까미 연결, 전구간 1인 체인으로 우선 선택")
+    print()
+    print("  [매칭 & 확정 흐름]")
+    print("  5. admin → POST /matching/run")
+    print("  6. shelter1 → 초코 매칭 결과 확인 → 승인")
+    print("  7. 봉사자들 → 매칭 제안 → 수락")
+    print("  8. 전원 수락 시 보호소 대시보드 봉사중 전환 확인")
+    print()
+    print("  [백업 시연 - 거절 → 자동 전환]")
+    print("  9. 뽀삐 봉사자 거절 → 로봉사로 자동 전환 확인")
 
 
 if __name__ == "__main__":

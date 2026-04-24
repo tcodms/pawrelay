@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { MessageCircle, Plus, Bell, CheckCircle2, X } from "lucide-react";
-import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY, sendChatMessage, getChatSessions } from "@/lib/api/chatbot";
+import { MessageCircle, Plus, Bell, CheckCircle2, X, Trash2 } from "lucide-react";
+import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY, sendChatMessage, getChatSessions, deleteChatSession } from "@/lib/api/chatbot";
 import type { PostContext } from "@/lib/api/chatbot";
 import type { AppNotification } from "@/lib/api/notifications";
 
@@ -121,6 +121,15 @@ export default function ChatPage() {
 
   const [starting, setStarting] = useState(false);
 
+  async function handleDeleteRoom(sessionId: string) {
+    try {
+      await deleteChatSession(sessionId);
+      setRooms((prev) => prev.filter((r) => r.session_id !== sessionId));
+    } catch {
+      alert("삭제에 실패했어요. 다시 시도해 주세요.");
+    }
+  }
+
   async function startNewChat() {
     if (starting) return;
     setStarting(true);
@@ -173,7 +182,7 @@ export default function ChatPage() {
       ) : (
         <ul className="px-4 pt-3 pb-4 space-y-2.5">
           {rooms.map((room) => (
-            <li key={room.session_id}>
+            <li key={room.session_id} className="flex items-center gap-2">
               <button
                 onClick={() => {
                   if (room.post_context) {
@@ -183,7 +192,7 @@ export default function ChatPage() {
                   }
                   router.push(`/volunteer/chat/${room.session_id}`);
                 }}
-                className="w-full flex items-center gap-3.5 bg-white rounded-2xl px-4 py-3.5 border border-gray-100 shadow-sm active:scale-[0.98] transition-transform text-left"
+                className="flex-1 flex items-center gap-3.5 bg-white rounded-2xl px-4 py-3.5 border border-gray-100 shadow-sm active:scale-[0.98] transition-transform text-left"
               >
                 {/* 프로필 */}
                 <div className="relative shrink-0">
@@ -222,6 +231,13 @@ export default function ChatPage() {
                 <span className={`shrink-0 text-[11px] ${room.unread > 0 ? "text-[#EEA968] font-semibold" : "text-gray-400"}`}>
                   {room.time}
                 </span>
+              </button>
+              <button
+                onClick={() => handleDeleteRoom(room.session_id)}
+                className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                aria-label="세션 삭제"
+              >
+                <Trash2 size={16} />
               </button>
             </li>
           ))}

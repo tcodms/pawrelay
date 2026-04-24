@@ -76,7 +76,7 @@ class ChatbotEngine:
             self.state = "CONFIRMING"
             confirm_msg = format_confirm_message(self.collected_data)
             return {
-                "state": "CONFIRMING", "message": confirm_msg + "\n\n[등록하기] [수정하기]",
+                "state": "CONFIRMING", "message": confirm_msg,
                 "input_type": "buttons", "options": ["등록하기", "수정하기"],
                 "collected_data": self.collected_data, "completed": False,
             }
@@ -110,7 +110,15 @@ class ChatbotEngine:
         self.collected_data = {}
         if self.auto_filled:
             self.collected_data = merge_collected_data({}, {}, self.auto_filled)
-        return self.get_initial_message()
+        missing = get_missing_fields(self.collected_data)
+        first_question = self._fallback_question(missing) if missing else "출발지를 알려주세요."
+        return {
+            "state": "COLLECTING",
+            "message": f"수정사항이 있으시면 처음부터 다시 진행할게요!\n\n{first_question}",
+            "missing_fields": missing,
+            "collected_data": self.collected_data,
+            "completed": False,
+        }
 
     def _handle_confirm(self, user_message: str) -> dict:
         if user_message in ["등록하기", "네", "확인"]:

@@ -12,6 +12,7 @@ import {
   CHATBOT_SESSION_KEY,
   CHATBOT_POST_CONTEXT_KEY,
 } from "@/lib/api/chatbot";
+import { getMe } from "@/lib/api";
 import type { PostContext, PostSuggestion } from "@/lib/api/chatbot";
 // import { getUnreadNotifications, markNotificationRead } from "@/lib/api/notifications"; // TODO: notifications 백엔드 구현 후 활성화
 import type { AppNotification } from "@/lib/api/notifications";
@@ -123,7 +124,7 @@ const DEMO_MESSAGES_1_POST: Message[] = [
     role: "bot", type: "matching_reason",
     reason: "출발지(광주광역시 북구)가 공고 출발지와 일치하고, 차량이 있어 소형 동물 수송에 최적입니다. 천안역에서 다음 봉사자와 인계가 원활하게 이루어질 수 있어 이 구간을 추천드려요.",
     chain: [
-      { volunteer: `나 (${typeof window !== "undefined" ? localStorage.getItem("user_name") ?? "나" : "나"})`, from: "광주광역시 북구", to: "천안역", isMe: true },
+      { volunteer: "나", from: "광주광역시 북구", to: "천안역", isMe: true },
       { volunteer: "이릴레이", from: "천안역", to: "수원역" },
       { volunteer: "박도움", from: "수원역", to: "서울 강남구" },
     ],
@@ -673,6 +674,11 @@ export default function ChatRoomPage() {
   const [registeredFields, setRegisteredFields] = useState<RegisteredFields | undefined>(undefined);
   const [matchingDecided, setMatchingDecided] = useState(false);
   const [pingAnswered, setPingAnswered] = useState(false);
+  const [userName, setUserName] = useState("나");
+
+  useEffect(() => {
+    getMe().then((user) => setUserName(user.name)).catch(() => {});
+  }, []);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1005,7 +1011,7 @@ export default function ChatRoomPage() {
             <BotRow key={i}><PostCardBubble post={msg.post} /></BotRow>
           );
           if (msg.type === "matching_reason") return (
-            <BotRow key={i}><MatchingReasonBubble reason={msg.reason} chain={msg.chain} /></BotRow>
+            <BotRow key={i}><MatchingReasonBubble reason={msg.reason} chain={msg.chain.map((s) => s.isMe ? { ...s, volunteer: `나 (${userName})` } : s)} /></BotRow>
           );
           if (msg.type === "recommendation") return (
             <BotRow key={i}>

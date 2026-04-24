@@ -13,7 +13,7 @@ import MatchingReasonBubble from "@/components/MatchingReasonBubble";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type TabKey = "all" | "recruiting" | "waiting" | "in_progress" | "completed";
+type TabKey = "all" | "recruiting" | "waiting" | "in_transit" | "completed";
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ const TABS: { key: TabKey; label: string; dot: string }[] = [
   { key: "all",         label: "전체",    dot: "bg-gray-400" },
   { key: "recruiting",  label: "모집 중", dot: "bg-green-500" },
   { key: "waiting",     label: "대기 중", dot: "bg-yellow-400" },
-  { key: "in_progress", label: "봉사 중", dot: "bg-sky-400" },
+  { key: "in_transit", label: "봉사 중", dot: "bg-sky-400" },
   { key: "completed",   label: "종료",    dot: "bg-gray-300" },
 ];
 
@@ -372,6 +372,7 @@ export default function DashboardPage() {
   const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevPostsRef = useRef<Post[]>([]);
 
   useEffect(() => {
     getPosts()
@@ -383,7 +384,17 @@ export default function DashboardPage() {
       .catch(() => {});
 
     const pollId = setInterval(() => {
-      getPosts().then(setPosts).catch(() => {});
+      getPosts().then((newPosts) => {
+        setPosts((prev) => {
+          newPosts.forEach((np) => {
+            const op = prev.find((p) => p.id === np.id);
+            if (op?.status === "waiting" && np.status === "in_transit") {
+              showToast(`🎉 매칭 확정! [${np.animal_info.name}] 릴레이가 시작됩니다!`);
+            }
+          });
+          return newPosts;
+        });
+      }).catch(() => {});
     }, 30_000);
 
     return () => {
@@ -426,10 +437,10 @@ export default function DashboardPage() {
     try {
       await approveShelterMatching(selectedPost.chain_id);
       setPosts((prev) =>
-        prev.map((p) => p.id === selectedPost.id ? { ...p, status: "in_progress" } : p)
+        prev.map((p) => p.id === selectedPost.id ? { ...p, status: "waiting" } : p)
       );
       closeSheet();
-      showToast("릴레이 매칭이 확정되었습니다! 모든 봉사자에게 안내 이메일이 발송됩니다.");
+      showToast("승인 완료! 봉사자 수락을 기다리고 있습니다.");
     } catch {
       showToast("처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
     }
@@ -473,14 +484,14 @@ export default function DashboardPage() {
     if (activeTab === "all")         return true;
     if (activeTab === "recruiting")  return p.status === "recruiting";
     if (activeTab === "waiting")     return p.status === "waiting";
-    if (activeTab === "in_progress") return p.status === "in_progress";
+    if (activeTab === "in_transit") return p.status === "in_transit";
     if (activeTab === "completed")   return p.status === "completed";
     return true;
   });
 
   const recruitingCount  = posts.filter((p) => p.status === "recruiting").length;
   const waitingCount     = posts.filter((p) => p.status === "waiting").length;
-  const inProgressCount  = posts.filter((p) => p.status === "in_progress").length;
+  const inProgressCount  = posts.filter((p) => p.status === "in_transit").length;
 
   return (
     <>
@@ -595,7 +606,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           filtered.map((post) =>
-            post.status === "in_progress" ? (
+            post.status === "in_transit" ? (
               <InProgressCard key={post.id} post={post} />
             ) : (
               <PostCard

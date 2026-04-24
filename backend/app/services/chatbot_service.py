@@ -35,6 +35,16 @@ _STATE_WELCOME = {
 def _build_welcome_response(session_id: str, session: dict) -> ChatMessageResponse:
     """message=null 첫 진입 시 현재 state에 맞는 안내 메시지를 반환한다."""
     state = session.get("state", "ASK_ORIGIN")
+    if state == "COMPLETED":
+        data = session.get("collected_data", {})
+        origin = data.get("origin", "")
+        destination = data.get("destination", "")
+        msg = f"이 동선({origin} → {destination})은 이미 등록이 완료되었어요! 🐾"
+        return ChatMessageResponse(
+            session_id=session_id, state="COMPLETED", message=msg,
+            input_type=None, options=None, auto_filled=None,
+            completed=True, schedule_id=session.get("schedule_id"),
+        )
     input_type, options, msg = _STATE_WELCOME.get(state, (None, None, "동선을 입력해주세요."))
     if state == "ASK_ORIGIN":
         msg = "안녕하세요! 이동봉사 동선을 등록할게요.\n" + msg
@@ -186,8 +196,7 @@ async def _finalize_session(
     if result.completed:
         schedule_id = session.get("schedule_id") or await _save_schedule(db, volunteer_id, session)
         session["schedule_id"] = schedule_id
-        await _save_session(redis, session_id, session)
-        await redis.delete(_session_key(session_id))
+        await redis.setex(_session_key(session_id), _USER_SESSIONS_TTL, json.dumps(session))
         return schedule_id
     await _save_session(redis, session_id, session)
     return None
