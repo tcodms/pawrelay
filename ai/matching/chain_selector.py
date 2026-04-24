@@ -12,7 +12,7 @@ _REQUIRED_KEYS = {"selected_chain_index", "matching_reason"}
 
 def _format_segment(seg: dict) -> str:
     vehicle = "차량 있음" if seg.get("vehicle_available") else "차량 없음"
-    direct = " (직접 지원)" if seg.get("is_direct_apply") else ""
+    direct = " [직접지원]" if seg.get("is_direct_apply") else ""
     return (
         f"  • {seg.get('origin_area', '?')} → {seg.get('destination_area', '?')}, "
         f"{seg.get('available_time', '?')}~{seg.get('estimated_arrival_time', '?')}, "
@@ -45,7 +45,8 @@ def _build_prompt(chains: list[list[dict]], post: dict) -> str:
 {chains_text}
 
 봉사자 동선의 연속성, 인계 시간 간격, 동물 크기 적합성을 고려해 \
-가장 적합한 체인 하나를 선택하고 이유를 한국어 2~3문장으로 설명하세요.
+가장 적합한 체인 하나를 선택하고 이유를 한국어 2~3문장으로 설명하세요. \
+[직접지원] 표시가 있는 봉사자가 포함된 체인을 우선적으로 선택하세요.
 
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요.
 {{

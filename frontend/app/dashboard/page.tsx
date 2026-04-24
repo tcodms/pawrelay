@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { User, Users, Plus, X, ChevronRight, ArrowRight, CheckCircle2 } from "lucide-react";
-import { getPosts, Post } from "@/lib/api/posts";
+import { getPosts, getPost, Post } from "@/lib/api/posts";
 import { DUMMY_POSTS } from "@/lib/dummy-posts";
 import { approveShelterMatching, rejectShelterMatching, cancelAutoApprovedMatching } from "@/lib/api/matching";
 import { getShelterProfile } from "@/lib/api/shelter";
@@ -13,7 +13,7 @@ import MatchingReasonBubble from "@/components/MatchingReasonBubble";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type TabKey = "all" | "recruiting" | "waiting" | "in_progress" | "completed";
+type TabKey = "all" | "recruiting" | "waiting" | "in_transit" | "completed";
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ const TABS: { key: TabKey; label: string; dot: string }[] = [
   { key: "all",         label: "전체",    dot: "bg-gray-400" },
   { key: "recruiting",  label: "모집 중", dot: "bg-green-500" },
   { key: "waiting",     label: "대기 중", dot: "bg-yellow-400" },
-  { key: "in_progress", label: "봉사 중", dot: "bg-sky-400" },
+  { key: "in_transit", label: "봉사 중", dot: "bg-sky-400" },
   { key: "completed",   label: "종료",    dot: "bg-gray-300" },
 ];
 
@@ -368,8 +368,11 @@ export default function DashboardPage() {
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [sheetType, setSheetType] = useState<"applicants" | "matching" | null>(null);
   const selectedPost = posts.find((p) => p.id === selectedPostId) ?? null;
+  const [applicants, setApplicants] = useState<Post["volunteers"]>([]);
+  const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevPostsRef = useRef<Post[]>([]);
 
   useEffect(() => {
     getPosts()
@@ -381,7 +384,17 @@ export default function DashboardPage() {
       .catch(() => {});
 
     const pollId = setInterval(() => {
-      getPosts().then(setPosts).catch(() => {});
+      getPosts().then((newPosts) => {
+        setPosts((prev) => {
+          newPosts.forEach((np) => {
+            const op = prev.find((p) => p.id === np.id);
+            if (op?.status === "waiting" && np.status === "in_transit") {
+              showToast(`🎉 매칭 확정! [${np.animal_info.name}] 릴레이가 시작됩니다!`);
+            }
+          });
+          return newPosts;
+        });
+      }).catch(() => {});
     }, 30_000);
 
     return () => {
@@ -399,6 +412,21 @@ export default function DashboardPage() {
   function closeSheet() {
     setSelectedPostId(null);
     setSheetType(null);
+    setApplicants([]);
+  }
+
+  async function openApplicants(post: Post) {
+    setSelectedPostId(post.id);
+    setSheetType("applicants");
+    setApplicantsLoading(true);
+    try {
+      const detail = await getPost(post.id);
+      setApplicants(detail?.volunteers ?? []);
+    } catch {
+      setApplicants([]);
+    } finally {
+      setApplicantsLoading(false);
+    }
   }
 
   async function handleApprove() {
@@ -409,10 +437,10 @@ export default function DashboardPage() {
     try {
       await approveShelterMatching(selectedPost.chain_id);
       setPosts((prev) =>
-        prev.map((p) => p.id === selectedPost.id ? { ...p, status: "in_progress" } : p)
+        prev.map((p) => p.id === selectedPost.id ? { ...p, status: "waiting" } : p)
       );
       closeSheet();
-      showToast("릴레이 매칭이 확정되었습니다! 모든 봉사자에게 안내 이메일이 발송됩니다.");
+      showToast("승인 완료! 봉사자 수락을 기다리고 있습니다.");
     } catch {
       showToast("처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
     }
@@ -456,14 +484,14 @@ export default function DashboardPage() {
     if (activeTab === "all")         return true;
     if (activeTab === "recruiting")  return p.status === "recruiting";
     if (activeTab === "waiting")     return p.status === "waiting";
-    if (activeTab === "in_progress") return p.status === "in_progress";
+    if (activeTab === "in_transit") return p.status === "in_transit";
     if (activeTab === "completed")   return p.status === "completed";
     return true;
   });
 
   const recruitingCount  = posts.filter((p) => p.status === "recruiting").length;
   const waitingCount     = posts.filter((p) => p.status === "waiting").length;
-  const inProgressCount  = posts.filter((p) => p.status === "in_progress").length;
+  const inProgressCount  = posts.filter((p) => p.status === "in_transit").length;
 
   return (
     <>
@@ -578,13 +606,13 @@ export default function DashboardPage() {
           </div>
         ) : (
           filtered.map((post) =>
-            post.status === "in_progress" ? (
+            post.status === "in_transit" ? (
               <InProgressCard key={post.id} post={post} />
             ) : (
               <PostCard
                 key={post.id}
                 post={post}
-                onShowApplicants={(p) => { setSelectedPostId(p.id); setSheetType("applicants"); }}
+                onShowApplicants={(p) => openApplicants(p)}
                 onShowMatching={(p)   => { setSelectedPostId(p.id); setSheetType("matching"); }}
               />
             )
@@ -611,7 +639,7 @@ export default function DashboardPage() {
                   {selectedPost.animal_info.name} 공고 지원자
                 </h3>
                 <p className="text-[12px] text-gray-400 mt-0.5">
-                  총 {selectedPost.volunteers.length}명 지원
+                  총 {applicants.length}명 지원
                 </p>
               </div>
               <button onClick={closeSheet} aria-label="닫기" className="text-gray-400 hover:text-gray-600">
@@ -620,21 +648,29 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex flex-col gap-2.5 mt-4">
-              {selectedPost.volunteers.map((v) => (
-                <div key={v.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3.5">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
-                    <span className="text-[13px] font-bold text-[#7A4A28]">{v.name[0]}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-gray-800">{v.name}</p>
-                    <div className="flex items-center gap-1 text-[12px] text-gray-400">
-                      <span>{v.from}</span>
-                      <ArrowRight size={11} />
-                      <span>{v.to}</span>
+              {applicantsLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
+                </div>
+              ) : applicants.length === 0 ? (
+                <p className="text-center text-[13px] text-gray-400 py-8">지원자가 없습니다.</p>
+              ) : (
+                applicants.map((v) => (
+                  <div key={v.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
+                      <span className="text-[13px] font-bold text-[#7A4A28]">{v.name[0]}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-semibold text-gray-800">{v.name}</p>
+                      <div className="flex items-center gap-1 text-[12px] text-gray-400">
+                        <span>{v.from}</span>
+                        <ArrowRight size={11} />
+                        <span>{v.to}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </>
         )}

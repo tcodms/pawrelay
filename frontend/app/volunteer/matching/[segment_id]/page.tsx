@@ -209,7 +209,7 @@ function StatusBadge({ status }: { status: string }) {
     proposed:    { label: "수락 대기 중", className: "bg-orange-50 text-orange-500" },
     accepted:    { label: "수락 완료",    className: "bg-green-50 text-green-600" },
     confirmed:   { label: "매칭 확정",    className: "bg-green-50 text-green-600" },
-    in_progress: { label: "이동 중",      className: "bg-blue-50 text-blue-600" },
+    in_transit: { label: "이동 중",      className: "bg-blue-50 text-blue-600" },
     completed:   { label: "완료",         className: "bg-gray-100 text-gray-500" },
     declined:    { label: "거절됨",       className: "bg-red-50 text-red-400" },
   };
@@ -375,12 +375,23 @@ export default function MatchingDetailPage() {
         setSeg((prev) => ({
           ...prev,
           order: segment.order,
+          animal_name: segment.animal_name || prev.animal_name,
+          animal_photo_url: segment.animal_photo_url ?? prev.animal_photo_url,
+          animal_size: segment.animal_size || prev.animal_size,
+          scheduled_date: segment.scheduled_date || prev.scheduled_date,
           pickup_location: { ...prev.pickup_location, ...segment.pickup_location },
           dropoff_location: { ...prev.dropoff_location, ...segment.dropoff_location },
           scheduled_time: segment.scheduled_time,
+          depart_time: segment.depart_time || prev.depart_time,
+          estimated_arrival_time: segment.estimated_arrival_time || prev.estimated_arrival_time,
           handover_code: segment.handover_code,
+          matching_reason: segment.matching_reason || prev.matching_reason,
+          notified_at: segment.notified_at || prev.notified_at,
           partner: segment.partner,
           kakao_openchat_url: segment.kakao_openchat_url,
+          ...(segment.chain_segments?.length
+            ? { chain_segments: segment.chain_segments }
+            : {}),
         }));
         setStatus(segment.status);
       })
@@ -397,9 +408,9 @@ export default function MatchingDetailPage() {
     if (window.kakao?.maps) window.kakao.maps.load(() => setMapReady(true));
   }, []);
 
-  const isProposed  = status === "proposed";
+  const isProposed  = status === "proposed" || status === "pending";
   const isAccepted  = status === "accepted";
-  const isConfirmed = status === "confirmed" || status === "in_progress";
+  const isConfirmed = status === "confirmed" || status === "in_transit";
   const isDeclined  = status === "declined";
 
   const allWaypoints: LatLng[] = [
@@ -561,12 +572,13 @@ export default function MatchingDetailPage() {
         <MatchingReasonBubble reason={seg.matching_reason} />
 
         {/* 인계 후보지 + 오픈채팅 버튼 */}
+        {/* TODO: waypoint DB 적재 및 백엔드 연결 완료 후 활성화
         <WaypointsCard
           waypoints={seg.waypoints}
           confirmed={isConfirmed}
           openchatUrl={seg.kakao_openchat_url}
           partnerName={seg.partner.name}
-        />
+        /> */}
 
         {/* 인계 코드 */}
         {isConfirmed && (

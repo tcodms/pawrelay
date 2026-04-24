@@ -3,7 +3,7 @@ import type { PostStatus } from "@/lib/api/posts";
 const STATUS_MAP: Record<PostStatus, { label: string; color: string }> = {
   recruiting:  { label: "모집 중",  color: "bg-green-100 text-green-700" },
   waiting:     { label: "대기 중",  color: "bg-yellow-500/30 text-yellow-800" },
-  in_progress: { label: "봉사 중",  color: "bg-sky-100 text-sky-600" },
+  in_transit: { label: "봉사 중",  color: "bg-sky-100 text-sky-600" },
   completed:   { label: "봉사 종료", color: "bg-gray-100 text-gray-500" },
 };
 

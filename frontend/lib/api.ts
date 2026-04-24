@@ -64,6 +64,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     throw new ApiError(body.error ?? "UNKNOWN_ERROR", res.status);
   }
 
+  if (res.status === 204) return undefined as unknown as T;
   return res.json() as Promise<T>;
 }
 
@@ -75,6 +76,7 @@ export interface User {
   id: number;
   email: string;
   role: UserRole;
+  name: string;
 }
 
 export interface LoginResponse {
@@ -138,4 +140,8 @@ export async function signupShelter(
 
 export async function logout(): Promise<void> {
   await request<{ ok: boolean }>("/auth/logout", { method: "POST" });
+}
+
+export async function getMe(): Promise<User> {
+  return request<User>("/auth/me");
 }

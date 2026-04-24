@@ -7,13 +7,14 @@ import { ArrowLeft, ArrowRight, Calendar, MapPin, Users } from "lucide-react";
 import { getPost } from "@/lib/api/posts";
 import type { Post } from "@/lib/api/posts";
 import { StatusBadge, SizeBadge } from "@/components/ui/PostBadges";
-import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY } from "@/lib/api/chatbot";
+import { sendChatMessage, CHATBOT_POST_CONTEXT_KEY } from "@/lib/api/chatbot";
 import type { PostContext } from "@/lib/api/chatbot";
 
 export default function VolunteerPostDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
   useEffect(() => {
     getPost(Number(params.id))
       .then(setPost)
@@ -129,21 +130,31 @@ export default function VolunteerPostDetailPage({ params }: { params: { id: stri
         <div className="mx-auto max-w-lg">
           {post.status === "recruiting" ? (
             <button
-              onClick={() => {
-                const sessionId = crypto.randomUUID();
-                const postContext: PostContext = {
-                  post_id: post.id,
-                  destination: post.destination,
-                  available_date: post.scheduled_date,
-                  max_animal_size: post.animal_info.size,
-                };
-                sessionStorage.setItem(CHATBOT_SESSION_KEY, sessionId);
-                sessionStorage.setItem(CHATBOT_POST_CONTEXT_KEY, JSON.stringify(postContext));
-                router.push(`/volunteer/chat/${sessionId}`);
+              disabled={applying}
+              onClick={async () => {
+                setApplying(true);
+                try {
+                  const postContext: PostContext = {
+                    post_id: post.id,
+                    destination: post.destination,
+                    available_date: post.scheduled_date,
+                    max_animal_size: post.animal_info.size,
+                  };
+                  sessionStorage.setItem(CHATBOT_POST_CONTEXT_KEY, JSON.stringify(postContext));
+                  const res = await sendChatMessage(null, post.id, null);
+                  sessionStorage.setItem(`chatbot_init_${res.session_id}`, JSON.stringify(res));
+                  router.push(`/volunteer/chat/${res.session_id}`);
+                } catch {
+                  alert("신청을 시작할 수 없습니다. 다시 시도해 주세요.");
+                } finally {
+                  setApplying(false);
+                }
               }}
-              className="flex w-full items-center justify-center h-14 rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] hover:bg-[#D99A55]"
+              className="flex w-full items-center justify-center h-14 rounded-full bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] hover:bg-[#D99A55] disabled:opacity-60"
             >
-              이 공고 신청하기
+              {applying ? (
+                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : "이 공고 신청하기"}
             </button>
           ) : (
             <div className="flex w-full items-center justify-center h-14 rounded-full bg-gray-100 text-[15px] font-bold text-gray-400">

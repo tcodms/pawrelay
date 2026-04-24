@@ -101,6 +101,48 @@ function dummyResponse(
  * @param postId    - 게시판에서 진입한 경우의 공고 ID (직접 진입 시 null)
  * @param message   - 사용자 메시지 (세션 초기화 시 null)
  */
+export interface AppliedPostInfo {
+  animal_name: string;
+  animal_size: string;
+  animal_photo_url: string | null;
+  origin: string;
+  destination: string;
+  post_status: string;
+}
+
+export interface ScheduleItem {
+  id: number;
+  post_id: number | null;
+  origin_area: string;
+  destination_area: string;
+  available_date: string;
+  available_time: string | null;
+  max_animal_size: string;
+  status: string;
+  applied_post: AppliedPostInfo | null;
+}
+
+export async function getMySchedules(): Promise<ScheduleItem[]> {
+  const res = await request<{ schedules: ScheduleItem[] }>("/volunteers/schedules");
+  return res.schedules;
+}
+
+export interface ChatSessionListItem {
+  session_id: string;
+  title: string;
+  last_message: string;
+  state: string;
+  updated_at: string;
+}
+
+export async function getChatSessions(): Promise<ChatSessionListItem[]> {
+  return request<ChatSessionListItem[]>("/chatbot/sessions");
+}
+
+export async function deleteChatSession(sessionId: string): Promise<void> {
+  await request<void>(`/chatbot/session/${sessionId}`, { method: "DELETE" });
+}
+
 export async function sendChatMessage(
   sessionId: string | null,
   postId: number | null,

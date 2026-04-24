@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.repositories import post_repo, user_repo
-from app.schemas.shelter import AnimalInfo, DashboardPostItem, ShelterDashboardResponse, ShelterProfileResponse
+from app.schemas.shelter import AnimalInfo, DashboardPostItem, RelaySegmentItem, ShelterDashboardResponse, ShelterProfileResponse
 
 router = APIRouter()
 
@@ -35,6 +35,8 @@ async def get_shelter_dashboard(
     if current_user.role != "shelter":
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
     rows = await post_repo.get_dashboard_posts(db, current_user.id)
+    chain_ids = [chain_id for _, _, chain_id, _, _ in rows if chain_id]
+    segments_by_chain = await post_repo.get_segments_for_chains(db, chain_ids)
     posts = [
         DashboardPostItem(
             id=post.id,
@@ -52,6 +54,9 @@ async def get_shelter_dashboard(
             chain_expires_at=chain_expires_at,
             matching_reason=matching_reason,
             share_token=post.share_token,
+            relay_segments=[
+                RelaySegmentItem(**s) for s in segments_by_chain.get(chain_id, [])
+            ] if chain_id else None,
         )
         for post, count, chain_id, matching_reason, chain_expires_at in rows
     ]
