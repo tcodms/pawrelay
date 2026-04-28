@@ -1,6 +1,10 @@
+from pathlib import Path
 from urllib.parse import quote_plus
 
 from pydantic_settings import BaseSettings
+
+# config.py 기준 3단계 상위 = 프로젝트 루트 (backend/app/core/config.py)
+_ROOT_ENV = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):
@@ -39,7 +43,7 @@ class Settings(BaseSettings):
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
+    model_config = {"env_file": [str(_ROOT_ENV), ".env"], "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 settings = Settings()
