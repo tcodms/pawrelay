@@ -47,7 +47,7 @@ def do_run_migrations(connection):
 
 
 async def run_migrations_online() -> None:
-    connect_args = {"ssl": "require"} if settings.is_production else {}
+    connect_args = {} if settings.postgres_host in ("localhost", "127.0.0.1") else {"ssl": "require"}
     engine = create_async_engine(settings.database_url, connect_args=connect_args)
     async with engine.connect() as connection:
         await connection.run_sync(do_run_migrations)
