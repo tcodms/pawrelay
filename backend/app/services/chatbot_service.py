@@ -2,7 +2,7 @@
 import json
 import re
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
@@ -10,10 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chatbot.llm_engine import EngineResult, LLMChatbotEngine
 from app.repositories import volunteer_repo
-from app.schemas.chatbot import ChatMessageResponse, ChatSessionResponse
+from app.schemas.chatbot import ChatMessageResponse, ChatSessionListItem, ChatSessionResponse
 from app.services import geocoding_service
 
 _SESSION_TTL = 3600  # 1시간
+_USER_SESSIONS_TTL = 86400 * 7  # 7일
 _engine = LLMChatbotEngine()
 
 _STATE_WELCOME = {
@@ -34,6 +35,16 @@ _STATE_WELCOME = {
 def _build_welcome_response(session_id: str, session: dict) -> ChatMessageResponse:
     """message=null 첫 진입 시 현재 state에 맞는 안내 메시지를 반환한다."""
     state = session.get("state", "ASK_ORIGIN")
+    if state == "COMPLETED":
+        data = session.get("collected_data", {})
+        origin = data.get("origin", "")
+        destination = data.get("destination", "")
+        msg = f"이 동선({origin} → {destination})은 이미 등록이 완료되었어요! 🐾"
+        return ChatMessageResponse(
+            session_id=session_id, state="COMPLETED", message=msg,
+            input_type=None, options=None, auto_filled=None,
+            completed=True, schedule_id=session.get("schedule_id"),
+        )
     input_type, options, msg = _STATE_WELCOME.get(state, (None, None, "동선을 입력해주세요."))
     if state == "ASK_ORIGIN":
         msg = "안녕하세요! 이동봉사 동선을 등록할게요.\n" + msg
@@ -47,6 +58,10 @@ def _build_welcome_response(session_id: str, session: dict) -> ChatMessageRespon
 
 def _session_key(session_id: str) -> str:
     return f"chatbot:session:{session_id}"
+
+
+def _user_sessions_key(volunteer_id: int) -> str:
+    return f"chatbot:user:{volunteer_id}:sessions"
 
 
 async def _load_session(redis: Redis, session_id: str) -> dict:
@@ -67,6 +82,10 @@ async def _save_session(redis: Redis, session_id: str, session: dict) -> None:
     await redis.setex(_session_key(session_id), _SESSION_TTL, json.dumps(session))
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 def _new_session(volunteer_id: int, post_id: int | None) -> dict:
     """신규 세션 dict를 생성한다."""
     return {
@@ -75,7 +94,21 @@ def _new_session(volunteer_id: int, post_id: int | None) -> dict:
         "state": "ASK_ORIGIN",
         "collected_data": {},
         "auto_filled": {},
+        "last_message": "",
+        "updated_at": _now_iso(),
     }
+
+
+def _derive_title(session: dict) -> str:
+    """세션 데이터에서 채팅방 제목을 생성한다."""
+    data = session.get("collected_data", {})
+    origin = data.get("origin", "")
+    destination = data.get("destination", "")
+    if origin and destination:
+        return f"{origin} → {destination}"
+    if origin:
+        return f"{origin} 출발"
+    return "동선 등록 중"
 
 
 async def _build_route_wkt(origin: str, destination: str) -> str | None:
@@ -144,6 +177,8 @@ def _update_session_fields(session: dict, result: EngineResult) -> None:
     """엔진 결과를 세션 dict에 반영한다."""
     session["state"] = result.next_state
     session["collected_data"] = result.collected_data
+    session["last_message"] = result.message
+    session["updated_at"] = _now_iso()
     if result.next_state == "ASK_ORIGIN":
         session.pop("schedule_id", None)
 
@@ -161,8 +196,7 @@ async def _finalize_session(
     if result.completed:
         schedule_id = session.get("schedule_id") or await _save_schedule(db, volunteer_id, session)
         session["schedule_id"] = schedule_id
-        await _save_session(redis, session_id, session)
-        await redis.delete(_session_key(session_id))
+        await redis.setex(_session_key(session_id), _USER_SESSIONS_TTL, json.dumps(session))
         return schedule_id
     await _save_session(redis, session_id, session)
     return None
@@ -191,7 +225,11 @@ async def _resolve_session(
         session = await _load_session(redis, session_id)
         _check_owner(session, volunteer_id)
         return session_id, session
-    return str(uuid.uuid4()), _new_session(volunteer_id, post_id)
+    new_sid = str(uuid.uuid4())
+    user_key = _user_sessions_key(volunteer_id)
+    await redis.sadd(user_key, new_sid)
+    await redis.expire(user_key, _USER_SESSIONS_TTL)
+    return new_sid, _new_session(volunteer_id, post_id)
 
 
 async def send_message(
@@ -204,6 +242,7 @@ async def send_message(
 ) -> ChatMessageResponse:
     session_id, session = await _resolve_session(redis, volunteer_id, session_id, post_id)
     if message is None:
+        session["updated_at"] = _now_iso()
         await _save_session(redis, session_id, session)
         return _build_welcome_response(session_id, session)
     result = await _engine.process_input(
@@ -225,6 +264,33 @@ async def get_session(redis: Redis, session_id: str, volunteer_id: int) -> ChatS
         collected_data=session["collected_data"],
         auto_filled=session.get("auto_filled") or None,
     )
+
+
+async def get_sessions(redis: Redis, volunteer_id: int) -> list[ChatSessionListItem]:
+    """해당 봉사자의 활성 챗봇 세션 목록을 반환한다."""
+    user_key = _user_sessions_key(volunteer_id)
+    raw_ids = await redis.smembers(user_key)
+    result = []
+    stale = []
+    for raw in raw_ids:
+        sid = raw.decode() if isinstance(raw, bytes) else raw
+        data = await redis.get(_session_key(sid))
+        if not data:
+            stale.append(raw)
+            continue
+        session = json.loads(data)
+        if session.get("volunteer_id") != volunteer_id:
+            continue
+        result.append(ChatSessionListItem(
+            session_id=sid,
+            title=_derive_title(session),
+            last_message=session.get("last_message", ""),
+            state=session.get("state", ""),
+            updated_at=session.get("updated_at", ""),
+        ))
+    if stale:
+        await redis.srem(user_key, *stale)
+    return sorted(result, key=lambda x: x.updated_at, reverse=True)
 
 
 async def delete_session(redis: Redis, session_id: str, volunteer_id: int) -> None:
