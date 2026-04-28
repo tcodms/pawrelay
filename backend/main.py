@@ -6,13 +6,24 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.routers import auth, posts, volunteers, matching, relay, chatbot, notifications, shelter, admin
 from app.websocket import router as ws_router
 
 app = FastAPI(title="PawRelay API", version="0.1.0")
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if isinstance(exc.detail, dict) and "error" in exc.detail:
+        content = exc.detail
+    else:
+        content = {"error": str(exc.detail)}
+    return JSONResponse(status_code=exc.status_code, content=content)
+
 
 app.add_middleware(
     CORSMiddleware,

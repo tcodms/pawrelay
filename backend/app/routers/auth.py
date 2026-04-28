@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Cookie, Depends, Response
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -31,7 +31,7 @@ async def signup_volunteer(
         user = await auth_service.signup_volunteer(db, body)
     except ValueError as e:
         if str(e) in _400_ERRORS:
-            return JSONResponse(status_code=400, content={"error": str(e)})
+            raise HTTPException(status_code=400, detail={"error": str(e)}) from e
         raise
     return SignupResponse(user=UserResponse.model_validate(user))
 
@@ -45,7 +45,7 @@ async def signup_shelter(
         user = await auth_service.signup_shelter(db, body)
     except ValueError as e:
         if str(e) in _400_ERRORS:
-            return JSONResponse(status_code=400, content={"error": str(e)})
+            raise HTTPException(status_code=400, detail={"error": str(e)}) from e
         raise
     return SignupResponse(user=UserResponse.model_validate(user))
 
@@ -69,9 +69,9 @@ async def login(
         user = await auth_service.login(db, body, response)
     except ValueError as e:
         if str(e) in _401_ERRORS:
-            return JSONResponse(status_code=401, content={"error": str(e)})
+            raise HTTPException(status_code=401, detail={"error": str(e)}) from e
         if str(e) in _400_ERRORS:
-            return JSONResponse(status_code=400, content={"error": str(e)})
+            raise HTTPException(status_code=400, detail={"error": str(e)}) from e
         raise
     return LoginResponse(user=UserResponse.model_validate(user))
 
@@ -99,5 +99,5 @@ async def refresh(
     try:
         await auth_service.refresh(refresh_token, response, db)
     except ValueError as e:
-        return JSONResponse(status_code=401, content={"error": str(e)})
+        raise HTTPException(status_code=401, detail={"error": str(e)}) from e
     return {"ok": True}

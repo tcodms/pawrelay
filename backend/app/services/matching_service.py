@@ -263,9 +263,10 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
     await matching_repo.mark_schedules_matched(db, [volunteer_id], scheduled_date)
 
     # 체인 내 전원 수락 시 post → in_transit
-    all_accepted = all(s.status == "accepted" for s in chain.segments)
-    if all_accepted:
-        await matching_repo.update_post_status(db, chain.transport_post_id, "in_transit")
+    if chain:
+        all_accepted = all(s.status == "accepted" for s in chain.segments)
+        if all_accepted:
+            await matching_repo.update_post_status(db, chain.transport_post_id, "in_transit")
 
     await db.commit()
 
