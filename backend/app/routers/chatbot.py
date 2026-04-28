@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.dependencies import get_current_user, get_db
 from app.core.redis import redis_client
 from app.models.user import User
-from app.schemas.chatbot import ChatMessageRequest, ChatMessageResponse, ChatSessionResponse
+from app.schemas.chatbot import ChatMessageRequest, ChatMessageResponse, ChatSessionListItem, ChatSessionResponse
 from app.services import chatbot_service
 
 router = APIRouter()
@@ -32,6 +32,14 @@ async def send_message(
         post_id=body.post_id,
         message=body.message,
     )
+
+
+@router.get("/sessions", response_model=list[ChatSessionListItem])
+async def get_sessions(
+    current_user: User = Depends(get_current_user),
+):
+    _require_volunteer(current_user)
+    return await chatbot_service.get_sessions(redis=redis_client, volunteer_id=current_user.id)
 
 
 @router.get("/session/{session_id}", response_model=ChatSessionResponse)

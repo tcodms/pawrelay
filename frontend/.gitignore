@@ -9,6 +9,7 @@ build
 **/public/fallback-*.js
 **/public/sw.js.map
 **/public/swe-worker-*.js
+**/public/worker-*.js
 
 # Claude Code 로컬 설정
 .claude/

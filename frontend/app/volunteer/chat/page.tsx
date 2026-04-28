@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { MessageCircle, Plus, Bell, CheckCircle2, X } from "lucide-react";
-import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY, sendChatMessage } from "@/lib/api/chatbot";
+import { MessageCircle, Plus, Bell, CheckCircle2, X, Trash2 } from "lucide-react";
+import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY, sendChatMessage, getChatSessions, deleteChatSession } from "@/lib/api/chatbot";
 import type { PostContext } from "@/lib/api/chatbot";
 import type { AppNotification } from "@/lib/api/notifications";
 
-// ── 더미 채팅방 목록 ───────────────────────────────────────────────────────────
+// ── 채팅방 목록 ────────────────────────────────────────────────────────────────
 
 interface ChatRoom {
   session_id: string;
@@ -19,33 +19,6 @@ interface ChatRoom {
   animal_photo_url: string | null;
   post_context?: PostContext;
 }
-
-const DUMMY_ROOMS: ChatRoom[] = [
-  {
-    session_id: "session-001",
-    title: "[초코] 릴레이 지원",
-    last_message: "수락 완료됐어요! 보호소 최종 확인 후 매칭이 확정돼요.",
-    time: "오후 2:30",
-    unread: 2,
-    animal_photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=200",
-    post_context: {
-      post_id: 1,
-      animal_name: "초코",
-      photo_url: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400",
-      destination: "서울특별시 강남구",
-      available_date: "2026-04-10",
-      max_animal_size: "small",
-    },
-  },
-  {
-    session_id: "session-002",
-    title: "릴레이 도우미",
-    last_message: "봉사 정보가 등록되었어요! 매칭 제안 해드릴게요. 🐾",
-    time: "어제",
-    unread: 0,
-    animal_photo_url: null,
-  },
-];
 
 // ── 더미 알림 ─────────────────────────────────────────────────────────────────
 
@@ -77,6 +50,19 @@ const NOTIF_TYPE_LABEL: Record<string, string> = {
   matching_failed: "매칭 실패",
 };
 
+function formatRoomTime(isoString: string) {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 1) return "방금 전";
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "어제";
+  return `${diffDays}일 전`;
+}
+
 function formatNotifTime(isoString: string) {
   const date = new Date(isoString);
   const now = new Date();
@@ -95,17 +81,21 @@ export default function ChatPage() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>(DUMMY_NOTIFICATIONS);
   const [readIds, setReadIds] = useState<Set<number>>(new Set());
-  const [rooms, setRooms] = useState<ChatRoom[]>(DUMMY_ROOMS);
+  const [rooms, setRooms] = useState<ChatRoom[]>([]);
 
   useEffect(() => {
-    setRooms(DUMMY_ROOMS.map((room) => {
-      try {
-        const saved = localStorage.getItem(`chatLastMsg_${room.session_id}`);
-        return saved ? { ...room, last_message: saved } : room;
-      } catch {
-        return room;
-      }
-    }));
+    getChatSessions()
+      .then((sessions) => {
+        setRooms(sessions.map((s) => ({
+          session_id: s.session_id,
+          title: s.title,
+          last_message: s.last_message || "대화를 시작해보세요.",
+          time: formatRoomTime(s.updated_at),
+          unread: 0,
+          animal_photo_url: null,
+        })));
+      })
+      .catch(() => setRooms([]));
   }, []);
 
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
@@ -130,6 +120,15 @@ export default function ChatPage() {
   }, [router]);
 
   const [starting, setStarting] = useState(false);
+
+  async function handleDeleteRoom(sessionId: string) {
+    try {
+      await deleteChatSession(sessionId);
+      setRooms((prev) => prev.filter((r) => r.session_id !== sessionId));
+    } catch {
+      alert("삭제에 실패했어요. 다시 시도해 주세요.");
+    }
+  }
 
   async function startNewChat() {
     if (starting) return;
@@ -183,7 +182,7 @@ export default function ChatPage() {
       ) : (
         <ul className="px-4 pt-3 pb-4 space-y-2.5">
           {rooms.map((room) => (
-            <li key={room.session_id}>
+            <li key={room.session_id} className="flex items-center gap-2">
               <button
                 onClick={() => {
                   if (room.post_context) {
@@ -193,7 +192,7 @@ export default function ChatPage() {
                   }
                   router.push(`/volunteer/chat/${room.session_id}`);
                 }}
-                className="w-full flex items-center gap-3.5 bg-white rounded-2xl px-4 py-3.5 border border-gray-100 shadow-sm active:scale-[0.98] transition-transform text-left"
+                className="flex-1 flex items-center gap-3.5 bg-white rounded-2xl px-4 py-3.5 border border-gray-100 shadow-sm active:scale-[0.98] transition-transform text-left"
               >
                 {/* 프로필 */}
                 <div className="relative shrink-0">
@@ -232,6 +231,13 @@ export default function ChatPage() {
                 <span className={`shrink-0 text-[11px] ${room.unread > 0 ? "text-[#EEA968] font-semibold" : "text-gray-400"}`}>
                   {room.time}
                 </span>
+              </button>
+              <button
+                onClick={() => handleDeleteRoom(room.session_id)}
+                className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                aria-label="세션 삭제"
+              >
+                <Trash2 size={16} />
               </button>
             </li>
           ))}

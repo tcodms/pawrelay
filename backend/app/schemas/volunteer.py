@@ -25,3 +25,34 @@ class ScheduleCreateRequest(BaseModel):
 class ScheduleCreateResponse(BaseModel):
     schedule_id: int
     status: str
+
+
+class AppliedPostInfo(BaseModel):
+    animal_name: str
+    animal_size: str
+    animal_photo_url: str | None
+    origin: str
+    destination: str
+    post_status: str
+
+    model_config = {"from_attributes": True}
+
+
+class ScheduleItem(BaseModel):
+    id: int
+    post_id: int | None
+    origin_area: str
+    destination_area: str
+    available_date: date
+    available_time: str | None
+    estimated_arrival_time: str | None
+    vehicle_available: bool
+    max_animal_size: str
+    status: str
+    applied_post: AppliedPostInfo | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ScheduleListResponse(BaseModel):
+    schedules: list[ScheduleItem]

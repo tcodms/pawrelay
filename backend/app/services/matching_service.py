@@ -1,6 +1,6 @@
 import logging
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -110,16 +110,20 @@ async def approve_chain(db: AsyncSession, chain_id: int, user_id: int, role: str
     chain = await matching_repo.get_chain_by_id(db, chain_id, for_update=True)
     if not chain:
         raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
-    if chain.status != "proposed":
+    if chain.status not in ("proposed", "active"):
         raise HTTPException(status_code=400, detail={"error": "CHAIN_NOT_PROPOSED"})
     if role == "volunteer" and user_id not in [s.volunteer_id for s in chain.segments]:
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+
+    # 이미 active인 경우 idempotent 반환
+    if chain.status == "active":
+        await db.commit()
+        return {"chain_id": chain_id, "status": "active", "cancelled_chains": 0}
 
     try:
         volunteer_ids = [s.volunteer_id for s in chain.segments]
         scheduled_date = chain.transport_post.scheduled_date if chain.transport_post else None
         await matching_repo.activate_chain(db, chain)
-        await matching_repo.mark_schedules_matched(db, volunteer_ids, scheduled_date)
 
         conflicting = await matching_repo.get_proposed_chains_with_volunteers(
             db, volunteer_ids, exclude_chain_id=chain_id
@@ -174,6 +178,25 @@ async def reject_chain(db: AsyncSession, chain_id: int, user_id: int, role: str)
 
 # ── 봉사자 segment 조회 / 수락 / 거절 ───────────────────────────────────────────
 
+async def get_my_segments(db: AsyncSession, volunteer_id: int) -> dict:
+    segments = await matching_repo.get_segments_for_volunteer(db, volunteer_id)
+    return {
+        "segments": [
+            {
+                "segment_id": seg.id,
+                "status": seg.status,
+                "animal_name": seg.chain.transport_post.animal_name if seg.chain and seg.chain.transport_post else "",
+                "animal_photo_url": seg.chain.transport_post.animal_photo_url if seg.chain and seg.chain.transport_post else None,
+                "scheduled_date": seg.chain.transport_post.scheduled_date.isoformat() if seg.chain and seg.chain.transport_post else None,
+                "pickup_location": seg.pickup_location,
+                "dropoff_location": seg.dropoff_location,
+                "depart_time": seg.scheduled_time.strftime("%H:%M") if seg.scheduled_time else None,
+            }
+            for seg in segments
+        ]
+    }
+
+
 async def get_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> dict:
     from fastapi import HTTPException
 
@@ -184,20 +207,40 @@ async def get_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> d
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
     partner = await matching_repo.get_partner_segment(db, segment)
+    chain = segment.chain
+    post = chain.transport_post if chain else None
+    chain_segments = sorted(chain.segments, key=lambda s: s.segment_order) if chain else []
 
     return {
         "segment": {
             "order": segment.segment_order,
             "status": segment.status,
+            "animal_name": post.animal_name if post else "",
+            "animal_photo_url": post.animal_photo_url if post else None,
+            "animal_size": post.animal_size if post else "small",
+            "scheduled_date": post.scheduled_date.isoformat() if post else None,
             "pickup_location": {"name": segment.pickup_location, "address": segment.pickup_location},
             "dropoff_location": {"name": segment.dropoff_location, "address": segment.dropoff_location},
             "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
+            "depart_time": segment.scheduled_time.strftime("%H:%M") if segment.scheduled_time else None,
+            "estimated_arrival_time": segment.estimated_arrival.strftime("%H:%M") if segment.estimated_arrival else None,
             "handover_code": segment.handover_code,
+            "matching_reason": chain.matching_reason if chain else None,
+            "notified_at": chain.created_at.isoformat() if chain else None,
             "partner": {
                 "name": partner.volunteer.name if partner and partner.volunteer else "",
                 "phone": "",
             },
             "kakao_openchat_url": "",
+            "chain_segments": [
+                {
+                    "volunteer": seg.volunteer.name if seg.volunteer else "",
+                    "from": seg.pickup_location,
+                    "to": seg.dropoff_location,
+                    "is_me": seg.volunteer_id == volunteer_id,
+                }
+                for seg in chain_segments
+            ],
         }
     }
 
@@ -215,6 +258,15 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
 
     segment.status = "accepted"
     segment.accepted_at = datetime.now(tz=timezone.utc)
+    chain = segment.chain
+    scheduled_date = chain.transport_post.scheduled_date if chain and chain.transport_post else None
+    await matching_repo.mark_schedules_matched(db, [volunteer_id], scheduled_date)
+
+    # 체인 내 전원 수락 시 post → in_transit
+    all_accepted = all(s.status == "accepted" for s in chain.segments)
+    if all_accepted:
+        await matching_repo.update_post_status(db, chain.transport_post_id, "in_transit")
+
     await db.commit()
 
     return {
@@ -246,9 +298,20 @@ async def decline_segment(db: AsyncSession, segment_id: int, volunteer_id: int, 
     segment.status = "no_show"
     segment.declined_at = datetime.now(tz=timezone.utc)
     segment.decline_reason = reason
-    await db.commit()
 
-    return {"status": "declined"}
+    chain = segment.chain
+    try:
+        await matching_repo.cancel_chain(db, chain)
+        scheduled_date = chain.transport_post.scheduled_date if chain.transport_post else None
+        promoted = await matching_repo.promote_backup(db, chain, scheduled_date)
+        if not promoted:
+            await matching_repo.restore_post_to_recruiting(db, chain.transport_post_id)
+        await db.commit()
+        return {"status": "declined", "promoted": promoted is not None}
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"[decline_segment] segment {segment_id} 처리 중 오류: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail={"error": "INTERNAL_ERROR"}) from e
 
 
 # ── 메인 실행 함수 ─────────────────────────────────────────────────────────────
@@ -332,6 +395,7 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
     saved_chain = await matching_repo.save_relay_chain(
         db, post.id, primary, backups, post.scheduled_date, matching_reason
     )
+    await matching_repo.update_post_status(db, post.id, "waiting")
     await db.commit()
     logger.info(f"[매칭] 공고 {post.id} → relay_chain {saved_chain.id} 저장 완료")
 
