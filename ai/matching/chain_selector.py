@@ -13,10 +13,14 @@ _REQUIRED_KEYS = {"selected_chain_index", "matching_reason"}
 def _format_segment(seg: dict) -> str:
     vehicle = "차량 있음" if seg.get("vehicle_available") else "차량 없음"
     direct = " [직접지원]" if seg.get("is_direct_apply") else ""
+    def _v(key: str) -> str:
+        val = seg.get(key)
+        return str(val) if val is not None else "?"
+
     return (
-        f"  • {seg.get('origin_area', '?')} → {seg.get('destination_area', '?')}, "
-        f"{seg.get('available_time', '?')}~{seg.get('estimated_arrival_time', '?')}, "
-        f"{vehicle}, 최대 {seg.get('max_animal_size', '?')} 크기{direct}"
+        f"  • {_v('origin_area')} → {_v('destination_area')}, "
+        f"{_v('available_time')}~{_v('estimated_arrival_time')}, "
+        f"{vehicle}, 최대 {_v('max_animal_size')} 크기{direct}"
     )
 
 

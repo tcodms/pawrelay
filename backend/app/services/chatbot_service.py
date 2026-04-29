@@ -197,6 +197,8 @@ async def _finalize_session(
         schedule_id = session.get("schedule_id") or await _save_schedule(db, volunteer_id, session)
         session["schedule_id"] = schedule_id
         await redis.setex(_session_key(session_id), _USER_SESSIONS_TTL, json.dumps(session))
+        user_key = _user_sessions_key(volunteer_id)
+        await redis.expire(user_key, _USER_SESSIONS_TTL)
         return schedule_id
     await _save_session(redis, session_id, session)
     return None
