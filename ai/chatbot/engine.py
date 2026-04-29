@@ -111,6 +111,9 @@ class ChatbotEngine:
         if self.auto_filled:
             self.collected_data = merge_collected_data({}, {}, self.auto_filled)
         missing = get_missing_fields(self.collected_data)
+        if not missing:
+            missing = list(get_missing_fields({}))
+            self.collected_data = {}
         first_question = self._fallback_question(missing) if missing else "출발지를 알려주세요."
         return {
             "state": "COLLECTING",

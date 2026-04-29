@@ -6,7 +6,7 @@ from ai.providers import get_llm_provider
 
 logger = logging.getLogger(__name__)
 
-_MAX_RETRIES = 1
+_MAX_RETRIES = 2
 _REQUIRED_KEYS = {"selected_chain_index", "matching_reason"}
 
 

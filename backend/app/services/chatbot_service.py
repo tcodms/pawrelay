@@ -243,7 +243,10 @@ async def send_message(
     session_id, session = await _resolve_session(redis, volunteer_id, session_id, post_id)
     if message is None:
         session["updated_at"] = _now_iso()
-        await _save_session(redis, session_id, session)
+        if session.get("state") == "COMPLETED":
+            await redis.setex(_session_key(session_id), _USER_SESSIONS_TTL, json.dumps(session))
+        else:
+            await _save_session(redis, session_id, session)
         return _build_welcome_response(session_id, session)
     result = await _engine.process_input(
         message=message, state=session["state"],

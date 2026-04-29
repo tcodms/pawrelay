@@ -87,8 +87,18 @@ export default function MyPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[15px] font-bold text-gray-900">{seg.animal_name}</span>
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${seg.status === "pending" ? "bg-orange-50 text-orange-500" : "bg-green-50 text-green-600"}`}>
-                          {seg.status === "pending" ? "수락 대기 중" : "수락 완료"}
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${
+                          seg.status === "pending" ? "bg-orange-50 text-orange-500" :
+                          seg.status === "accepted" ? "bg-green-50 text-green-600" :
+                          seg.status === "in_progress" ? "bg-blue-50 text-blue-600" :
+                          seg.status === "completed" ? "bg-gray-100 text-gray-500" :
+                          "bg-red-50 text-red-400"
+                        }`}>
+                          {seg.status === "pending" ? "수락 대기 중" :
+                           seg.status === "accepted" ? "수락 완료" :
+                           seg.status === "in_progress" ? "이동 중" :
+                           seg.status === "completed" ? "완료" :
+                           "취소됨"}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 text-[12px] text-gray-500">
