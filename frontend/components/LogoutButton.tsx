@@ -10,8 +10,9 @@ export default function LogoutButton() {
   async function handleLogout() {
     try {
       await logout();
-    } finally {
       router.push("/login");
+    } catch {
+      // 로그아웃 실패 시 현재 페이지 유지
     }
   }
 
