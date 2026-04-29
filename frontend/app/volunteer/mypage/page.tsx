@@ -7,7 +7,7 @@ import { ArrowRight, Calendar, MapPin, CheckCircle2, ChevronRight } from "lucide
 import VolunteerHeader from "@/components/VolunteerHeader";
 import { getMySchedules } from "@/lib/api/chatbot";
 import type { ScheduleItem } from "@/lib/api/chatbot";
-import { request } from "@/lib/api";
+import { request, ApiError } from "@/lib/api";
 
 interface MySegment {
   segment_id: number;
@@ -41,14 +41,17 @@ export default function MyPage() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [mySegments, setMySegments] = useState<MySegment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
-      getMySchedules().catch(() => []),
-      getMySegments().catch(() => []),
+      getMySchedules(),
+      getMySegments(),
     ]).then(([s, segs]) => {
       setSchedules(s);
       setMySegments(segs);
+    }).catch((err) => {
+      setError(err instanceof ApiError ? err.code : "UNKNOWN_ERROR");
     }).finally(() => setLoading(false));
   }, []);
 
@@ -62,6 +65,15 @@ export default function MyPage() {
       {loading ? (
         <div className="flex justify-center pt-20">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center pt-20 px-4 text-center">
+          <p className="text-[15px] font-semibold text-gray-600">정보를 불러오지 못했습니다.</p>
+          <p className="text-[13px] text-gray-400 mt-1">
+            {error === "REFRESH_TOKEN_EXPIRED"
+              ? "로그인이 만료되었습니다. 다시 로그인해 주세요."
+              : "네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."}
+          </p>
         </div>
       ) : (
         <div className="mx-auto max-w-2xl px-4 pt-4 pb-24 space-y-6">

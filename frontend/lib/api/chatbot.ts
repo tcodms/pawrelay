@@ -117,6 +117,8 @@ export interface ScheduleItem {
   destination_area: string;
   available_date: string;
   available_time: string | null;
+  estimated_arrival_time: string | null;
+  vehicle_available: boolean;
   max_animal_size: string;
   status: string;
   applied_post: AppliedPostInfo | null;

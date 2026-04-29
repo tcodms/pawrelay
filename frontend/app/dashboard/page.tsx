@@ -373,6 +373,7 @@ export default function DashboardPage() {
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevPostsRef = useRef<Post[]>([]);
+  const activeApplicantPostIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     getPosts()
@@ -410,6 +411,7 @@ export default function DashboardPage() {
   }
 
   function closeSheet() {
+    activeApplicantPostIdRef.current = null;
     setSelectedPostId(null);
     setSheetType(null);
     setApplicants([]);
@@ -419,13 +421,18 @@ export default function DashboardPage() {
     setSelectedPostId(post.id);
     setSheetType("applicants");
     setApplicantsLoading(true);
+    activeApplicantPostIdRef.current = post.id;
     try {
       const detail = await getPost(post.id);
+      if (activeApplicantPostIdRef.current !== post.id) return;
       setApplicants(detail?.volunteers ?? []);
     } catch {
+      if (activeApplicantPostIdRef.current !== post.id) return;
       setApplicants([]);
     } finally {
-      setApplicantsLoading(false);
+      if (activeApplicantPostIdRef.current === post.id) {
+        setApplicantsLoading(false);
+      }
     }
   }
 
