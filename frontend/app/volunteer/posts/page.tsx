@@ -406,6 +406,7 @@ function PostsPage() {
                     </div>
                     <div className="flex flex-col justify-between flex-1 min-w-0 py-0.5">
                       <div>
+                        <p className="text-[15px] font-bold text-[#5C3317] mb-1">{post.animal_name}</p>
                         <div className="flex flex-col min-w-0 mb-2.5">
                           <span className="text-[13px] font-bold text-gray-900 leading-snug">{post.origin}</span>
                           <div className="flex items-center gap-1 mt-1">
