@@ -79,6 +79,7 @@ export interface VolunteerPost {
   origin: string;
   destination: string;
   scheduled_date: string;
+  animal_name: string;
   animal_size: "small" | "medium" | "large";
   status: string;
   animal_photo_url: string | null;

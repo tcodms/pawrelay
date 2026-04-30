@@ -2,8 +2,38 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories import volunteer_repo
-from app.schemas.volunteer import ScheduleCreateRequest, ScheduleCreateResponse
+from app.schemas.volunteer import AppliedPostInfo, ScheduleCreateRequest, ScheduleCreateResponse, ScheduleItem, ScheduleListResponse
 from app.services.geocoding_service import geocode
+
+
+async def list_schedules(db: AsyncSession, volunteer_id: int) -> ScheduleListResponse:
+    schedules = await volunteer_repo.get_schedules_by_volunteer(db, volunteer_id)
+    items = []
+    for s in schedules:
+        applied_post = None
+        if s.post:
+            applied_post = AppliedPostInfo(
+                animal_name=s.post.animal_name,
+                animal_size=s.post.animal_size,
+                animal_photo_url=s.post.animal_photo_url,
+                origin=s.post.origin,
+                destination=s.post.destination,
+                post_status=s.post.status,
+            )
+        items.append(ScheduleItem(
+            id=s.id,
+            post_id=s.post_id,
+            origin_area=s.origin_area,
+            destination_area=s.destination_area,
+            available_date=s.available_date,
+            available_time=s.available_time,
+            estimated_arrival_time=s.estimated_arrival_time,
+            vehicle_available=s.vehicle_available,
+            max_animal_size=s.max_animal_size,
+            status=s.status,
+            applied_post=applied_post,
+        ))
+    return ScheduleListResponse(schedules=items)
 
 
 async def create_schedule(

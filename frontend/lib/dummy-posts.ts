@@ -1,4 +1,4 @@
-export type PostStatus = "recruiting" | "waiting" | "in_progress" | "completed";
+export type PostStatus = "recruiting" | "waiting" | "in_transit" | "completed";
 
 export interface Volunteer {
   id: number;
@@ -115,7 +115,7 @@ export const DUMMY_POSTS: Post[] = [
     origin: "전라북도 전주시",
     destination: "경기도 고양시",
     scheduled_date: "2026-04-20",
-    status: "in_progress",
+    status: "in_transit",
     volunteers: [
       { id: 6, name: "황봉사", from: "전주역", to: "대전역" },
       { id: 7, name: "윤릴레이", from: "대전역", to: "고양시" },

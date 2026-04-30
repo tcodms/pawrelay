@@ -17,6 +17,13 @@ class AnimalInfo(BaseModel):
     photo_url: str | None
 
 
+class RelaySegmentItem(BaseModel):
+    volunteer_name: str
+    from_area: str
+    to_area: str
+    depart_time: str | None
+
+
 class DashboardPostItem(BaseModel):
     id: int
     origin: str
@@ -29,6 +36,7 @@ class DashboardPostItem(BaseModel):
     chain_expires_at: datetime | None
     matching_reason: str | None
     share_token: UUID
+    relay_segments: list[RelaySegmentItem] | None = None
 
 
 class ShelterDashboardResponse(BaseModel):

@@ -174,8 +174,6 @@ async def get_proposed_chains_with_volunteers(
 
 async def activate_chain(db: AsyncSession, chain: RelayChain) -> None:
     chain.status = "active"
-    for segment in chain.segments:
-        segment.status = "accepted"
     await db.flush()
 
 
@@ -201,14 +199,18 @@ async def cancel_chain(db: AsyncSession, chain: RelayChain) -> None:
     await db.flush()
 
 
-async def restore_post_to_recruiting(db: AsyncSession, post_id: int) -> None:
+async def update_post_status(db: AsyncSession, post_id: int, status: str) -> None:
     result = await db.execute(
         select(TransportPost).where(TransportPost.id == post_id)
     )
     post = result.scalar_one_or_none()
     if post:
-        post.status = "recruiting"
+        post.status = status
         await db.flush()
+
+
+async def restore_post_to_recruiting(db: AsyncSession, post_id: int) -> None:
+    await update_post_status(db, post_id, "recruiting")
 
 
 async def promote_backup(
@@ -249,11 +251,36 @@ async def promote_backup(
     return new_chain
 
 
+async def get_segments_for_volunteer(db: AsyncSession, volunteer_id: int) -> list[RelaySegment]:
+    result = await db.execute(
+        select(RelaySegment)
+        .join(RelayChain, RelaySegment.chain_id == RelayChain.id)
+        .where(
+            and_(
+                RelaySegment.volunteer_id == volunteer_id,
+                RelaySegment.status.in_(["pending", "accepted"]),
+                RelayChain.status == "active",
+            )
+        )
+        .options(
+            selectinload(RelaySegment.chain).selectinload(RelayChain.transport_post),
+        )
+        .order_by(RelaySegment.id.desc())
+    )
+    return list(result.scalars().all())
+
+
 async def get_segment_by_id(db: AsyncSession, segment_id: int) -> RelaySegment | None:
     result = await db.execute(
         select(RelaySegment)
         .where(RelaySegment.id == segment_id)
-        .options(selectinload(RelaySegment.volunteer))
+        .options(
+            selectinload(RelaySegment.volunteer),
+            selectinload(RelaySegment.chain).selectinload(RelayChain.transport_post),
+            selectinload(RelaySegment.chain)
+                .selectinload(RelayChain.segments)
+                .selectinload(RelaySegment.volunteer),
+        )
     )
     return result.scalar_one_or_none()
 

@@ -13,7 +13,7 @@ def get_llm_provider() -> LLMProvider:
         claude  -> ClaudeProvider (claude-sonnet-4-6)
         mock    -> MockProvider (테스트용, API 키 불필요)
     """
-    provider_name = os.getenv("LLM_PROVIDER", "mock")
+    provider_name = os.getenv("LLM_PROVIDER", "openai")
 
     if provider_name not in _VALID_PROVIDERS:
         raise ValueError(

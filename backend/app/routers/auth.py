@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 
 from app.core.dependencies import get_current_user, get_current_user_id, get_db
+from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -82,6 +83,11 @@ async def logout(
 ):
     await auth_service.logout(response, user_id)
     return {"ok": True}
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    return UserResponse.model_validate(current_user)
 
 
 @router.post("/refresh")

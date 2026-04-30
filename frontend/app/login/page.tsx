@@ -76,6 +76,7 @@ function LoginForm() {
     try {
       const { user } = await login(email, password);
       pendingRole.current = user.role;
+      localStorage.setItem("user_name", user.name);
       const hasPwaFlag = localStorage.getItem("pwa_welcome_pending") === "1";
       const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
       if (hasPwaFlag && isMobile) {

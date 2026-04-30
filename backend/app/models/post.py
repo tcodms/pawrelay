@@ -17,7 +17,7 @@ class TransportPost(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     shelter_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
     status = Column(
-        Enum("recruiting", "in_transit", "completed", "cancelled", name="post_status_enum"),
+        Enum("recruiting", "waiting", "in_transit", "completed", "cancelled", name="post_status_enum"),
         nullable=False,
         default="recruiting",
         server_default="recruiting",

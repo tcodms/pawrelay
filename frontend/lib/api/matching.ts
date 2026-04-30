@@ -52,13 +52,22 @@ export async function declineMatching(segmentId: number, reason: string): Promis
 
 export interface SegmentDetail {
   order: number;
+  status: string;
+  animal_name: string;
+  animal_photo_url: string | null;
+  animal_size: "small" | "medium" | "large";
+  scheduled_date: string | null;
   pickup_location: { name: string; address: string };
   dropoff_location: { name: string; address: string };
-  scheduled_time: string;
+  scheduled_time: string | null;
+  depart_time: string | null;
+  estimated_arrival_time: string | null;
   handover_code: string | null;
+  matching_reason: string | null;
+  notified_at: string | null;
   partner: { name: string; phone: string };
   kakao_openchat_url: string;
-  status: string;
+  chain_segments: { volunteer: string; from: string; to: string; is_me: boolean }[];
 }
 
 export async function getSegment(segmentId: number): Promise<{ segment: SegmentDetail }> {
