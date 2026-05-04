@@ -1,3 +1,29 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.dependencies import get_current_user_id, get_db
+from app.core.redis import redis_client
+from app.schemas.relay import CheckpointIn, CheckpointOut, HandoverVerifyIn, HandoverVerifyOut
+from app.services import relay_service
 
 router = APIRouter()
+
+
+@router.post("/checkpoint", response_model=CheckpointOut)
+async def post_checkpoint(
+    body: CheckpointIn,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    return await relay_service.save_checkpoint(db, user_id, body)
+
+
+@router.post("/handover/verify", response_model=HandoverVerifyOut)
+async def verify_handover(
+    request: Request,
+    body: HandoverVerifyIn,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    client_ip = request.client.host if request.client else "unknown"
+    return await relay_service.verify_handover(db, redis_client, user_id, client_ip, body)

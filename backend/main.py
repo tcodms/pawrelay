@@ -1,5 +1,6 @@
 import os
 import sys
+from contextlib import asynccontextmanager
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -10,9 +11,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth, posts, volunteers, matching, relay, chatbot, notifications, shelter, admin
+from app.tasks.scheduler import setup_scheduler
 from app.websocket import router as ws_router
 
-app = FastAPI(title="PawRelay API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = setup_scheduler()
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+
+
+app = FastAPI(title="PawRelay API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
