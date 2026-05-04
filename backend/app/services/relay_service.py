@@ -85,13 +85,12 @@ async def _check_handover_rate_limit(redis: Redis, user_id: int, client_ip: str)
     ip_key = f"rl:handover:ip:{client_ip}"
     user_key = f"rl:handover:user:{user_id}"
 
-    ip_count = await redis.incr(ip_key)
-    if ip_count == 1:
-        await redis.expire(ip_key, _RL_WINDOW)
-
-    user_count = await redis.incr(user_key)
-    if user_count == 1:
-        await redis.expire(user_key, _RL_WINDOW)
+    async with redis.pipeline(transaction=False) as pipe:
+        pipe.incr(ip_key)
+        pipe.expire(ip_key, _RL_WINDOW, nx=True)  # TTL 없을 때만 세팅 (고정 윈도우)
+        pipe.incr(user_key)
+        pipe.expire(user_key, _RL_WINDOW, nx=True)
+        ip_count, _, user_count, _ = await pipe.execute()
 
     if ip_count > _RL_IP_LIMIT or user_count > _RL_USER_LIMIT:
         raise HTTPException(status_code=429, detail={"error": "RATE_LIMIT_EXCEEDED"})
