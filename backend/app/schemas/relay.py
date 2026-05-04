@@ -29,3 +29,24 @@ class HandoverVerifyIn(BaseModel):
 
 class HandoverVerifyOut(BaseModel):
     status: Literal["completed", "waiting_partner"]
+
+
+class HandoverRequestOut(BaseModel):
+    ok: bool
+
+
+class HandoverApproveOut(BaseModel):
+    status: str
+
+
+class HandoverLocationIn(BaseModel):
+    waypoint_id: int
+
+
+class WaypointInfo(BaseModel):
+    name: str
+    address: str
+
+
+class HandoverLocationOut(BaseModel):
+    dropoff_location: WaypointInfo
