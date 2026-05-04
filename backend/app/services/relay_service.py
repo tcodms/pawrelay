@@ -121,6 +121,8 @@ async def approve_handover(
         raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
     if segment.status != _SEGMENT_STATUS_ACTIVE:
         raise HTTPException(status_code=409, detail={"error": "INVALID_SEGMENT_STATUS"})
+    if not segment.ping_sent_at:
+        raise HTTPException(status_code=409, detail={"error": "HANDOVER_NOT_REQUESTED"})
 
     segment.ping_responded_at = datetime.now(timezone.utc)
     segment.status = _SEGMENT_STATUS_DONE
@@ -140,6 +142,9 @@ async def update_handover_location(
         raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
     if segment.volunteer_id != user_id:
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED_SEGMENT"})
+
+    if segment.status == _SEGMENT_STATUS_DONE:
+        raise HTTPException(status_code=409, detail={"error": "INVALID_SEGMENT_STATUS"})
 
     waypoint = await waypoint_repo.get_waypoint(db, body.waypoint_id)
     if not waypoint:

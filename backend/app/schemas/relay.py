@@ -36,7 +36,7 @@ class HandoverRequestOut(BaseModel):
 
 
 class HandoverApproveOut(BaseModel):
-    status: str
+    status: Literal["completed"]
 
 
 class HandoverLocationIn(BaseModel):
