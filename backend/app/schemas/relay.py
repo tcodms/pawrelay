@@ -20,3 +20,12 @@ class CheckpointIn(BaseModel):
 class CheckpointOut(BaseModel):
     checkpoint_id: int
     recorded_at: datetime
+
+
+class HandoverVerifyIn(BaseModel):
+    segment_id: int
+    code: str = Field(pattern=r"^\d{6}$")
+
+
+class HandoverVerifyOut(BaseModel):
+    status: Literal["completed", "waiting_partner"]
