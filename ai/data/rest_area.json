@@ -1,0 +1,139 @@
+{
+  "rest_area": [
+    {
+      "name": "정안알밤휴게소",
+      "type": "rest_area",
+      "latitude": 36.553812,
+      "longitude": 127.125442,
+      "address": "충청남도 공주시 정안면 논산천안고속도로 58",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "천안삼거리휴게소",
+      "type": "rest_area",
+      "latitude": 36.746313,
+      "longitude": 127.173824,
+      "address": "충청남도 천안시 동남구 경부고속도로 21",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "망향휴게소",
+      "type": "rest_area",
+      "latitude": 36.853147,
+      "longitude": 127.173588,
+      "address": "충청남도 천안시 서북구 경부고속도로 362",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "안성휴게소",
+      "type": "rest_area",
+      "latitude": 36.995978,
+      "longitude": 127.147894,
+      "address": "경기도 안성시 경부고속도로 365",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "기흥휴게소",
+      "type": "rest_area",
+      "latitude": 37.223862,
+      "longitude": 127.103119,
+      "address": "경기도 용인시 기흥구 경부고속도로 379",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "화성휴게소",
+      "type": "rest_area",
+      "latitude": 37.205744,
+      "longitude": 126.830561,
+      "address": "경기도 화성시 서해안고속도로 301",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "죽암휴게소",
+      "type": "rest_area",
+      "latitude": 36.623108,
+      "longitude": 127.355201,
+      "address": "충청북도 청주시 서원구 경부고속도로 289",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "옥산휴게소",
+      "type": "rest_area",
+      "latitude": 36.684966,
+      "longitude": 127.377023,
+      "address": "충청북도 청주시 흥덕구 경부고속도로 317",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "신탄진휴게소",
+      "type": "rest_area",
+      "latitude": 36.440863,
+      "longitude": 127.426876,
+      "address": "대전광역시 대덕구 경부고속도로 291",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "여산휴게소",
+      "type": "rest_area",
+      "latitude": 36.075722,
+      "longitude": 127.055969,
+      "address": "전북특별자치도 익산시 호남고속도로 191",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "정읍녹두장군휴게소",
+      "type": "rest_area",
+      "latitude": 35.535824,
+      "longitude": 126.925924,
+      "address": "전북특별자치도 정읍시 호남고속도로 137",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "백양사휴게소",
+      "type": "rest_area",
+      "latitude": 35.319382,
+      "longitude": 126.807581,
+      "address": "전라남도 장성군 호남고속도로 108",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "칠곡휴게소",
+      "type": "rest_area",
+      "latitude": 36.009384,
+      "longitude": 128.392071,
+      "address": "경상북도 칠곡군 경부고속도로 158",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "추풍령휴게소",
+      "type": "rest_area",
+      "latitude": 36.206744,
+      "longitude": 127.995851,
+      "address": "충청북도 영동군 경부고속도로 213",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "함안휴게소",
+      "type": "rest_area",
+      "latitude": 35.270531,
+      "longitude": 128.406857,
+      "address": "경상남도 함안군 남해고속도로 113",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    }
+  ]
+}
