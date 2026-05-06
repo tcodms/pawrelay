@@ -6,137 +6,310 @@ from ai.providers import get_llm_provider
 
 logger = logging.getLogger(__name__)
 
-_MAX_RETRIES = 1
-_REQUIRED_KEYS = {"selected_chain_index", "matching_reason"}
+_MAX_RETRIES = 2
+_REQUIRED_KEYS = {"chain", "backup_candidates", "matching_reason"}
+_PROMPT_TEMPLATE = """You are selecting the best volunteer relay chain for an animal transport post.
 
+Post:
+{post}
 
-def _format_segment(seg: dict) -> str:
-    vehicle = "차량 있음" if seg.get("vehicle_available") else "차량 없음"
-    direct = " [직접지원]" if seg.get("is_direct_apply") else ""
-    return (
-        f"  • {seg.get('origin_area', '?')} → {seg.get('destination_area', '?')}, "
-        f"{seg.get('available_time', '?')}~{seg.get('estimated_arrival_time', '?')}, "
-        f"{vehicle}, 최대 {seg.get('max_animal_size', '?')} 크기{direct}"
-    )
+Candidate chains:
+{chains}
 
+Rules:
+- Return JSON only.
+- "chain" must be exactly one candidate chain copied from the list above.
+- "backup_candidates" must contain every remaining candidate chain, ordered by backup priority.
+- Copy every segment object exactly, including schedule_id and volunteer_id.
+- Prefer chains that include direct applicants when other quality factors are close.
+- matching_reason must be 2-3 Korean sentences.
 
-def _format_chain(index: int, chain: list[dict]) -> str:
-    segments_text = "\n".join(_format_segment(seg) for seg in chain)
-    return f"체인 {index}:\n{segments_text}"
-
-
-def _build_post_section(post: dict) -> str:
-    return (
-        f"- 동물: {post.get('animal_info', '정보 없음')}\n"
-        f"- 경로: {post.get('origin', '?')} → {post.get('destination', '?')}\n"
-        f"- 이동 날짜: {post.get('scheduled_date', '?')}"
-    )
+Return this schema exactly:
+{{
+  "chain": [{{"...": "..."}}],
+  "backup_candidates": [
+    [{{"...": "..."}}]
+  ],
+  "matching_reason": "..."
+}}"""
+_SEGMENT_KEYS = (
+    "schedule_id",
+    "volunteer_id",
+    "origin_area",
+    "destination_area",
+    "available_date",
+    "available_time",
+    "estimated_arrival_time",
+    "vehicle_available",
+    "max_animal_size",
+    "is_direct_apply",
+)
 
 
 def _build_prompt(chains: list[list[dict]], post: dict) -> str:
-    chains_text = "\n\n".join(_format_chain(i, c) for i, c in enumerate(chains))
-    post_info = _build_post_section(post)
-    return f"""유기동물 이동봉사 공고에 대한 릴레이 체인 후보 {len(chains)}개를 검토해주세요.
-
-공고 정보:
-{post_info}
-
-체인 후보:
-{chains_text}
-
-봉사자 동선의 연속성, 인계 시간 간격, 동물 크기 적합성을 고려해 \
-가장 적합한 체인 하나를 선택하고 이유를 한국어 2~3문장으로 설명하세요. \
-[직접지원] 표시가 있는 봉사자가 포함된 체인을 우선적으로 선택하세요.
-
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요.
-{{
-  "selected_chain_index": 선택한 체인 번호(정수),
-  "matching_reason": "선택 이유 (한국어 2~3문장)"
-}}"""
+    post_json = json.dumps(post, ensure_ascii=False, indent=2)
+    chains_json = json.dumps(chains, ensure_ascii=False, indent=2)
+    return _PROMPT_TEMPLATE.format(post=post_json, chains=chains_json)
 
 
-def _validate_fields(data: dict) -> bool:
-    if not _REQUIRED_KEYS.issubset(data.keys()):
-        logger.warning("응답에 필수 키 누락: %s", data.keys())
-        return False
-    if type(data["selected_chain_index"]) is not int:
-        logger.warning("selected_chain_index 타입 오류: %r", data["selected_chain_index"])
-        return False
-    if not isinstance(data["matching_reason"], str) or not data["matching_reason"].strip():
-        logger.warning("matching_reason 타입/내용 오류")
-        return False
-    sentence_count = len(
-        [s for s in data["matching_reason"].replace("。", ".").split(".") if s.strip()]
-    )
-    if not (2 <= sentence_count <= 3):
-        logger.warning("matching_reason 문장 수 오류: %d문장", sentence_count)
-        return False
-    return True
+def _coerce_int(value):
+    if type(value) is int:
+        return value
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value.strip())
+    return None
 
 
-def _parse_response(text: str) -> dict | None:
-    try:
-        cleaned = (
-            text.strip()
-            .removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-        )
-        data = json.loads(cleaned)
-        if not isinstance(data, dict):
-            logger.warning("응답 타입 오류: dict 아님")
-            return None
-        return data if _validate_fields(data) else None
-    except (json.JSONDecodeError, AttributeError) as e:
-        logger.warning("JSON 파싱 실패: %s", e)
+def _coerce_bool(value):
+    if type(value) is bool:
+        return value
+    if not isinstance(value, str):
         return None
+    lowered = value.strip().lower()
+    if lowered == "true":
+        return True
+    if lowered == "false":
+        return False
+    return None
+
+
+def _has_segment_keys(seg: dict) -> bool:
+    missing = [key for key in _SEGMENT_KEYS if key not in seg]
+    if not missing:
+        return True
+    logger.warning("segment missing keys: %s", ", ".join(missing))
+    return False
+
+
+def _normalize_segment_id(key: str, value) -> int | None:
+    coerced = _coerce_int(value)
+    if coerced is None:
+        logger.warning("segment id type error for %s: %r", key, value)
+    return coerced
+
+
+def _normalize_segment_flag(key: str, value) -> bool | None:
+    coerced = _coerce_bool(value)
+    if coerced is None:
+        logger.warning("segment bool type error for %s: %r", key, value)
+    return coerced
+
+
+def _normalize_segment_value(key: str, value):
+    if key in {"schedule_id", "volunteer_id"}:
+        return _normalize_segment_id(key, value)
+    if key in {"vehicle_available", "is_direct_apply"}:
+        return _normalize_segment_flag(key, value)
+    if value is None:
+        return None
+    return str(value)
+
+
+def _normalize_segment(seg: dict) -> dict | None:
+    if not isinstance(seg, dict):
+        logger.warning("segment type error: %r", type(seg))
+        return None
+    if not _has_segment_keys(seg):
+        return None
+    normalized = {}
+    for key in _SEGMENT_KEYS:
+        normalized[key] = _normalize_segment_value(key, seg[key])
+        if normalized[key] is None and seg[key] is not None:
+            return None
+    return normalized
+
+
+def _normalize_chain(chain: list[dict]) -> list[dict] | None:
+    if not isinstance(chain, list) or not chain:
+        logger.warning("chain type/empty error")
+        return None
+    normalized = []
+    for seg in chain:
+        normalized_seg = _normalize_segment(seg)
+        if normalized_seg is None:
+            return None
+        normalized.append(normalized_seg)
+    return normalized
+
+
+def _chain_signature(chain: list[dict]) -> tuple:
+    return tuple(tuple(seg[key] for key in _SEGMENT_KEYS) for seg in chain)
+
+
+def _has_required_keys(data: dict) -> bool:
+    if _REQUIRED_KEYS.issubset(data.keys()):
+        return True
+    logger.warning("response missing required keys: %s", data.keys())
+    return False
+
+
+def _has_matching_reason(data: dict) -> bool:
+    reason = data["matching_reason"]
+    if isinstance(reason, str) and reason.strip():
+        return True
+    logger.warning("matching_reason type/content error")
+    return False
+
+
+def _normalize_candidates(chains: list[list[dict]]) -> list[list[dict]] | None:
+    normalized = []
+    for candidate in chains:
+        chain = _normalize_chain(candidate)
+        if chain is None:
+            logger.warning("input candidate chain is invalid")
+            return None
+        normalized.append(chain)
+    return normalized
+
+
+def _build_candidate_map(chains: list[list[dict]]) -> dict[tuple, list[dict]]:
+    return {_chain_signature(candidate): candidate for candidate in chains}
+
+
+def _validate_primary_chain(primary_data, candidate_map: dict[tuple, list[dict]]):
+    primary_chain = _normalize_chain(primary_data)
+    if primary_chain is None:
+        logger.warning("primary chain is invalid")
+        return None
+    signature = _chain_signature(primary_chain)
+    if signature not in candidate_map:
+        logger.warning("primary chain not found in candidates")
+        return None
+    return signature, candidate_map[signature]
+
+
+def _expected_backup_signatures(chains: list[list[dict]], primary_signature: tuple) -> list[tuple]:
+    signatures = [_chain_signature(candidate) for candidate in chains]
+    return [signature for signature in signatures if signature != primary_signature]
+
+
+def _validate_backup_entry(backup, primary_signature: tuple, candidate_map: dict[tuple, list[dict]], seen: set):
+    normalized = _normalize_chain(backup)
+    if normalized is None:
+        logger.warning("backup chain is invalid")
+        return None
+    signature = _chain_signature(normalized)
+    if signature == primary_signature or signature not in candidate_map:
+        logger.warning("backup chain not found in candidates")
+        return None
+    if signature in seen:
+        logger.warning("duplicate backup chain returned")
+        return None
+    seen.add(signature)
+    return signature, candidate_map[signature]
+
+
+def _validate_backup_candidates(backups_data, primary_signature: tuple, candidate_map: dict[tuple, list[dict]], expected: list[tuple]):
+    if not isinstance(backups_data, list):
+        logger.warning("backup_candidates type error")
+        return None
+    backups = []
+    seen = set()
+    signatures = []
+    for backup in backups_data:
+        entry = _validate_backup_entry(backup, primary_signature, candidate_map, seen)
+        if entry is None:
+            return None
+        signature, chain = entry
+        signatures.append(signature)
+        backups.append(chain)
+    if len(signatures) != len(expected) or set(signatures) != set(expected):
+        logger.warning("backup chain set mismatch")
+        return None
+    return backups
+
+
+def _validate_fields(data: dict, chains: list[list[dict]]) -> dict | None:
+    if not _has_required_keys(data) or not _has_matching_reason(data):
+        return None
+    normalized_candidates = _normalize_candidates(chains)
+    if normalized_candidates is None:
+        return None
+    candidate_map = _build_candidate_map(normalized_candidates)
+    primary = _validate_primary_chain(data["chain"], candidate_map)
+    if primary is None:
+        return None
+    primary_signature, primary_chain = primary
+    expected = _expected_backup_signatures(normalized_candidates, primary_signature)
+    backups = _validate_backup_candidates(data["backup_candidates"], primary_signature, candidate_map, expected)
+    if backups is None:
+        return None
+    return {"chain": primary_chain, "backup_candidates": backups, "matching_reason": data["matching_reason"].strip()}
+
+
+def _strip_code_fence(text: str) -> str:
+    return text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+
+
+def _parse_response(text: str, chains: list[list[dict]]) -> dict | None:
+    try:
+        data = json.loads(_strip_code_fence(text))
+    except (json.JSONDecodeError, AttributeError) as exc:
+        logger.warning("JSON parse failed: %s", exc)
+        return None
+    if not isinstance(data, dict):
+        logger.warning("response type error: expected dict")
+        return None
+    return _validate_fields(data, chains)
 
 
 def _init_provider(post: dict):
     try:
         return get_llm_provider()
-    except Exception as e:
-        error_msg = f"LLM provider 초기화 실패 (post_id={post.get('id')}): {e}"
+    except Exception as exc:
+        error_msg = f"LLM provider init failed (post_id={post.get('id')}): {exc}"
         notify_admin(error_msg)
-        raise ValueError(error_msg) from e
+        raise ValueError(error_msg) from exc
 
 
-async def _attempt_once(provider, prompt: str, chains: list) -> dict | None:
+async def _attempt_once(provider, prompt: str, chains: list[list[dict]]) -> dict | None:
     response = await provider.complete(prompt)
-    result = _parse_response(response)
-    if result is None:
-        return None
-    if not (0 <= result["selected_chain_index"] < len(chains)):
-        logger.warning("selected_chain_index 범위 오류: %s", result["selected_chain_index"])
-        return None
-    return result
+    return _parse_response(response, chains)
+
+
+def _log_call_failure(attempt: int, exc: Exception) -> None:
+    logger.warning("LLM call failed (%d/%d): %s", attempt + 1, _MAX_RETRIES + 1, exc)
+
+
+def _log_validation_failure(attempt: int) -> None:
+    logger.warning("LLM response validation failed (%d/%d)", attempt + 1, _MAX_RETRIES + 1)
+
+
+async def _select_with_retries(provider, prompt: str, chains: list[list[dict]]) -> tuple[dict | None, Exception | None]:
+    last_error = None
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            result = await _attempt_once(provider, prompt, chains)
+        except Exception as exc:
+            last_error = exc
+            _log_call_failure(attempt, exc)
+            continue
+        if result is not None:
+            return result, last_error
+        _log_validation_failure(attempt)
+    return None, last_error
 
 
 def _handle_all_failed(post: dict, last_error: Exception | None) -> None:
-    error_msg = (
-        f"LLM 체인 선택 실패: {_MAX_RETRIES + 1}회 시도 후 유효한 응답 없음"
-        f" (post_id={post.get('id')})"
-    )
+    error_msg = f"LLM chain selection failed after {_MAX_RETRIES + 1} attempts (post_id={post.get('id')})"
     notify_admin(error_msg)
     if last_error is not None:
         raise ValueError(f"{error_msg} | last_error={last_error}") from last_error
     raise ValueError(error_msg)
 
 
-async def select_chain(chains: list[list[dict]], post: dict) -> dict:
+def _validate_input_chains(chains: list[list[dict]]) -> None:
     if not chains:
-        raise ValueError("후보 체인이 비어 있습니다.")
+        raise ValueError("candidate chains are empty")
     if any(not chain for chain in chains):
-        raise ValueError("빈 체인이 포함되어 있습니다.")
+        raise ValueError("candidate chains contain an empty chain")
+
+
+async def select_chain(chains: list[list[dict]], post: dict) -> dict:
+    _validate_input_chains(chains)
     provider = _init_provider(post)
     prompt = _build_prompt(chains, post)
-    last_error: Exception | None = None
-    for attempt in range(_MAX_RETRIES + 1):
-        try:
-            result = await _attempt_once(provider, prompt, chains)
-        except Exception as e:
-            last_error = e
-            logger.warning("LLM 호출 실패 (시도 %d/%d): %s", attempt + 1, _MAX_RETRIES + 1, e)
-            continue
-        if result is not None:
-            return result
-        logger.warning("파싱 실패 (시도 %d/%d)", attempt + 1, _MAX_RETRIES + 1)
+    result, last_error = await _select_with_retries(provider, prompt, chains)
+    if result is not None:
+        return result
     _handle_all_failed(post, last_error)
