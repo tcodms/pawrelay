@@ -24,6 +24,7 @@ const SCHEDULE_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
 const SEGMENT_STATUS: Record<string, { label: string; cls: string }> = {
   pending:     { label: "수락 대기 중", cls: "bg-orange-50 text-orange-500" },
   accepted:    { label: "수락 완료",    cls: "bg-green-50 text-green-600" },
+  confirmed:   { label: "봉사 확정",    cls: "bg-blue-50 text-blue-600" },
   in_progress: { label: "이동 중",      cls: "bg-blue-50 text-blue-600" },
   completed:   { label: "완료",         cls: "bg-gray-100 text-gray-500" },
 };
@@ -164,7 +165,7 @@ function InProgressTab({ schedules, segments }: { schedules: ScheduleItem[]; seg
   const routes     = schedules.filter((s) => s.post_id === null && s.status !== "expired");
   const applied    = schedules.filter((s) => s.post_id !== null && s.status !== "expired");
   const waiting    = segments.filter((s) => s.status === "pending");
-  const inProgress = segments.filter((s) => s.status === "accepted" || s.status === "in_progress");
+  const inProgress = segments.filter((s) => ["accepted", "confirmed", "in_progress"].includes(s.status));
 
   return (
     <div className="space-y-4">
@@ -208,7 +209,7 @@ function CompletedTab({ segments }: { segments: MySegment[] }) {
 function CancelledTab({ schedules, segments }: { schedules: ScheduleItem[]; segments: MySegment[] }) {
   const expiredSchedules  = schedules.filter((s) => s.status === "expired");
   const cancelledSegments = segments.filter(
-    (s) => !["pending", "accepted", "in_progress", "completed"].includes(s.status)
+    (s) => !["pending", "accepted", "confirmed", "in_progress", "completed"].includes(s.status)
   );
   if (expiredSchedules.length === 0 && cancelledSegments.length === 0) return <EmptyState />;
   return (
@@ -236,13 +237,18 @@ export default function ServicesPage() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [segments, setSegments] = useState<MySegment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  function fetchAll() {
+    setLoading(true);
+    setError(false);
     let done = 0;
     const finish = () => { if (++done === 2) setLoading(false); };
-    getMySchedules().then(setSchedules).catch(() => {}).finally(finish);
-    getMySegments().then(setSegments).catch(() => {}).finally(finish);
-  }, []);
+    getMySchedules().then(setSchedules).catch(() => setError(true)).finally(finish);
+    getMySegments().then(setSegments).catch(() => setError(true)).finally(finish);
+  }
+
+  useEffect(() => { fetchAll(); }, []);
 
   const TABS: Tab[] = ["진행중", "완료", "취소"];
 
@@ -271,6 +277,16 @@ export default function ServicesPage() {
       {loading ? (
         <div className="flex justify-center pt-20">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center pt-20 text-center gap-3">
+          <p className="text-[14px] text-gray-500">정보를 불러오지 못했어요.</p>
+          <button
+            onClick={fetchAll}
+            className="text-[13px] text-[#EEA968] font-semibold"
+          >
+            다시 시도
+          </button>
         </div>
       ) : (
         <div className="mx-auto max-w-2xl px-4 pt-5 pb-24">
