@@ -176,7 +176,7 @@ function InProgressTab({ schedules, segments }: { schedules: ScheduleItem[]; seg
         <p className="text-[13px] text-gray-300 px-1">등록된 동선이 없어요.</p>
       )}
 
-      <SectionDivider label="매칭 제안 대기" />
+      <SectionDivider label="매칭 대기" />
       {(applied.length > 0 || waiting.length > 0) ? (
         <div className="space-y-2.5">
           {applied.map((s) => <AppliedCard key={s.id} s={s} />)}
