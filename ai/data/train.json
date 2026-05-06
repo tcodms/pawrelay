@@ -1,0 +1,1687 @@
+{
+  "train": [
+    {
+      "name": "강경역",
+      "type": "train",
+      "latitude": 36.153333,
+      "longitude": 127.015237,
+      "address": "충청남도 논산시 강경읍 대흥로 1",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "강릉역",
+      "type": "train",
+      "latitude": 37.763401,
+      "longitude": 128.898856,
+      "address": "강원도 강릉시 용지로 176",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "개포역",
+      "type": "train",
+      "latitude": 36.627125,
+      "longitude": 128.328868,
+      "address": "경상북도 예천군 개포면 방터길 7-11",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "건천역",
+      "type": "train",
+      "latitude": 35.850289,
+      "longitude": 129.102206,
+      "address": "경상북도 경주시 건천읍 내서로 1038-18",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "경산역",
+      "type": "train",
+      "latitude": 35.819999,
+      "longitude": 128.727745,
+      "address": "경상북도 경산시 중앙로 1",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "경주역",
+      "type": "train",
+      "latitude": 35.84509,
+      "longitude": 129.217778,
+      "address": "경상북도 경주시 원화로 266",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "계룡역",
+      "type": "train",
+      "latitude": 36.272439,
+      "longitude": 127.265714,
+      "address": "충청남도 계룡시 두마면 팥거리로 95",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "고한역",
+      "type": "train",
+      "latitude": 37.199561,
+      "longitude": 128.853005,
+      "address": "강원도 정선군 고한읍 고한로166",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "곡성역",
+      "type": "train",
+      "latitude": 35.283436,
+      "longitude": 127.303795,
+      "address": "전라남도 곡성군 곡성읍 곡성로 920",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "공주역",
+      "type": "train",
+      "latitude": 36.3325,
+      "longitude": 127.0968,
+      "address": "충청남도 공주시 이인면 새빛로 100",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "광명역",
+      "type": "train",
+      "latitude": 37.420592,
+      "longitude": 126.881594,
+      "address": "경기도 광명시 광명역로 21",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "광양역",
+      "type": "train",
+      "latitude": 34.9678528,
+      "longitude": 127.5890069,
+      "address": "전라남도 광양시 광양읍 해광로 800",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "광주송정역",
+      "type": "train",
+      "latitude": 35.137783,
+      "longitude": 126.791767,
+      "address": "광주광역시 광산구 상무대로 201",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "광주역",
+      "type": "train",
+      "latitude": 35.166544,
+      "longitude": 126.909419,
+      "address": "광주광역시 북구 무등로 235",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "광천역",
+      "type": "train",
+      "latitude": 36.502653,
+      "longitude": 126.622567,
+      "address": "충청남도 홍성군 광천읍 광천로273번길 85",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "구례구역",
+      "type": "train",
+      "latitude": 35.163483,
+      "longitude": 127.452645,
+      "address": "전라남도 순천시 황전면 섬진강로 217",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "구미역",
+      "type": "train",
+      "latitude": 36.129274,
+      "longitude": 128.330932,
+      "address": "경상북도 구미시 구미중앙로 76",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "구포역",
+      "type": "train",
+      "latitude": 35.205531,
+      "longitude": 128.997341,
+      "address": "부산광역시 북구 구포만세길 82",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "군북역",
+      "type": "train",
+      "latitude": 35.260219,
+      "longitude": 128.347453,
+      "address": "경상남도 함안군 군북면 의산삼일로 1992",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "군산역",
+      "type": "train",
+      "latitude": 36.00184,
+      "longitude": 126.758747,
+      "address": "전라북도 군산시 내흥2길 197",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "극락강역",
+      "type": "train",
+      "latitude": 35.176,
+      "longitude": 126.830705,
+      "address": "광주광역시 광산구 목련로310-23",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "기장역",
+      "type": "train",
+      "latitude": 35.240989,
+      "longitude": 129.218172,
+      "address": "부산광역시 기장군 기장읍 차성로288번길 86",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "김제역",
+      "type": "train",
+      "latitude": 35.793266,
+      "longitude": 126.903852,
+      "address": "전라북도 김제시 두월로 198번지",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "김천역",
+      "type": "train",
+      "latitude": 36.123719,
+      "longitude": 128.114323,
+      "address": "경상북도 김천시 김천로 111",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "나주역",
+      "type": "train",
+      "latitude": 35.013988,
+      "longitude": 126.717214,
+      "address": "전라남도 나주시 나주역길 56",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "남성현역",
+      "type": "train",
+      "latitude": 35.706107,
+      "longitude": 128.718557,
+      "address": "경상북도 청도군 화양읍 다로길 39",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "남원역",
+      "type": "train",
+      "latitude": 35.410791,
+      "longitude": 127.360528,
+      "address": "전라북도 남원시 교룡로 71",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "남창역",
+      "type": "train",
+      "latitude": 35.417332,
+      "longitude": 129.283655,
+      "address": "울산광역시 울주군 온양읍 남창역길 40",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "논산역",
+      "type": "train",
+      "latitude": 36.207051,
+      "longitude": 127.09203,
+      "address": "충청남도 논산시 해월로 236-12",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "능주역",
+      "type": "train",
+      "latitude": 34.986037,
+      "longitude": 126.964298,
+      "address": "전라남도 화순군 능주면 학포로 1896-10",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "다시역",
+      "type": "train",
+      "latitude": 35.016545,
+      "longitude": 126.639671,
+      "address": "전라남도 나주시 다시면 다시로 218",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "단양역",
+      "type": "train",
+      "latitude": 36.973249,
+      "longitude": 128.343616,
+      "address": "충청북도 단양군 단양읍 단양로 896",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "대구역",
+      "type": "train",
+      "latitude": 35.8765,
+      "longitude": 128.597445,
+      "address": "대구광역시 중구 태평로 161",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "대야역",
+      "type": "train",
+      "latitude": 35.9432,
+      "longitude": 126.810774,
+      "address": "전라북도 군산시 대야면 대야관통로 46-6",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "대전역",
+      "type": "train",
+      "latitude": 36.332269,
+      "longitude": 127.434183,
+      "address": "대전광역시 동구 중앙로 215",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "대천역",
+      "type": "train",
+      "latitude": 36.342308,
+      "longitude": 126.585596,
+      "address": "충청남도 보령시 대해로 116",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "덕소역",
+      "type": "train",
+      "latitude": 37.587005,
+      "longitude": 127.208644,
+      "address": "경기도 남양주시 와부읍 덕소로 56",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "덕하역",
+      "type": "train",
+      "latitude": 35.495022,
+      "longitude": 129.304992,
+      "address": "울산광역시 울주군 청량읍 상남리 533-15",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "도계역",
+      "type": "train",
+      "latitude": 37.229232,
+      "longitude": 129.044309,
+      "address": "강원도 삼척시 도계로 222",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "동대구역",
+      "type": "train",
+      "latitude": 35.879012,
+      "longitude": 128.626219,
+      "address": "대구광역시 동구 동대구로 550",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "동백산역",
+      "type": "train",
+      "latitude": 37.1510421,
+      "longitude": 129.033998,
+      "address": "강원도 태백시 동태백로 984",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "동해역",
+      "type": "train",
+      "latitude": 37.498237,
+      "longitude": 129.12391,
+      "address": "강원도 동해시 동해역길 69",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "득량역",
+      "type": "train",
+      "latitude": 34.760834,
+      "longitude": 127.171993,
+      "address": "전라남도 보성군 득량면 역전길 28",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "마산역",
+      "type": "train",
+      "latitude": 35.235919,
+      "longitude": 128.577026,
+      "address": "경남 창원시 마산회원구 마산역광장로18",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "만종역",
+      "type": "train",
+      "latitude": 37.3563988,
+      "longitude": 127.8969128,
+      "address": "강원도 원주시 호저면 운동들2길 21-33",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "목포역",
+      "type": "train",
+      "latitude": 34.791165,
+      "longitude": 126.386415,
+      "address": "전남 목포시 영산로 98",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "몽탄역",
+      "type": "train",
+      "latitude": 34.929382,
+      "longitude": 126.503262,
+      "address": "전라남도 무안군 몽탄면 몽탄로 869",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "무안역",
+      "type": "train",
+      "latitude": 34.900108,
+      "longitude": 126.468278,
+      "address": "전라남도 무안군 몽탄면 우명길 16-32",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "묵호역",
+      "type": "train",
+      "latitude": 37.545955,
+      "longitude": 129.107776,
+      "address": "강원도 동해시 해안로 520",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "물금역",
+      "type": "train",
+      "latitude": 35.307264,
+      "longitude": 128.984321,
+      "address": "경상남도 양산시 물금읍 황산로 347",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "민둥산역",
+      "type": "train",
+      "latitude": 37.243657,
+      "longitude": 128.773221,
+      "address": "강원도 정선군 남면 무릉1로 128",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "밀양역",
+      "type": "train",
+      "latitude": 35.474614,
+      "longitude": 128.771229,
+      "address": "경상남도 밀양시 중앙로 62",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "반성역",
+      "type": "train",
+      "latitude": 35.1695659,
+      "longitude": 128.2768257,
+      "address": "경상남도 진주시 일반성면 일사로 787",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "백양사역",
+      "type": "train",
+      "latitude": 35.431654,
+      "longitude": 126.808405,
+      "address": "전라남도 장성군 북이면 백양로 2-14",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "벌교역",
+      "type": "train",
+      "latitude": 34.822102,
+      "longitude": 127.310301,
+      "address": "전라남도 보성군 벌교읍 채동선로 228",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "보성역",
+      "type": "train",
+      "latitude": 34.76862,
+      "longitude": 127.080168,
+      "address": "전라남도 보성군 보성읍 현충로 90",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "봉양역",
+      "type": "train",
+      "latitude": 37.131099,
+      "longitude": 128.131003,
+      "address": "충청북도 제천시 봉양면 주포로 8길 58",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "봉화역",
+      "type": "train",
+      "latitude": 36.89164,
+      "longitude": 128.726469,
+      "address": "경상북도 봉화군 봉화읍 봉화로 1072-1",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "부강역",
+      "type": "train",
+      "latitude": 36.532184,
+      "longitude": 127.366045,
+      "address": "세종특별자치시 부강면 청연로 90",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "부산역",
+      "type": "train",
+      "latitude": 35.115242,
+      "longitude": 129.042895,
+      "address": "부산광역시 동구 중앙대로 206",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "부전역",
+      "type": "train",
+      "latitude": 35.164421,
+      "longitude": 129.060169,
+      "address": "부산광역시 부산진구 부전로 181",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "북천역",
+      "type": "train",
+      "latitude": 35.114378,
+      "longitude": 127.894964,
+      "address": "경상남도 하동군 북천면 경서대로 2347",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "분천역",
+      "type": "train",
+      "latitude": 36.9323645,
+      "longitude": 129.0585209,
+      "address": "경상북도 봉화군 소천면 분천길 49",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "불국사역",
+      "type": "train",
+      "latitude": 35.778179,
+      "longitude": 129.296269,
+      "address": "경상북도 경주시 산업로 3043-8",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "사북역",
+      "type": "train",
+      "latitude": 37.226237,
+      "longitude": 128.816682,
+      "address": "강원도 정선군 사북읍 지장천로 616-12",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "사상역",
+      "type": "train",
+      "latitude": 35.162477,
+      "longitude": 128.988826,
+      "address": "부산광역시 사상구 광장로 108",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "삼랑진역",
+      "type": "train",
+      "latitude": 35.399489,
+      "longitude": 128.843391,
+      "address": "경상남도 밀양시 삼랑진읍 천태로 72",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "삼례역",
+      "type": "train",
+      "latitude": 35.906407,
+      "longitude": 127.064098,
+      "address": "전라북도 완주군 삼례읍 삼례역로 85-32",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "삼탄역",
+      "type": "train",
+      "latitude": 37.071098,
+      "longitude": 128.029394,
+      "address": "충청북도 충주시 산척면 삼여울길 108",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "삽교역",
+      "type": "train",
+      "latitude": 36.685998,
+      "longitude": 126.739561,
+      "address": "충청남도 예산군 삽교읍 삽교역로 101-14",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "상동역",
+      "type": "train",
+      "latitude": 35.55546,
+      "longitude": 128.760349,
+      "address": "경상남도 밀양시 상동면 금산7길 4",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "상봉역",
+      "type": "train",
+      "latitude": 37.5969776,
+      "longitude": 127.0857994,
+      "address": "서울특별시 중랑구 망우로 297",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "상주역",
+      "type": "train",
+      "latitude": 36.410428,
+      "longitude": 128.163667,
+      "address": "경상북도 상주시 남문1길 24",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "서경주역",
+      "type": "train",
+      "latitude": 35.868628,
+      "longitude": 129.2011165,
+      "address": "경상북도 경주시 현곡면 용담로 198-5",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "서광주역",
+      "type": "train",
+      "latitude": 35.124528,
+      "longitude": 126.848249,
+      "address": "광주광역시 서구 풍서좌로 203",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "서대전역",
+      "type": "train",
+      "latitude": 36.326388,
+      "longitude": 127.401657,
+      "address": "대전광역시 중구 오류로 23",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "서울역",
+      "type": "train",
+      "latitude": 37.557863,
+      "longitude": 126.969468,
+      "address": "서울시 중구 한강대로 405",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "서정리역",
+      "type": "train",
+      "latitude": 37.056459,
+      "longitude": 127.052839,
+      "address": "경기도 평택시 탄현로 51",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "서천역",
+      "type": "train",
+      "latitude": 36.077034,
+      "longitude": 126.701291,
+      "address": "충청남도 서천군 서천읍 서천역길 57",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "석포역",
+      "type": "train",
+      "latitude": 37.045098,
+      "longitude": 129.060802,
+      "address": "경상북도 봉화군 석포면 석포로 134",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "성환역",
+      "type": "train",
+      "latitude": 36.915783,
+      "longitude": 127.126822,
+      "address": "충청남도 천안시 서북구 성환읍 성환1로 237-5",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "수원역",
+      "type": "train",
+      "latitude": 37.266118,
+      "longitude": 126.999941,
+      "address": "경기도 수원시 팔달구 덕영대로 924",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "순천역",
+      "type": "train",
+      "latitude": 34.946606,
+      "longitude": 127.500904,
+      "address": "전라남도 순천시 팔마로 135",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "승부역",
+      "type": "train",
+      "latitude": 36.993791,
+      "longitude": 129.083741,
+      "address": "경상북도 봉화군 석포면 승부길 1162-5",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "신경주역",
+      "type": "train",
+      "latitude": 35.7983408,
+      "longitude": 129.1389251,
+      "address": "경상북도 경주시 건천읍 신경주역로 80",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "신기역",
+      "type": "train",
+      "latitude": 37.346133,
+      "longitude": 129.085038,
+      "address": "강원도 삼척시 신기역길 89",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "신녕역",
+      "type": "train",
+      "latitude": 36.034029,
+      "longitude": 128.790654,
+      "address": "경상북도 영천시 신녕면 장수로 1587",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "신동역",
+      "type": "train",
+      "latitude": 35.955297,
+      "longitude": 128.486559,
+      "address": "경상북도 칠곡군 지천면 신동로7길 37",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "신례원역",
+      "type": "train",
+      "latitude": 36.725901,
+      "longitude": 126.847648,
+      "address": "충청남도 예산군 예산읍 신례원로212번길 19-12",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "신탄진역",
+      "type": "train",
+      "latitude": 36.450512,
+      "longitude": 127.428437,
+      "address": "대전광역시 대덕구 신탄진로 807",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "신태인역",
+      "type": "train",
+      "latitude": 35.687386,
+      "longitude": 126.884743,
+      "address": "전라북도 정읍시 신태인읍 정신로 1163번지",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "심천역",
+      "type": "train",
+      "latitude": 36.237936,
+      "longitude": 127.719524,
+      "address": "충청북도 영동군 심천면 심천로5길 5",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "쌍용역",
+      "type": "train",
+      "latitude": 37.1746385,
+      "longitude": 128.3284116,
+      "address": "강원도 영월군 한반도면 용정원길 9",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "안강역",
+      "type": "train",
+      "latitude": 35.98938,
+      "longitude": 129.231233,
+      "address": "경상북도 경주시 안강읍 비화원로 15-1",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "안동역",
+      "type": "train",
+      "latitude": 36.56205,
+      "longitude": 128.731023,
+      "address": "경상북도 안동시 경동로 122-16",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "안양역",
+      "type": "train",
+      "latitude": 37.401933,
+      "longitude": 126.922651,
+      "address": "경기도 안양시 만안구 만안로 244",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "약목역",
+      "type": "train",
+      "latitude": 36.0371781,
+      "longitude": 128.3640792,
+      "address": "경상북도 칠곡군 약목면 칠곡대로 635",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "양동역",
+      "type": "train",
+      "latitude": 37.420275,
+      "longitude": 127.754842,
+      "address": "경기도 양평군 양동면 양동역길 19",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "양평역",
+      "type": "train",
+      "latitude": 37.496011,
+      "longitude": 127.49178,
+      "address": "경기도 양평군 양평읍 역전길 30",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "여수엑스포역",
+      "type": "train",
+      "latitude": 34.748164,
+      "longitude": 127.745746,
+      "address": "전라남도 여수시 망양로 2",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "여천역",
+      "type": "train",
+      "latitude": 34.768147,
+      "longitude": 127.659479,
+      "address": "전라남도 여수시 시청로 200",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "연산역",
+      "type": "train",
+      "latitude": 36.2124543,
+      "longitude": 127.20118,
+      "address": "충청남도 논산시 연산면 선비로275번길 31-2",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "영동역",
+      "type": "train",
+      "latitude": 36.174281,
+      "longitude": 127.782071,
+      "address": "충청북도 영동군 영동읍 계산로 87",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "영등포역",
+      "type": "train",
+      "latitude": 37.517699,
+      "longitude": 126.912623,
+      "address": "서울특별시 영등포구 경인로 846",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "영월역",
+      "type": "train",
+      "latitude": 37.190198,
+      "longitude": 128.548305,
+      "address": "강원도 영월군 영월읍 영월로 2106",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "영주역",
+      "type": "train",
+      "latitude": 36.785543,
+      "longitude": 128.623836,
+      "address": "경상북도 영주시 선비로 64",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "영천역",
+      "type": "train",
+      "latitude": 35.959184,
+      "longitude": 128.940869,
+      "address": "경상북도 영천시 금완로 98",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "예당역",
+      "type": "train",
+      "latitude": 34.778745,
+      "longitude": 127.202843,
+      "address": "전라남도 보성군 득량면 예당역전길 19",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "예미역",
+      "type": "train",
+      "latitude": 37.212716,
+      "longitude": 128.648036,
+      "address": "강원도 정선군 신동읍 함백로 55",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "예산역",
+      "type": "train",
+      "latitude": 36.685687,
+      "longitude": 126.829066,
+      "address": "충청남도 예산군 예산읍 역전로 83",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "예천역",
+      "type": "train",
+      "latitude": 36.647584,
+      "longitude": 128.444855,
+      "address": "경상북도 예천군 예천읍 역전길 4",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "오근장역",
+      "type": "train",
+      "latitude": 36.698932,
+      "longitude": 127.476861,
+      "address": "충청북도 청주시 청원구 토성로 443",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "오산역",
+      "type": "train",
+      "latitude": 37.146584,
+      "longitude": 127.066772,
+      "address": "경기도 오산시 오산동 역광장로 59",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "오송역",
+      "type": "train",
+      "latitude": 36.621521,
+      "longitude": 127.328793,
+      "address": "충청북도 청주시 흥덕구 오송읍 오송가락로 123",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "오수역",
+      "type": "train",
+      "latitude": 35.5444797,
+      "longitude": 127.3191582,
+      "address": "전라북도 임실군 오수면 충효로 1967-19",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "옥산역",
+      "type": "train",
+      "latitude": 36.283291,
+      "longitude": 128.095064,
+      "address": "경상북도 상주시 공성면 산현1길 28",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "옥천역",
+      "type": "train",
+      "latitude": 36.297869,
+      "longitude": 127.565283,
+      "address": "충청북도 옥천군 옥천읍 옥천로 1624",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "온양온천역",
+      "type": "train",
+      "latitude": 36.780879,
+      "longitude": 127.003683,
+      "address": "충청남도 아산시 온천대로 1496",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "왜관역",
+      "type": "train",
+      "latitude": 35.99303,
+      "longitude": 128.400079,
+      "address": "경상북도 칠곡군 왜관읍 중앙로8길 10",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "용문역",
+      "type": "train",
+      "latitude": 37.482958,
+      "longitude": 127.595217,
+      "address": "경기도 양평군 용문면 용문역길 21",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "용산역",
+      "type": "train",
+      "latitude": 37.529567,
+      "longitude": 126.963918,
+      "address": "서울특별시 용산구 한강대로 23길 55",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "울산역",
+      "type": "train",
+      "latitude": 35.539412,
+      "longitude": 129.355105,
+      "address": "울산광역시 울주군 삼남면 울산역로 177",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "웅천역",
+      "type": "train",
+      "latitude": 36.234122,
+      "longitude": 126.601819,
+      "address": "충청남도 보령시 웅천읍 방축길 151",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "원동역",
+      "type": "train",
+      "latitude": 35.3627245,
+      "longitude": 128.9207899,
+      "address": "경상남도 양산시 원동면 원동마을길 13",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "원주역",
+      "type": "train",
+      "latitude": 37.35825,
+      "longitude": 127.944163,
+      "address": "강원도 원주시 북원로 1860",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "음성역",
+      "type": "train",
+      "latitude": 36.926125,
+      "longitude": 127.704487,
+      "address": "충청북도 음성군 음성읍 한불로 60",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "의성역",
+      "type": "train",
+      "latitude": 36.353948,
+      "longitude": 128.693497,
+      "address": "경상북도 의성군 의성읍 문소3길 89-8",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "이양역",
+      "type": "train",
+      "latitude": 34.890855,
+      "longitude": 126.989989,
+      "address": "전라남도 화순군 이양면 이양로 134",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "이원역",
+      "type": "train",
+      "latitude": 36.243676,
+      "longitude": 127.617932,
+      "address": "충청북도 옥천군 이원면 이원역길 51",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "익산역",
+      "type": "train",
+      "latitude": 35.940719,
+      "longitude": 126.946551,
+      "address": "전라북도 익산시 익산대로 153",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "일로역",
+      "type": "train",
+      "latitude": 34.8482593,
+      "longitude": 126.4777165,
+      "address": "전라남도 무안군 삼향읍 국사로 5-11",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "일신역",
+      "type": "train",
+      "latitude": 37.4454594,
+      "longitude": 127.6883584,
+      "address": "경기도 양평군 지평면 노곡길 2",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "임기역",
+      "type": "train",
+      "latitude": 36.90383,
+      "longitude": 128.999305,
+      "address": "경상북도 봉화군 소천면 숲터길 58",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "임성리역",
+      "type": "train",
+      "latitude": 34.820361,
+      "longitude": 126.43453,
+      "address": "전라남도 목포시 임성로 62번길 18",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "임실역",
+      "type": "train",
+      "latitude": 35.632293,
+      "longitude": 127.288274,
+      "address": "전라북도 임실군 임실읍 춘향로 2932",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "장성역",
+      "type": "train",
+      "latitude": 35.299404,
+      "longitude": 126.779848,
+      "address": "전라남도 장성군 장성읍 역전로 87",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "장항역",
+      "type": "train",
+      "latitude": 36.041492,
+      "longitude": 126.708189,
+      "address": "충청남도 서천군 마서면 장항역길 55",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "전의역",
+      "type": "train",
+      "latitude": 36.678032,
+      "longitude": 127.203382,
+      "address": "세종특별자치시 전의면 만세길 10",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "전주역",
+      "type": "train",
+      "latitude": 35.849552,
+      "longitude": 127.161439,
+      "address": "전라북도 전주시 덕지구 동부대로 680번지",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "점촌역",
+      "type": "train",
+      "latitude": 36.595544,
+      "longitude": 128.203253,
+      "address": "경상북도 문경시 신흥로 170",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "정동진역",
+      "type": "train",
+      "latitude": 37.691093,
+      "longitude": 129.033194,
+      "address": "강원도 강릉시 강동면 정동역길 17",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "정읍역",
+      "type": "train",
+      "latitude": 35.575371,
+      "longitude": 126.842753,
+      "address": "전라북도 정읍시 서부산업도로 305",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "제천역",
+      "type": "train",
+      "latitude": 37.128031,
+      "longitude": 128.204342,
+      "address": "충청북도 제천시 의림대로 1",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "조성역",
+      "type": "train",
+      "latitude": 34.806748,
+      "longitude": 127.248707,
+      "address": "전라남도 보성군 조성면 조성4길 14",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "조치원역",
+      "type": "train",
+      "latitude": 36.601316,
+      "longitude": 127.296073,
+      "address": "세종특별자치시 조치원읍 으뜸길 215",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "좌천역",
+      "type": "train",
+      "latitude": 35.3109577,
+      "longitude": 129.2442646,
+      "address": "부산광역시 기장군 장안읍 좌천리 좌천로 40-13",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "주덕역",
+      "type": "train",
+      "latitude": 36.972924,
+      "longitude": 127.802446,
+      "address": "충청북도 충주시 주덕읍 신양로 138",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "증평역",
+      "type": "train",
+      "latitude": 36.777729,
+      "longitude": 127.581994,
+      "address": "충청북도 증평군 증평읍 역전로 92",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "지평역",
+      "type": "train",
+      "latitude": 37.482325,
+      "longitude": 127.594833,
+      "address": "경기도 양평군 지평면 지평역길 32",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "진례역",
+      "type": "train",
+      "latitude": 35.2666868,
+      "longitude": 128.7629265,
+      "address": "경상남도 김해시 진례면 테크노밸리길 94",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "진영역",
+      "type": "train",
+      "latitude": 35.303802,
+      "longitude": 128.730003,
+      "address": "경상남도 김해시 진영읍 김해대로 809",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "진주역",
+      "type": "train",
+      "latitude": 35.183267,
+      "longitude": 128.087144,
+      "address": "경상남도 진주시 개양로 116번길 33",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "창원역",
+      "type": "train",
+      "latitude": 35.258459,
+      "longitude": 128.60721,
+      "address": "경상남도 창원시 의창구 의창대로 67",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "창원중앙역",
+      "type": "train",
+      "latitude": 35.2422624,
+      "longitude": 128.7014842,
+      "address": "경상남도 창원시 의창구 상남로 381",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "천안아산역",
+      "type": "train",
+      "latitude": 36.794613,
+      "longitude": 127.104529,
+      "address": "충청남도 아산시 배방읍 희망로 100",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "천안역",
+      "type": "train",
+      "latitude": 36.809452,
+      "longitude": 127.147055,
+      "address": "충청남도 천안시 동남구 대흥로 239",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "철암역",
+      "type": "train",
+      "latitude": 37.579983,
+      "longitude": 127.047679,
+      "address": "강원도 태백시 동태백로 389",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "청도역",
+      "type": "train",
+      "latitude": 35.6396751,
+      "longitude": 128.7462136,
+      "address": "경상북도 청도군 청도읍 청화로 214",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "청량리역",
+      "type": "train",
+      "latitude": 37.11298,
+      "longitude": 129.036482,
+      "address": "서울특별시 동대문구 왕산로 214",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "청리역",
+      "type": "train",
+      "latitude": 36.338832,
+      "longitude": 128.128361,
+      "address": "경상북도 상주시 청리면 청리중앙로 135-5",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "청소역",
+      "type": "train",
+      "latitude": 36.445658,
+      "longitude": 126.590964,
+      "address": "충청남도 보령시 청소면 청소큰길 176",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "청주역",
+      "type": "train",
+      "latitude": 36.647096,
+      "longitude": 127.39233,
+      "address": "충청북도 청주시 흥덕구 청주역로 363",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "추풍령역",
+      "type": "train",
+      "latitude": 36.2132,
+      "longitude": 127.995682,
+      "address": "충청북도 영동군 추풍령면 추풍령로 444",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "춘양역",
+      "type": "train",
+      "latitude": 36.9372273,
+      "longitude": 128.9198593,
+      "address": "경상북도 봉화군 춘양면 운곡길 22-2",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "충주역",
+      "type": "train",
+      "latitude": 36.975797,
+      "longitude": 127.90958,
+      "address": "충청북도 충주시 충원대로 539",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "탑리역",
+      "type": "train",
+      "latitude": 36.2596607,
+      "longitude": 128.6828609,
+      "address": "경상북도 의성군 금성면 탑리5길 31",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "태백역",
+      "type": "train",
+      "latitude": 37.176869,
+      "longitude": 128.98347,
+      "address": "강원도 태백시 서황지로 79",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "태화강역",
+      "type": "train",
+      "latitude": 35.5397714,
+      "longitude": 129.3538491,
+      "address": "울산광역시 남구 산업로 654",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "판교역",
+      "type": "train",
+      "latitude": 36.1556176,
+      "longitude": 126.6793422,
+      "address": "충청남도 서천군 판교면 저산길 8번",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "평택역",
+      "type": "train",
+      "latitude": 36.990316,
+      "longitude": 127.085794,
+      "address": "경기도 평택시 평택로 51",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "포항역",
+      "type": "train",
+      "latitude": 36.03619,
+      "longitude": 129.359715,
+      "address": "경상북도 포항시 북구 흥해읍 포항역로 1",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "풍기역",
+      "type": "train",
+      "latitude": 36.873337,
+      "longitude": 128.522421,
+      "address": "경상북도 영주시 풍기읍 인삼로 1",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "하동역",
+      "type": "train",
+      "latitude": 35.0702,
+      "longitude": 127.75986,
+      "address": "경상남도 하동군 하동읍 너뱅이길 30",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "하양역",
+      "type": "train",
+      "latitude": 35.909377,
+      "longitude": 128.818018,
+      "address": "경상북도 경산시 하양읍 하양역길 1",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "한림정역",
+      "type": "train",
+      "latitude": 35.3223909,
+      "longitude": 128.8034871,
+      "address": "경상남도 김해시 한림면 한림로372번길 20",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "함안역",
+      "type": "train",
+      "latitude": 35.277177,
+      "longitude": 128.410183,
+      "address": "경상남도 함안군 함안면 진함로 1637",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "함열역",
+      "type": "train",
+      "latitude": 36.080321,
+      "longitude": 126.956892,
+      "address": "전라북도 익산시 함열읍 함열로 71",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "함평역",
+      "type": "train",
+      "latitude": 35.0239174,
+      "longitude": 126.5388286,
+      "address": "전남 함평군 학교면 영산로 3530",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "행신역",
+      "type": "train",
+      "latitude": 37.615263,
+      "longitude": 126.843493,
+      "address": "경기도 고양시 덕양구 소원로 102",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "현동역",
+      "type": "train",
+      "latitude": 36.937118,
+      "longitude": 129.012065,
+      "address": "경상북도 봉화군 소천면 열람이길 55",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "호계역",
+      "type": "train",
+      "latitude": 35.622116,
+      "longitude": 129.354023,
+      "address": "울산광역시 북구 호계6길 30",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "홍성역",
+      "type": "train",
+      "latitude": 36.599343,
+      "longitude": 126.680419,
+      "address": "충청남도 홍성군 홍성읍 조양로 272",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "화명역",
+      "type": "train",
+      "latitude": 35.2341753,
+      "longitude": 129.0071425,
+      "address": "부산광역시 북구 학사로 135",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "화본역",
+      "type": "train",
+      "latitude": 36.127132,
+      "longitude": 128.694556,
+      "address": "경상북도 군위군 산성면 산성가음로 711-9",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "화순역",
+      "type": "train",
+      "latitude": 35.032908,
+      "longitude": 126.933214,
+      "address": "전라남도 화순군 화순읍 오성로 488-5",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "황간역",
+      "type": "train",
+      "latitude": 36.224254,
+      "longitude": 127.912099,
+      "address": "충청북도 영동군 황간면 하옥포2길 14",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    },
+    {
+      "name": "효천역",
+      "type": "train",
+      "latitude": 35.1028841,
+      "longitude": 126.8775723,
+      "address": "광주광역시 남구 효천길 5",
+      "phone": null,
+      "source": "nationwide_train_station_csv_20250711"
+    }
+  ]
+}
