@@ -163,8 +163,8 @@ function EmptyState() {
 function InProgressTab({ schedules, segments }: { schedules: ScheduleItem[]; segments: MySegment[] }) {
   const routes     = schedules.filter((s) => s.post_id === null && s.status !== "expired");
   const applied    = schedules.filter((s) => s.post_id !== null && s.status !== "expired");
-  const waiting    = segments.filter((s) => s.status === "pending" || s.status === "accepted");
-  const inProgress = segments.filter((s) => s.status === "in_progress");
+  const waiting    = segments.filter((s) => s.status === "pending");
+  const inProgress = segments.filter((s) => s.status === "accepted" || s.status === "in_progress");
 
   return (
     <div className="space-y-4">
