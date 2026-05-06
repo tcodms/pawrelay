@@ -1,0 +1,139 @@
+{
+  "bus": [
+    {
+      "name": "서울고속버스터미널",
+      "type": "bus",
+      "latitude": 37.504914,
+      "longitude": 127.004891,
+      "address": "서울특별시 서초구 신반포로 194",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "서울남부터미널",
+      "type": "bus",
+      "latitude": 37.480421,
+      "longitude": 127.015706,
+      "address": "서울특별시 서초구 효령로 292",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "동서울종합터미널",
+      "type": "bus",
+      "latitude": 37.534898,
+      "longitude": 127.094361,
+      "address": "서울특별시 광진구 강변역로 50",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "광주종합버스터미널(유스퀘어)",
+      "type": "bus",
+      "latitude": 35.160358,
+      "longitude": 126.882825,
+      "address": "광주광역시 서구 무진대로 904",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "광주송정시외버스터미널",
+      "type": "bus",
+      "latitude": 35.139233,
+      "longitude": 126.793441,
+      "address": "광주광역시 광산구 상무대로 201",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "천안종합버스터미널",
+      "type": "bus",
+      "latitude": 36.819157,
+      "longitude": 127.156764,
+      "address": "충청남도 천안시 동남구 만남로 43",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "아산시외버스터미널",
+      "type": "bus",
+      "latitude": 36.792839,
+      "longitude": 127.001539,
+      "address": "충청남도 아산시 번영로 223",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "대전복합터미널",
+      "type": "bus",
+      "latitude": 36.351422,
+      "longitude": 127.436467,
+      "address": "대전광역시 동구 동서대로 1689",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "청주고속버스터미널",
+      "type": "bus",
+      "latitude": 36.635388,
+      "longitude": 127.424842,
+      "address": "충청북도 청주시 흥덕구 2순환로 1227",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "전주고속버스터미널",
+      "type": "bus",
+      "latitude": 35.824196,
+      "longitude": 127.148036,
+      "address": "전북특별자치도 전주시 덕진구 가리내로 30",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "부산종합버스터미널",
+      "type": "bus",
+      "latitude": 35.282016,
+      "longitude": 129.096357,
+      "address": "부산광역시 금정구 중앙대로 2238",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "동대구터미널",
+      "type": "bus",
+      "latitude": 35.877682,
+      "longitude": 128.628954,
+      "address": "대구광역시 동구 동부로 149",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "인천종합버스터미널",
+      "type": "bus",
+      "latitude": 37.441927,
+      "longitude": 126.699519,
+      "address": "인천광역시 미추홀구 연남로 35",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "수원버스터미널",
+      "type": "bus",
+      "latitude": 37.251192,
+      "longitude": 127.018731,
+      "address": "경기도 수원시 권선구 경수대로 270",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    },
+    {
+      "name": "고양종합터미널",
+      "type": "bus",
+      "latitude": 37.642515,
+      "longitude": 126.789538,
+      "address": "경기도 고양시 일산동구 중앙로 1036",
+      "phone": null,
+      "source": "manual_seed_demo_routes_v1"
+    }
+  ]
+}
