@@ -37,9 +37,9 @@ async def get_active_chain_by_post_id(db: AsyncSession, post_id: int) -> RelayCh
         select(RelayChain).where(
             RelayChain.transport_post_id == post_id,
             RelayChain.status.in_(["proposed", "active"]),
-        )
+        ).order_by(RelayChain.created_at.desc()).limit(1)
     )
-    return result.scalar_one_or_none()
+    return result.scalars().first()
 
 
 async def get_segments_with_volunteers(db: AsyncSession, chain_id: int) -> list[RelaySegment]:

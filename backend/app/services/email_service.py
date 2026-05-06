@@ -8,8 +8,12 @@ async def send_sos_alert(segment_id: int, volunteer_name: str, latitude: float |
         return
 
     _configure()
-    location = f"{latitude}, {longitude}" if latitude and longitude else "위치 정보 없음"
-    resend.Emails.send({
+    location = (
+        f"{latitude}, {longitude}"
+        if latitude is not None and longitude is not None
+        else "위치 정보 없음"
+    )
+    await resend.Emails.send_async({
         "from": settings.email_from,
         "to": settings.admin_email,
         "subject": "[PawRelay] SOS 긴급 신고 접수",

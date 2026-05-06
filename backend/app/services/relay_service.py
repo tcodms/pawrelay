@@ -13,6 +13,8 @@ from app.schemas.relay import (
     SosIn, SosOut,
     WaypointInfo,
 )
+from app.tasks.scheduler import scheduler
+from app.tasks.sos_alert import send_delayed_sos_alert
 
 _SEGMENT_STATUS_ON_DEPARTURE = "accepted"
 _SEGMENT_STATUS_ACTIVE = "in_progress"
@@ -21,6 +23,8 @@ _SEGMENT_STATUS_DONE = "completed"
 _RL_IP_LIMIT = 10
 _RL_USER_LIMIT = 5
 _RL_WINDOW = 60  # seconds
+
+_SOS_ALERT_DELAY_MINUTES = 5
 
 
 async def save_checkpoint(
@@ -160,9 +164,6 @@ async def update_handover_location(
 
 
 async def report_sos(db: AsyncSession, user_id: int, body: SosIn) -> SosOut:
-    from app.tasks.scheduler import scheduler
-    from app.tasks.sos_alert import send_delayed_sos_alert
-
     segment = await relay_repo.get_segment(db, body.segment_id, load_volunteer=True)
     if not segment:
         raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
@@ -170,19 +171,29 @@ async def report_sos(db: AsyncSession, user_id: int, body: SosIn) -> SosOut:
         raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
 
     volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{user_id}"
-    run_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+    _schedule_sos_alert(body.segment_id, volunteer_name, body.latitude, body.longitude)
+    return SosOut(message="긴급 재매칭 요청이 접수되었습니다.")
+
+
+def _schedule_sos_alert(
+    segment_id: int,
+    volunteer_name: str,
+    latitude: float | None,
+    longitude: float | None,
+) -> None:
+    # TODO: 영속 jobstore(RedisJobStore/SQLAlchemyJobStore) 적용 필요 — 현재 메모리 기반으로 재시작 시 잡 유실 가능
+    run_at = datetime.now(timezone.utc) + timedelta(minutes=_SOS_ALERT_DELAY_MINUTES)
     scheduler.add_job(
         send_delayed_sos_alert,
         trigger="date",
         run_date=run_at,
         kwargs={
-            "segment_id": body.segment_id,
+            "segment_id": segment_id,
             "volunteer_name": volunteer_name,
-            "latitude": body.latitude,
-            "longitude": body.longitude,
+            "latitude": latitude,
+            "longitude": longitude,
         },
     )
-    return SosOut(message="긴급 재매칭 요청이 접수되었습니다.")
 
 
 async def report_delay(db: AsyncSession, user_id: int, body: DelayIn) -> DelayOut:
