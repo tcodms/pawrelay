@@ -3,8 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
-from app.repositories import post_repo, user_repo
-from app.schemas.shelter import AnimalInfo, DashboardPostItem, RelaySegmentItem, ShelterDashboardResponse, ShelterProfileResponse
+from app.repositories import post_repo, relay_repo, user_repo
+from app.schemas.shelter import (
+    AnimalInfo, DashboardPostItem, LocationInfo,
+    RelayDetailResponse, RelaySegmentDetail, RelaySegmentItem,
+    ShelterDashboardResponse, ShelterProfileResponse,
+)
 
 router = APIRouter()
 
@@ -61,3 +65,44 @@ async def get_shelter_dashboard(
         for post, count, chain_id, matching_reason, chain_expires_at in rows
     ]
     return ShelterDashboardResponse(posts=posts)
+
+
+@router.get("/posts/{post_id}/relay", response_model=RelayDetailResponse)
+async def get_relay_detail(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if current_user.role != "shelter":
+        raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
+
+    post = await post_repo.get_post_by_id(db, post_id)
+    if not post or post.shelter_id != current_user.id:
+        raise HTTPException(status_code=404, detail={"error": "POST_NOT_FOUND"})
+
+    chain = await relay_repo.get_active_chain_by_post_id(db, post_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail={"error": "CHAIN_NOT_FOUND"})
+
+    segments = await relay_repo.get_segments_with_volunteers(db, chain.id)
+    return RelayDetailResponse(segments=[_build_segment_detail(s) for s in segments])
+
+
+def _build_segment_detail(segment) -> RelaySegmentDetail:
+    ping_status = _resolve_ping_status(segment)
+    return RelaySegmentDetail(
+        order=segment.segment_order,
+        volunteer_name=segment.volunteer.name if segment.volunteer else "",
+        pickup_location=LocationInfo(name=segment.pickup_location, address=segment.pickup_location),
+        dropoff_location=LocationInfo(name=segment.dropoff_location, address=segment.dropoff_location),
+        status=segment.status,
+        ping_status=ping_status,
+    )
+
+
+def _resolve_ping_status(segment) -> str:
+    if segment.ping_responded_at:
+        return "confirmed"
+    if segment.ping_sent_at:
+        return "no_response"
+    return "pending"

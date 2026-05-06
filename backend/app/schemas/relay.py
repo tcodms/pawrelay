@@ -50,3 +50,22 @@ class WaypointInfo(BaseModel):
 
 class HandoverLocationOut(BaseModel):
     dropoff_location: WaypointInfo
+
+
+class SosIn(BaseModel):
+    segment_id: int
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
+
+class SosOut(BaseModel):
+    message: str
+
+
+class DelayIn(BaseModel):
+    segment_id: int
+    message: str
+
+
+class DelayOut(BaseModel):
+    ok: bool
