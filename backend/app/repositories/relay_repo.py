@@ -1,13 +1,18 @@
 from datetime import datetime
 
 from sqlalchemy import and_, or_, select, update
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.relay import Checkpoint, RelaySegment
+from app.models.relay import Checkpoint, RelayChain, RelaySegment
 
 
-async def get_segment(db: AsyncSession, segment_id: int, lock: bool = False) -> RelaySegment | None:
+async def get_segment(
+    db: AsyncSession, segment_id: int, lock: bool = False, load_volunteer: bool = False
+) -> RelaySegment | None:
     query = select(RelaySegment).where(RelaySegment.id == segment_id)
+    if load_volunteer:
+        query = query.options(selectinload(RelaySegment.volunteer))
     if lock:
         query = query.with_for_update()
     result = await db.execute(query)
@@ -25,6 +30,26 @@ async def get_next_segment(
         query = query.with_for_update()
     result = await db.execute(query)
     return result.scalar_one_or_none()
+
+
+async def get_active_chain_by_post_id(db: AsyncSession, post_id: int) -> RelayChain | None:
+    result = await db.execute(
+        select(RelayChain).where(
+            RelayChain.transport_post_id == post_id,
+            RelayChain.status.in_(["proposed", "active"]),
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_segments_with_volunteers(db: AsyncSession, chain_id: int) -> list[RelaySegment]:
+    result = await db.execute(
+        select(RelaySegment)
+        .where(RelaySegment.chain_id == chain_id)
+        .options(selectinload(RelaySegment.volunteer))
+        .order_by(RelaySegment.segment_order)
+    )
+    return list(result.scalars().all())
 
 
 async def mark_stale_handovers_as_needs_verification(

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories import relay_repo, waypoint_repo
 from app.schemas.relay import (
     CheckpointIn, CheckpointOut,
+    DelayIn, DelayOut,
     HandoverApproveOut, HandoverLocationIn, HandoverLocationOut,
     HandoverRequestOut, HandoverVerifyIn, HandoverVerifyOut,
+    SosIn, SosOut,
     WaypointInfo,
 )
 
@@ -151,9 +153,46 @@ async def update_handover_location(
         raise HTTPException(status_code=404, detail={"error": "WAYPOINT_NOT_FOUND"})
 
     segment.dropoff_location = waypoint.name
+    segment.waypoint_id = waypoint.id
     await db.commit()
     # 뒷구간 봉사자 Web Push는 6주차 알림 모듈 완성 후 연결
     return HandoverLocationOut(dropoff_location=WaypointInfo(name=waypoint.name, address=waypoint.address))
+
+
+async def report_sos(db: AsyncSession, user_id: int, body: SosIn) -> SosOut:
+    from app.tasks.scheduler import scheduler
+    from app.tasks.sos_alert import send_delayed_sos_alert
+
+    segment = await relay_repo.get_segment(db, body.segment_id, load_volunteer=True)
+    if not segment:
+        raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
+    if segment.volunteer_id != user_id:
+        raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
+
+    volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{user_id}"
+    run_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+    scheduler.add_job(
+        send_delayed_sos_alert,
+        trigger="date",
+        run_date=run_at,
+        kwargs={
+            "segment_id": body.segment_id,
+            "volunteer_name": volunteer_name,
+            "latitude": body.latitude,
+            "longitude": body.longitude,
+        },
+    )
+    return SosOut(message="긴급 재매칭 요청이 접수되었습니다.")
+
+
+async def report_delay(db: AsyncSession, user_id: int, body: DelayIn) -> DelayOut:
+    segment = await relay_repo.get_segment(db, body.segment_id)
+    if not segment:
+        raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
+    if segment.volunteer_id != user_id:
+        raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
+    # 다음 구간 봉사자 + 보호소 알림은 6주차 알림 모듈 완성 후 연결
+    return DelayOut(ok=True)
 
 
 async def _check_handover_rate_limit(redis: Redis, user_id: int, client_ip: str) -> None:

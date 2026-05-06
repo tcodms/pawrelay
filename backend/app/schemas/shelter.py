@@ -41,3 +41,21 @@ class DashboardPostItem(BaseModel):
 
 class ShelterDashboardResponse(BaseModel):
     posts: list[DashboardPostItem]
+
+
+class LocationInfo(BaseModel):
+    name: str
+    address: str
+
+
+class RelaySegmentDetail(BaseModel):
+    order: int
+    volunteer_name: str
+    pickup_location: LocationInfo
+    dropoff_location: LocationInfo
+    status: str
+    ping_status: str
+
+
+class RelayDetailResponse(BaseModel):
+    segments: list[RelaySegmentDetail]

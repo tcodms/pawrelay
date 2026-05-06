@@ -46,6 +46,7 @@ class RelaySegment(Base):
     dropoff_location = Column(String(255), nullable=False)
     scheduled_time = Column(DateTime(timezone=True), nullable=False)
     estimated_arrival = Column(DateTime(timezone=True), nullable=True)
+    waypoint_id = Column(BigInteger, ForeignKey("waypoints.id"), nullable=True)
     handover_code = Column(CHAR(6), nullable=True)
     handover_code_given_at = Column(DateTime(timezone=True), nullable=True)
     handover_code_received_at = Column(DateTime(timezone=True), nullable=True)

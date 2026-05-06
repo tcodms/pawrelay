@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     resend_api_key: str = ""
     email_from: str = "onboarding@resend.dev"
+    admin_email: str = "admin@pawrelay.com"
     frontend_url: str = "http://localhost:3000"
 
     aws_access_key_id: str | None = None
