@@ -74,6 +74,24 @@ export async function getSegment(segmentId: number): Promise<{ segment: SegmentD
   return request<{ segment: SegmentDetail }>(`/matching/segments/${segmentId}`);
 }
 
+// ── 내 세그먼트 목록 ──────────────────────────────────────────────────────────
+
+export interface MySegment {
+  segment_id: number;
+  status: string;
+  animal_name: string;
+  animal_photo_url: string | null;
+  scheduled_date: string | null;
+  pickup_location: string;
+  dropoff_location: string;
+  depart_time: string | null;
+}
+
+export async function getMySegments(): Promise<MySegment[]> {
+  const res = await request<{ segments: MySegment[] }>("/matching/my-segments");
+  return res.segments;
+}
+
 // ── 보호소 매칭 승인/거절 ─────────────────────────────────────────────────────
 
 export async function approveShelterMatching(chainId: number): Promise<void> {
