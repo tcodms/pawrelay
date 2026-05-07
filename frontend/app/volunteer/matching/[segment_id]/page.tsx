@@ -497,7 +497,7 @@ function HandoverLocationModal({
 }: {
   waypoints: { train: WaypointEntry[]; rest_area: WaypointEntry[] };
   currentName: string;
-  onSelect: (id: number, name: string, address: string) => void;
+  onSelect: (id: number, name: string, address: string, lat: number, lng: number) => void;
   onClose: () => void;
   loading: boolean;
 }) {
@@ -530,7 +530,7 @@ function HandoverLocationModal({
                     return (
                       <button
                         key={wp.id}
-                        onClick={() => !isSelected && onSelect(wp.id, wp.name, wp.address)}
+                        onClick={() => !isSelected && onSelect(wp.id, wp.name, wp.address, wp.lat, wp.lng)}
                         disabled={loading || isSelected}
                         className={`w-full flex items-center justify-between rounded-2xl px-3.5 py-3 text-left transition-all active:scale-[0.98] ${
                           isSelected
@@ -734,14 +734,14 @@ export default function MatchingDetailPage() {
     }
   }
 
-  async function handleChangeLocation(waypointId: number, name: string, address: string) {
+  async function handleChangeLocation(waypointId: number, name: string, address: string, lat: number, lng: number) {
     setLocationChanging(true);
     try {
       const res = await changeHandoverLocation(segmentId, waypointId);
       setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, ...res.dropoff_location } }));
     } catch {
       // 백엔드 미연결 시 로컬 업데이트로 대체
-      setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, name, address } }));
+      setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, name, address, lat, lng } }));
     } finally {
       setLocationChanging(false);
       setShowLocationModal(false);
