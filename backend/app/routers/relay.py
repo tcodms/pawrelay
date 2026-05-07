@@ -69,7 +69,7 @@ async def emergency_sos(
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await relay_service.report_sos(db, user_id, body)
+    return await relay_service.report_sos(db, redis_client, user_id, body)
 
 
 @router.post("/emergency/delay", response_model=DelayOut)

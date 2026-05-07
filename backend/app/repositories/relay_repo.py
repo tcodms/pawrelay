@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import and_, or_, select, update
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,7 +54,7 @@ async def get_segments_with_volunteers(db: AsyncSession, chain_id: int) -> list[
 
 async def mark_stale_handovers_as_needs_verification(
     db: AsyncSession, cutoff: datetime
-) -> int:
+) -> list[RelaySegment]:
     """한쪽만 인계 코드 입력 후 cutoff 시간 이상 경과한 세그먼트를 needs_verification으로 전환."""
     stale_condition = or_(
         and_(
@@ -69,11 +69,30 @@ async def mark_stale_handovers_as_needs_verification(
         ),
     )
     result = await db.execute(
-        update(RelaySegment)
+        select(RelaySegment)
         .where(RelaySegment.status == "in_progress", stale_condition)
-        .values(status="needs_verification")
+        .options(selectinload(RelaySegment.volunteer))
+        .with_for_update()
     )
-    return result.rowcount
+    segments = list(result.scalars().all())
+    for segment in segments:
+        segment.status = "needs_verification"
+    return segments
+
+
+async def get_delayed_segments(db: AsyncSession, cutoff: datetime) -> list[RelaySegment]:
+    """scheduled_time 기준 cutoff 이상 경과했으나 출발 체크포인트가 없는 세그먼트 조회."""
+    result = await db.execute(
+        select(RelaySegment)
+        .where(
+            and_(
+                RelaySegment.status == "accepted",
+                RelaySegment.scheduled_time <= cutoff,
+            )
+        )
+        .options(selectinload(RelaySegment.volunteer))
+    )
+    return list(result.scalars().all())
 
 
 async def create_checkpoint(

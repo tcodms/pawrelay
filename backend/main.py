@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -11,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth, posts, volunteers, matching, relay, chatbot, notifications, shelter, admin
+from app.tasks.ai_decision_subscriber import run_ai_decision_subscriber
 from app.tasks.scheduler import setup_scheduler
 from app.websocket import router as ws_router
 
@@ -19,7 +21,9 @@ from app.websocket import router as ws_router
 async def lifespan(app: FastAPI):
     scheduler = setup_scheduler()
     scheduler.start()
+    subscriber_task = asyncio.create_task(run_ai_decision_subscriber())
     yield
+    subscriber_task.cancel()
     scheduler.shutdown()
 
 

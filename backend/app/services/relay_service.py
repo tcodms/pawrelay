@@ -1,9 +1,11 @@
+import json
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.volunteer import VolunteerHistory
 from app.repositories import relay_repo, waypoint_repo
 from app.schemas.relay import (
     CheckpointIn, CheckpointOut,
@@ -44,6 +46,8 @@ async def save_checkpoint(
         db, body.segment_id, body.type, body.latitude, body.longitude
     )
     _apply_status_transition(segment, body.type)
+    if body.type == "arrival":
+        await _record_volunteer_history(db, segment)
 
     await db.commit()
     await db.refresh(checkpoint)
@@ -163,7 +167,7 @@ async def update_handover_location(
     return HandoverLocationOut(dropoff_location=WaypointInfo(name=waypoint.name, address=waypoint.address))
 
 
-async def report_sos(db: AsyncSession, user_id: int, body: SosIn) -> SosOut:
+async def report_sos(db: AsyncSession, redis: Redis, user_id: int, body: SosIn) -> SosOut:
     segment = await relay_repo.get_segment(db, body.segment_id, load_volunteer=True)
     if not segment:
         raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
@@ -172,7 +176,30 @@ async def report_sos(db: AsyncSession, user_id: int, body: SosIn) -> SosOut:
 
     volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{user_id}"
     _schedule_sos_alert(body.segment_id, volunteer_name, body.latitude, body.longitude)
+    await _publish_sos_event(redis, segment, volunteer_name, body)
     return SosOut(message="긴급 재매칭 요청이 접수되었습니다.")
+
+
+async def _record_volunteer_history(db: AsyncSession, segment) -> None:
+    history = VolunteerHistory(
+        volunteer_id=segment.volunteer_id,
+        segment_id=segment.id,
+        distance_km=0,
+        completed_at=datetime.now(timezone.utc),
+    )
+    db.add(history)
+
+
+async def _publish_sos_event(redis: Redis, segment, volunteer_name: str, body: SosIn) -> None:
+    payload = {
+        "segment_id": segment.id,
+        "chain_id": segment.chain_id,
+        "volunteer_id": segment.volunteer_id,
+        "volunteer_name": volunteer_name,
+        "latitude": body.latitude,
+        "longitude": body.longitude,
+    }
+    await redis.publish("pawrelay:sos", json.dumps(payload))
 
 
 def _schedule_sos_alert(
