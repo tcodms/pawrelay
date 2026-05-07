@@ -16,15 +16,15 @@ const SIZE_LABEL: Record<string, string> = {
 };
 
 const SCHEDULE_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  available: { label: "대기 중",   cls: "bg-green-100 text-green-700" },
-  matched:   { label: "매칭 완료", cls: "bg-[#FDF3EC] text-[#C17A3A]" },
-  expired:   { label: "만료",      cls: "bg-gray-100 text-gray-400" },
+  available: { label: "대기 중",      cls: "bg-green-100 text-green-700" },
+  matched:   { label: "보호소 검토 중", cls: "bg-yellow-50 text-yellow-600" },
+  expired:   { label: "만료",          cls: "bg-gray-100 text-gray-400" },
 };
 
 const SEGMENT_STATUS: Record<string, { label: string; cls: string }> = {
   pending:     { label: "수락 대기 중", cls: "bg-orange-50 text-orange-500" },
   accepted:    { label: "수락 완료",    cls: "bg-green-50 text-green-600" },
-  confirmed:   { label: "봉사 확정",    cls: "bg-blue-50 text-blue-600" },
+  confirmed:   { label: "매칭 확정",    cls: "bg-green-50 text-green-600" },
   in_progress: { label: "이동 중",      cls: "bg-blue-50 text-blue-600" },
   completed:   { label: "완료",         cls: "bg-gray-100 text-gray-500" },
 };
@@ -33,8 +33,9 @@ type Tab = "진행중" | "완료" | "취소";
 
 // ── 카드 컴포넌트 ──────────────────────────────────────────────────────────────
 
-function RouteCard({ s }: { s: ScheduleItem }) {
-  return (
+function RouteCard({ s, href, badge }: { s: ScheduleItem; href?: string; badge?: { label: string; cls: string } }) {
+  const activeBadge = badge ?? SCHEDULE_STATUS_LABEL[s.status] ?? { label: s.status, cls: "bg-gray-100 text-gray-400" };
+  const inner = (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-3.5">
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5 text-[14px] font-semibold text-gray-800">
@@ -42,8 +43,8 @@ function RouteCard({ s }: { s: ScheduleItem }) {
           <ArrowRight size={12} className="text-gray-300" />
           <span>{s.destination_area}</span>
         </div>
-        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${SCHEDULE_STATUS_LABEL[s.status]?.cls ?? "bg-gray-100 text-gray-400"}`}>
-          {SCHEDULE_STATUS_LABEL[s.status]?.label ?? s.status}
+        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeBadge.cls}`}>
+          {activeBadge.label}
         </span>
       </div>
       <div className="flex items-center gap-3 text-[12px] text-gray-400">
@@ -57,10 +58,13 @@ function RouteCard({ s }: { s: ScheduleItem }) {
       </div>
     </div>
   );
+  if (href) return <Link href={href} className="block active:scale-[0.98] transition-transform">{inner}</Link>;
+  return inner;
 }
 
-function AppliedCard({ s }: { s: ScheduleItem }) {
-  return (
+function AppliedCard({ s, href, badge }: { s: ScheduleItem; href?: string; badge?: { label: string; cls: string } }) {
+  const activeBadge = badge ?? SCHEDULE_STATUS_LABEL[s.status] ?? { label: s.status, cls: "bg-gray-100 text-gray-400" };
+  const inner = (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
       <div className="flex gap-3.5 p-4">
         <div className="relative h-[60px] w-[60px] shrink-0 rounded-xl overflow-hidden bg-gray-100">
@@ -76,8 +80,8 @@ function AppliedCard({ s }: { s: ScheduleItem }) {
             <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
               {SIZE_LABEL[s.applied_post?.animal_size ?? ""] ?? "-"}
             </span>
-            <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${SCHEDULE_STATUS_LABEL[s.status]?.cls ?? "bg-gray-100 text-gray-400"}`}>
-              {SCHEDULE_STATUS_LABEL[s.status]?.label ?? s.status}
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${activeBadge.cls}`}>
+              {activeBadge.label}
             </span>
           </div>
           <div className="flex items-center gap-1 text-[12px] text-gray-500 mb-1">
@@ -102,6 +106,8 @@ function AppliedCard({ s }: { s: ScheduleItem }) {
       </div>
     </div>
   );
+  if (href) return <Link href={href} className="block active:scale-[0.98] transition-transform">{inner}</Link>;
+  return inner;
 }
 
 function SegmentCard({ seg }: { seg: MySegment }) {
@@ -161,47 +167,111 @@ function EmptyState() {
 
 // ── 탭 콘텐츠 ─────────────────────────────────────────────────────────────────
 
+function findSegment(s: ScheduleItem, segments: MySegment[]): MySegment | undefined {
+  return s.post_id === null
+    ? segments.find((seg) => seg.pickup_location === s.origin_area && seg.dropoff_location === s.destination_area)
+    : segments.find((seg) => s.applied_post && seg.animal_name === s.applied_post.animal_name);
+}
+
+const DONE_BADGE = { label: "봉사 완료", cls: "bg-gray-100 text-gray-500" };
+
+const WAITING_BADGE = { label: "대기 중", cls: "bg-green-100 text-green-700" };
+
+function resolveBadge(s: ScheduleItem, seg: MySegment | undefined) {
+  if (seg) return SEGMENT_STATUS[seg.status];
+  // 직접 지원이 matched인데 세그먼트 없으면 완료
+  if (s.status === "matched" && s.post_id !== null) return DONE_BADGE;
+  // 동선이 matched인데 세그먼트 없으면 대기 중 유지 (백엔드 버그)
+  if (s.status === "matched" && s.post_id === null) return WAITING_BADGE;
+  return undefined;
+}
+
 function InProgressTab({ schedules, segments }: { schedules: ScheduleItem[]; segments: MySegment[] }) {
-  const routes     = schedules.filter((s) => s.post_id === null && s.status !== "expired");
-  const applied    = schedules.filter((s) => s.post_id !== null && s.status !== "expired");
-  const waiting    = segments.filter((s) => s.status === "pending");
-  const inProgress = segments.filter((s) => ["accepted", "confirmed", "in_progress"].includes(s.status));
+  // 동선: available이거나 matched지만 세그먼트 없는 경우(백엔드 버그)도 진행중에 유지
+  const routes = schedules.filter((s) => {
+    if (s.post_id !== null) return false;
+    if (s.status === "available") return true;
+    if (s.status === "matched") {
+      const seg = findSegment(s, segments);
+      if (!seg) return true; // 백엔드 버그로 잘못 matched된 경우도 진행중 유지
+      return ["pending", "accepted", "in_progress"].includes(seg.status);
+    }
+    return false;
+  });
+
+  // 직접 지원: available이거나 matched + 활성 세그먼트 있을 때만 진행중
+  const applies = schedules.filter((s) => {
+    if (s.post_id === null) return false;
+    if (s.status === "available") return true;
+    if (s.status === "matched") {
+      const seg = findSegment(s, segments);
+      return !!seg && ["pending", "accepted", "in_progress"].includes(seg.status);
+    }
+    return false;
+  });
 
   return (
     <div className="space-y-4">
       <SectionDivider label="등록된 동선" />
       {routes.length > 0 ? (
-        <div className="space-y-2.5">{routes.map((s) => <RouteCard key={s.id} s={s} />)}</div>
+        <div className="space-y-2.5">
+          {routes.map((s) => {
+            const seg = findSegment(s, segments);
+            return (
+              <RouteCard key={s.id} s={s}
+                href={seg ? `/volunteer/matching/${seg.segment_id}` : undefined}
+                badge={resolveBadge(s, seg)}
+              />
+            );
+          })}
+        </div>
       ) : (
         <p className="text-[13px] text-gray-300 px-1">등록된 동선이 없어요.</p>
       )}
 
-      <SectionDivider label="매칭 대기" />
-      {(applied.length > 0 || waiting.length > 0) ? (
+      <SectionDivider label="직접 지원한 공고" />
+      {applies.length > 0 ? (
         <div className="space-y-2.5">
-          {applied.map((s) => <AppliedCard key={s.id} s={s} />)}
-          {waiting.map((seg) => <SegmentCard key={seg.segment_id} seg={seg} />)}
+          {applies.map((s) => {
+            const seg = findSegment(s, segments);
+            return (
+              <AppliedCard key={s.id} s={s}
+                href={seg ? `/volunteer/matching/${seg.segment_id}` : undefined}
+                badge={resolveBadge(s, seg)}
+              />
+            );
+          })}
         </div>
       ) : (
-        <p className="text-[13px] text-gray-300 px-1">매칭 제안이 없어요.</p>
-      )}
-
-      <SectionDivider label="봉사 진행중" />
-      {inProgress.length > 0 ? (
-        <div className="space-y-2.5">{inProgress.map((seg) => <SegmentCard key={seg.segment_id} seg={seg} />)}</div>
-      ) : (
-        <p className="text-[13px] text-gray-300 px-1">진행 중인 봉사가 없어요.</p>
+        <p className="text-[13px] text-gray-300 px-1">직접 지원한 공고가 없어요.</p>
       )}
     </div>
   );
 }
 
-function CompletedTab({ segments }: { segments: MySegment[] }) {
-  const completed = segments.filter((s) => s.status === "completed");
-  if (completed.length === 0) return <EmptyState />;
+function CompletedTab({ schedules, segments }: { schedules: ScheduleItem[]; segments: MySegment[] }) {
+  const completedSegments = segments.filter((s) => s.status === "completed");
+
+  // 백엔드가 completed 세그먼트를 반환하지 않으므로, matched 스케줄 중 활성 세그먼트가
+  // 없는 것을 완료로 간주한다.
+  // post_id=null(챗봇 동선)은 백엔드 mark_schedules_matched 버그로
+  // 인접 날짜 스케줄이 일괄 matched 처리되므로 이 휴리스틱에서 제외한다.
+  const completedSchedules = schedules.filter((s) => {
+    if (s.status !== "matched" || s.post_id === null) return false;
+    const seg = findSegment(s, segments);
+    return !seg;
+  });
+
+  if (completedSegments.length === 0 && completedSchedules.length === 0) return <EmptyState />;
+
   return (
     <div className="space-y-2.5">
-      {completed.map((seg) => <SegmentCard key={seg.segment_id} seg={seg} />)}
+      {completedSegments.map((seg) => <SegmentCard key={seg.segment_id} seg={seg} />)}
+      {completedSchedules.map((s) =>
+        s.post_id === null
+          ? <RouteCard key={s.id} s={s} badge={DONE_BADGE} />
+          : <AppliedCard key={s.id} s={s} badge={DONE_BADGE} />
+      )}
     </div>
   );
 }
@@ -209,7 +279,7 @@ function CompletedTab({ segments }: { segments: MySegment[] }) {
 function CancelledTab({ schedules, segments }: { schedules: ScheduleItem[]; segments: MySegment[] }) {
   const expiredSchedules  = schedules.filter((s) => s.status === "expired");
   const cancelledSegments = segments.filter(
-    (s) => !["pending", "accepted", "confirmed", "in_progress", "completed"].includes(s.status)
+    (s) => !["pending", "accepted", "in_progress", "completed"].includes(s.status)
   );
   if (expiredSchedules.length === 0 && cancelledSegments.length === 0) return <EmptyState />;
   return (
@@ -237,18 +307,13 @@ export default function ServicesPage() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [segments, setSegments] = useState<MySegment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
-  function fetchAll() {
-    setLoading(true);
-    setError(false);
+  useEffect(() => {
     let done = 0;
     const finish = () => { if (++done === 2) setLoading(false); };
-    getMySchedules().then(setSchedules).catch(() => setError(true)).finally(finish);
-    getMySegments().then(setSegments).catch(() => setError(true)).finally(finish);
-  }
-
-  useEffect(() => { fetchAll(); }, []);
+    getMySchedules().then(setSchedules).catch(() => {}).finally(finish);
+    getMySegments().then(setSegments).catch(() => {}).finally(finish);
+  }, []);
 
   const TABS: Tab[] = ["진행중", "완료", "취소"];
 
@@ -278,20 +343,10 @@ export default function ServicesPage() {
         <div className="flex justify-center pt-20">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
         </div>
-      ) : error ? (
-        <div className="flex flex-col items-center justify-center pt-20 text-center gap-3">
-          <p className="text-[14px] text-gray-500">정보를 불러오지 못했어요.</p>
-          <button
-            onClick={fetchAll}
-            className="text-[13px] text-[#EEA968] font-semibold"
-          >
-            다시 시도
-          </button>
-        </div>
       ) : (
         <div className="mx-auto max-w-2xl px-4 pt-5 pb-24">
           {tab === "진행중" && <InProgressTab schedules={schedules} segments={segments} />}
-          {tab === "완료"   && <CompletedTab segments={segments} />}
+          {tab === "완료"   && <CompletedTab schedules={schedules} segments={segments} />}
           {tab === "취소"   && <CancelledTab schedules={schedules} segments={segments} />}
         </div>
       )}

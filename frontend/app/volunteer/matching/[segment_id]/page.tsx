@@ -6,10 +6,12 @@ import Image from "next/image";
 import Script from "next/script";
 import {
   ArrowLeft, Clock, Train, Coffee,
-  ExternalLink, CheckCircle2, MapPin, Lock, MessageCircle,
+  ExternalLink, CheckCircle2, MapPin, Lock, MessageCircle, Navigation,
 } from "lucide-react";
 import MatchingReasonBubble from "@/components/MatchingReasonBubble";
 import { acceptMatching, declineMatching, getSegment } from "@/lib/api/matching";
+import { recordCheckpoint, verifyHandover, requestHandover, approveHandover } from "@/lib/api/relay";
+import { ApiError } from "@/lib/api";
 
 declare global {
   interface Window { kakao: any; }
@@ -45,13 +47,16 @@ const DUMMY_SEGMENT = {
       { name: "목천휴게소", address: "충남 천안시 동남구 목천읍", distance_km: 8.5, lat: 36.7150, lng: 127.1456 },
     ],
   },
+  chain_segments: [
+    { volunteer: "나", from: "광주광역시 북구", to: "천안아산역", is_me: true },
+    { volunteer: "이릴레이", from: "천안아산역", to: "서울 마포구", is_me: false },
+  ],
 };
 
-// 매칭 확정 더미 (segment_id=42) — handover_code: null이면 잠금 카드, 값 있으면 코드+QR
 const DUMMY_CONFIRMED_SEGMENT = {
   ...DUMMY_SEGMENT,
   status: "confirmed",
-  handover_code: "A3F9K2" as string | null,
+  handover_code: "483920" as string | null,
 };
 
 const SIZE_LABEL: Record<string, string> = { small: "소형", medium: "중형", large: "대형" };
@@ -184,7 +189,7 @@ function DeadlineBanner({ notifiedAt }: { notifiedAt: string }) {
   );
 }
 
-// ── 매칭 확정 배너 ────────────────────────────────────────────────────────────
+// ── 배너들 ────────────────────────────────────────────────────────────────────
 
 function ConfirmedBanner({ partnerName }: { partnerName: string }) {
   return (
@@ -202,16 +207,47 @@ function ConfirmedBanner({ partnerName }: { partnerName: string }) {
   );
 }
 
+function InProgressBanner() {
+  return (
+    <div className="rounded-2xl bg-blue-50 shadow-sm px-4 py-3.5 flex items-center gap-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100">
+        <Navigation size={18} className="text-blue-500" />
+      </div>
+      <div>
+        <p className="text-[14px] font-bold text-blue-700">봉사가 시작됐어요!</p>
+        <p className="text-[12px] text-blue-600 mt-0.5">각 구간마다 체크포인트를 기록해 주세요</p>
+      </div>
+    </div>
+  );
+}
+
+function CompletedBanner({ animalName }: { animalName: string }) {
+  return (
+    <div className="rounded-2xl bg-[#F0FDF4] border border-green-100 shadow-sm px-4 py-4 flex items-center gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
+        <CheckCircle2 size={20} className="text-green-500" />
+      </div>
+      <div>
+        <p className="text-[14px] font-bold text-green-700">봉사가 완료됐어요!</p>
+        <p className="text-[12px] text-green-600 mt-0.5">{animalName}와 함께한 릴레이가 완료됐어요. 감사합니다 🐾</p>
+      </div>
+    </div>
+  );
+}
+
 // ── 상태 뱃지 ─────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
     proposed:    { label: "수락 대기 중", className: "bg-orange-50 text-orange-500" },
+    pending:     { label: "수락 대기 중", className: "bg-orange-50 text-orange-500" },
     accepted:    { label: "수락 완료",    className: "bg-green-50 text-green-600" },
     confirmed:   { label: "매칭 확정",    className: "bg-green-50 text-green-600" },
-    in_transit: { label: "이동 중",      className: "bg-blue-50 text-blue-600" },
+    in_progress: { label: "이동 중",      className: "bg-blue-50 text-blue-600" },
+    in_transit:  { label: "이동 중",      className: "bg-blue-50 text-blue-600" },
     completed:   { label: "완료",         className: "bg-gray-100 text-gray-500" },
     declined:    { label: "거절됨",       className: "bg-red-50 text-red-400" },
+    no_show:     { label: "거절됨",       className: "bg-red-50 text-red-400" },
   };
   const { label, className } = config[status] ?? { label: status, className: "bg-gray-100 text-gray-500" };
   return (
@@ -284,71 +320,160 @@ function HandoverCodeLockedCard({ scheduledDate }: { scheduledDate: string }) {
   );
 }
 
-// ── 인계 후보지 ───────────────────────────────────────────────────────────────
 
-function WaypointsCard({
-  waypoints,
-  confirmed = false,
-  openchatUrl,
-  partnerName,
+// ── 인계 코드 입력 카드 ───────────────────────────────────────────────────────
+
+function HandoverInputCard({
+  segmentId,
+  onComplete,
 }: {
-  waypoints: typeof DUMMY_SEGMENT.waypoints;
-  confirmed?: boolean;
-  openchatUrl?: string;
-  partnerName?: string;
+  segmentId: number;
+  onComplete: () => void;
 }) {
-  const types: WaypointType[] = ["train", "rest_area"];
-  return (
-    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-4 pt-3.5 pb-1">
-        <p className="text-[13px] font-bold text-gray-800">인계 후보지</p>
-        <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">
-          {confirmed
-            ? "오픈채팅에서 파트너와 최종 장소를 협의하세요"
-            : "매칭 확정 후 제공되는 오픈채팅에서\n파트너와 최종 장소를 협의하세요"}
-        </p>
-      </div>
-      <div className="px-4 pb-4 pt-2 space-y-3">
-        {types.map((type) => {
-          const items = waypoints[type];
-          if (!items.length) return null;
-          const Icon = WAYPOINT_ICONS[type];
-          return (
-            <div key={type}>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Icon size={12} className="text-[#EEA968]" />
-                <span className="text-[11px] font-semibold text-gray-500">{WAYPOINT_LABELS[type]}</span>
-              </div>
-              <div className="space-y-1">
-                {items.map((item, i) => (
-                  <div key={i} className={`flex items-center gap-2 rounded-xl px-3 py-2 ${i === 0 ? "bg-orange-50" : "bg-gray-50"}`}>
-                    <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold shrink-0 ${i === 0 ? "bg-[#EEA968] text-white" : "bg-gray-200 text-gray-500"}`}>
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-[12px] font-semibold truncate ${i === 0 ? "text-gray-800" : "text-gray-600"}`}>{item.name}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{item.address}</p>
-                    </div>
-                    <span className="shrink-0 text-[11px] text-gray-400">{item.distance_km}km</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+  const [digits, setDigits]           = useState(["", "", "", "", "", ""]);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyMsg, setVerifyMsg]     = useState<{ text: string; ok: boolean } | null>(null);
+  const [showFallback, setShowFallback] = useState(false);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-        {confirmed && openchatUrl && (
-          <a
-            href={openchatUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gray-100 text-[13px] font-bold text-gray-500 active:scale-[0.98] transition-transform mt-1"
-          >
-            <MessageCircle size={15} />
-            {partnerName ? `${partnerName}님과 오픈채팅 참여` : "오픈채팅 참여하기"}
-          </a>
-        )}
+  const code = digits.join("");
+
+  function handleDigitChange(idx: number, val: string) {
+    const num = val.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[idx] = num;
+    setDigits(next);
+    setVerifyMsg(null);
+    if (num && idx < 5) inputRefs.current[idx + 1]?.focus();
+  }
+
+  function handleKeyDown(idx: number, e: React.KeyboardEvent) {
+    if (e.key === "Backspace" && !digits[idx] && idx > 0) {
+      inputRefs.current[idx - 1]?.focus();
+    }
+  }
+
+  async function handleVerify() {
+    if (code.length < 6) return;
+    setVerifyLoading(true);
+    setVerifyMsg(null);
+    try {
+      const res = await verifyHandover(segmentId, code);
+      if (res.status === "completed") {
+        onComplete();
+      } else {
+        setVerifyMsg({ text: "코드 확인 완료! 파트너 입력을 기다리는 중이에요.", ok: true });
+      }
+    } catch (err) {
+      const msg = err instanceof ApiError && err.status === 429
+        ? "시도 횟수를 초과했어요. 잠시 후 다시 시도해 주세요."
+        : "코드가 일치하지 않아요. 다시 확인해 주세요.";
+      setVerifyMsg({ text: msg, ok: false });
+    } finally {
+      setVerifyLoading(false);
+    }
+  }
+
+  async function handleRequest() {
+    setFallbackLoading(true);
+    try {
+      await requestHandover(segmentId);
+      setRequestSent(true);
+    } catch {
+      setVerifyMsg({ text: "요청 전송에 실패했어요. 다시 시도해 주세요.", ok: false });
+    } finally {
+      setFallbackLoading(false);
+    }
+  }
+
+  async function handleApprove() {
+    setFallbackLoading(true);
+    try {
+      await approveHandover(segmentId);
+      onComplete();
+    } catch {
+      setVerifyMsg({ text: "승인에 실패했어요. 다시 시도해 주세요.", ok: false });
+    } finally {
+      setFallbackLoading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-4">
+      <p className="text-[13px] font-bold text-gray-700">인계 코드 확인</p>
+
+      <div className="flex gap-2 justify-center">
+        {digits.map((d, i) => (
+          <input
+            key={i}
+            ref={(el) => { inputRefs.current[i] = el; }}
+            type="tel"
+            inputMode="numeric"
+            maxLength={1}
+            value={d}
+            onChange={(e) => handleDigitChange(i, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(i, e)}
+            className={`w-10 h-12 text-center text-[20px] font-bold rounded-xl border-2 focus:outline-none transition-colors ${
+              d ? "border-[#EEA968] text-[#EEA968]" : "border-gray-200 text-gray-700"
+            }`}
+          />
+        ))}
       </div>
+
+      {verifyMsg && (
+        <p className={`text-[11px] text-center ${verifyMsg.ok ? "text-green-500" : "text-red-400"}`}>
+          {verifyMsg.text}
+        </p>
+      )}
+
+      <button
+        onClick={handleVerify}
+        disabled={code.length < 6 || verifyLoading}
+        className="w-full h-11 rounded-2xl bg-[#EEA968] text-[14px] font-bold text-white disabled:opacity-40 active:scale-[0.97] transition-all"
+      >
+        {verifyLoading ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            확인 중...
+          </span>
+        ) : "인계 완료 확인"}
+      </button>
+
+      <button
+        onClick={() => setShowFallback((v) => !v)}
+        className="w-full text-center text-[12px] text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        코드를 입력할 수 없나요?
+      </button>
+
+      {showFallback && (
+        <div className="space-y-2 border-t border-gray-100 pt-3">
+          <p className="text-[11px] text-gray-400 text-center">코드 없이 인계를 완료할 수 있어요</p>
+          {requestSent ? (
+            <div className="flex items-center justify-center gap-1.5 rounded-xl bg-green-50 py-2.5">
+              <CheckCircle2 size={13} className="text-green-500" />
+              <p className="text-[12px] font-semibold text-green-600">파트너에게 요청을 보냈어요</p>
+            </div>
+          ) : (
+            <button
+              onClick={handleRequest}
+              disabled={fallbackLoading}
+              className="w-full h-10 rounded-xl bg-gray-100 text-[13px] font-semibold text-gray-600 disabled:opacity-40 active:scale-[0.97] transition-all"
+            >
+              인계 완료 요청 보내기
+            </button>
+          )}
+          <button
+            onClick={handleApprove}
+            disabled={fallbackLoading}
+            className="w-full h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-500 disabled:opacity-40 active:scale-[0.97] transition-all"
+          >
+            파트너 요청 승인하기
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -356,16 +481,20 @@ function WaypointsCard({
 // ── 페이지 ────────────────────────────────────────────────────────────────────
 
 export default function MatchingDetailPage() {
-  const router       = useRouter();
-  const params       = useParams();
+  const router  = useRouter();
+  const params  = useParams();
 
-  const [mounted, setMounted]             = useState(false);
-  const [status, setStatus]               = useState(DUMMY_SEGMENT.status);
-  const [seg, setSeg]                     = useState(DUMMY_SEGMENT);
-  const [acting, setActing]               = useState(false);
-  const [declineInput, setDeclineInput]   = useState("");
+  const [mounted, setMounted]                   = useState(false);
+  const [status, setStatus]                     = useState(DUMMY_SEGMENT.status);
+  const [seg, setSeg]                           = useState(DUMMY_SEGMENT);
+  const [acting, setActing]                     = useState(false);
+  const [declineInput, setDeclineInput]         = useState("");
   const [showDeclineModal, setShowDeclineModal] = useState(false);
-  const [mapReady, setMapReady]           = useState(false);
+  const [mapReady, setMapReady]                 = useState(false);
+  const [departureLoading, setDepartureLoading] = useState(false);
+  const [waypointLoading, setWaypointLoading]   = useState(false);
+  const [arrivalLoading, setArrivalLoading]     = useState(false);
+  const [gpsWarning, setGpsWarning]             = useState(false);
 
   useEffect(() => {
     const segmentId = Number(params.segment_id);
@@ -389,14 +518,11 @@ export default function MatchingDetailPage() {
           notified_at: segment.notified_at || prev.notified_at,
           partner: segment.partner,
           kakao_openchat_url: segment.kakao_openchat_url,
-          ...(segment.chain_segments?.length
-            ? { chain_segments: segment.chain_segments }
-            : {}),
+          ...(segment.chain_segments?.length ? { chain_segments: segment.chain_segments } : {}),
         }));
         setStatus(segment.status);
       })
       .catch(() => {
-        // 백엔드 미연결 시 더미 폴백
         const fallback = segmentId === 42 ? DUMMY_CONFIRMED_SEGMENT : DUMMY_SEGMENT;
         setSeg(fallback);
         setStatus(fallback.status);
@@ -408,10 +534,15 @@ export default function MatchingDetailPage() {
     if (window.kakao?.maps) window.kakao.maps.load(() => setMapReady(true));
   }, []);
 
-  const isProposed  = status === "proposed" || status === "pending";
-  const isAccepted  = status === "accepted";
-  const isConfirmed = status === "confirmed" || status === "in_transit";
-  const isDeclined  = status === "declined";
+  const isProposed   = status === "proposed" || status === "pending";
+  const isAccepted   = status === "accepted";
+  const isConfirmed  = status === "confirmed";
+  const isInProgress = status === "in_progress" || status === "in_transit";
+  const isCompleted  = status === "completed";
+  const isDeclined   = status === "declined" || status === "no_show";
+
+  const chainSegs = (seg as typeof DUMMY_SEGMENT & { chain_segments?: { is_me: boolean }[] }).chain_segments ?? [];
+  const isLast = chainSegs.length === 0 || chainSegs[chainSegs.length - 1]?.is_me === true;
 
   const allWaypoints: LatLng[] = [
     ...seg.waypoints.train,
@@ -431,13 +562,70 @@ export default function MatchingDetailPage() {
     }
   }
 
+  async function getGPS() {
+    return new Promise<{ latitude: number | null; longitude: number | null }>((resolve) => {
+      if (!navigator.geolocation) { setGpsWarning(true); return resolve({ latitude: null, longitude: null }); }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        () => { setGpsWarning(true); resolve({ latitude: null, longitude: null }); },
+        { timeout: 5000 },
+      );
+    });
+  }
+
+  // API가 좌표를 반환하지 않으므로 dropoff 주소로 카카오맵 URL 생성
+  const kakaoMapUrl = seg.dropoff_location.address
+    ? `https://map.kakao.com/?q=${encodeURIComponent(seg.dropoff_location.address)}`
+    : (seg as typeof DUMMY_SEGMENT).kakao_map_url;
+
+  async function handleDeparture() {
+    setDepartureLoading(true);
+    setGpsWarning(false);
+    const { latitude, longitude } = await getGPS();
+    try {
+      await recordCheckpoint(segmentId, "departure", latitude, longitude);
+      setStatus("in_progress");
+    } catch {
+      setStatus("in_progress"); // 백엔드 미연결 테스트용
+    } finally {
+      setDepartureLoading(false);
+    }
+  }
+
+  async function handleWaypoint() {
+    setWaypointLoading(true);
+    setGpsWarning(false);
+    const { latitude, longitude } = await getGPS();
+    try {
+      await recordCheckpoint(segmentId, "waypoint", latitude, longitude);
+    } catch {
+      // ignore — 백엔드 미연결
+    } finally {
+      setWaypointLoading(false);
+    }
+  }
+
+  async function handleArrival() {
+    setArrivalLoading(true);
+    setGpsWarning(false);
+    const { latitude, longitude } = await getGPS();
+    try {
+      await recordCheckpoint(segmentId, "arrival", latitude, longitude);
+      setStatus("completed");
+    } catch {
+      setStatus("completed"); // 백엔드 미연결 테스트용
+    } finally {
+      setArrivalLoading(false);
+    }
+  }
+
   async function handleAccept() {
     setActing(true);
     try {
       await acceptMatching(segmentId);
       goBackToChat("accepted");
-    } catch (err) {
-      console.error("매칭 수락 실패", err);
+    } catch {
+      // ignore
     } finally {
       setActing(false);
     }
@@ -449,14 +637,17 @@ export default function MatchingDetailPage() {
       await declineMatching(segmentId, declineInput || "일정 변경");
       setShowDeclineModal(false);
       goBackToChat("declined");
-    } catch (err) {
-      console.error("매칭 거절 실패", err);
+    } catch {
+      // ignore
     } finally {
       setActing(false);
     }
   }
 
-  const pageTitle = isConfirmed ? "매칭 확정" : "매칭 제안";
+  const pageTitle =
+    isInProgress || isCompleted ? "봉사 진행 현황"
+    : isAccepted || isConfirmed ? "매칭 확정"
+    : "매칭 제안";
 
   if (!mounted) {
     return (
@@ -475,7 +666,7 @@ export default function MatchingDetailPage() {
         </header>
         <div className="mx-auto max-w-2xl px-4 py-4 space-y-3">
           {[140, 200, 100, 120].map((h, i) => (
-            <div key={i} className={`rounded-2xl bg-white border border-gray-100 animate-pulse`} style={{ height: h }} />
+            <div key={i} className="rounded-2xl bg-white border border-gray-100 animate-pulse" style={{ height: h }} />
           ))}
         </div>
       </main>
@@ -509,8 +700,10 @@ export default function MatchingDetailPage() {
       <div className="mx-auto max-w-2xl px-4 py-4 space-y-3 pb-32">
 
         {/* 상단 배너 */}
-        {isProposed  && <DeadlineBanner notifiedAt={seg.notified_at} />}
-        {isConfirmed && <ConfirmedBanner partnerName={seg.partner.name} />}
+        {isProposed                  && <DeadlineBanner notifiedAt={seg.notified_at} />}
+        {(isAccepted || isConfirmed) && <ConfirmedBanner partnerName={seg.partner.name} />}
+        {isInProgress                && <InProgressBanner />}
+        {isCompleted                 && <CompletedBanner animalName={seg.animal_name} />}
 
         {/* 동물 + 내 구간 */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
@@ -565,28 +758,136 @@ export default function MatchingDetailPage() {
           pickup={{ lat: seg.pickup_location.lat, lng: seg.pickup_location.lng, name: seg.pickup_location.name }}
           dropoff={{ lat: seg.dropoff_location.lat, lng: seg.dropoff_location.lng, name: seg.dropoff_location.name }}
           waypointList={allWaypoints}
-          kakaoMapUrl={seg.kakao_map_url}
+          kakaoMapUrl={kakaoMapUrl}
         />
 
-        {/* AI 매칭 이유 */}
-        <MatchingReasonBubble reason={seg.matching_reason} />
+        {/* 완료 — 릴레이 체인 요약 */}
+        {isCompleted && chainSegs.length > 0 && (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4">
+            <p className="text-[12px] font-bold text-[#EEA968] mb-3">릴레이 전체 구간</p>
+            <div className="space-y-2">
+              {chainSegs.map((cs, idx) => (
+                <div key={idx} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${cs.is_me ? "bg-[#FDF3EC]" : "bg-gray-50"}`}>
+                  <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${cs.is_me ? "bg-[#EEA968] text-white" : "bg-gray-200 text-gray-500"}`}>
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[13px] font-semibold truncate ${cs.is_me ? "text-[#C87941]" : "text-gray-700"}`}>
+                      {cs.is_me ? "나" : cs.volunteer}
+                    </p>
+                    <p className="text-[11px] text-gray-400 truncate">{cs.from} → {cs.to}</p>
+                  </div>
+                  {cs.is_me && (
+                    <CheckCircle2 size={15} className="text-[#EEA968] shrink-0" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* 인계 후보지 + 오픈채팅 버튼 */}
-        {/* TODO: waypoint DB 적재 및 백엔드 연결 완료 후 활성화
-        <WaypointsCard
-          waypoints={seg.waypoints}
-          confirmed={isConfirmed}
-          openchatUrl={seg.kakao_openchat_url}
-          partnerName={seg.partner.name}
-        /> */}
+        {/* AI 매칭 이유 */}
+        {!isInProgress && !isCompleted && <MatchingReasonBubble reason={seg.matching_reason} />}
+
+        {/* 오픈채팅 버튼 */}
+        {(isAccepted || isConfirmed || isInProgress) && seg.kakao_openchat_url && (
+          <a
+            href={seg.kakao_openchat_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between w-full rounded-2xl bg-gray-100 px-4 py-3.5 active:scale-[0.97] transition-transform"
+          >
+            <div className="flex items-center gap-2.5">
+              <MessageCircle size={18} className="text-gray-500 shrink-0" />
+              <div>
+                <p className="text-[13px] font-bold text-gray-700">카카오 오픈채팅 참여</p>
+                <p className="text-[11px] text-gray-400">{seg.partner.name}님과 인계 장소 협의</p>
+              </div>
+            </div>
+            <ExternalLink size={14} className="text-gray-400 shrink-0" />
+          </a>
+        )}
 
         {/* 인계 코드 */}
-        {isConfirmed && (
+        {(isAccepted || isConfirmed || isInProgress) && (
           seg.handover_code
             ? <HandoverCodeCard code={seg.handover_code} />
             : <HandoverCodeLockedCard scheduledDate={seg.scheduled_date} />
         )}
-        {!isConfirmed && seg.handover_code && <HandoverCodeCard code={seg.handover_code} />}
+
+        {/* 출발 기록 (수락 완료 / 확정 상태) */}
+        {(isAccepted || isConfirmed) && (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-3">
+            <p className="text-[13px] font-bold text-gray-700">체크포인트 기록</p>
+            {gpsWarning && (
+              <p className="text-[11px] text-amber-500 px-1">위치 정보 없이 기록됩니다</p>
+            )}
+            <button
+              onClick={handleDeparture}
+              disabled={departureLoading}
+              className="w-full h-12 rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 disabled:opacity-40 active:scale-[0.97] transition-all"
+            >
+              {departureLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  기록 중...
+                </span>
+              ) : "출발 기록"}
+            </button>
+          </div>
+        )}
+
+        {/* 거점 도착 기록 (이동 중, 중간 구간) */}
+        {isInProgress && !isLast && (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-3">
+            <p className="text-[13px] font-bold text-gray-700">거점 도착 기록</p>
+            {gpsWarning && (
+              <p className="text-[11px] text-amber-500 px-1">위치 정보 없이 기록됩니다</p>
+            )}
+            <button
+              onClick={handleWaypoint}
+              disabled={waypointLoading}
+              className="w-full h-11 rounded-2xl bg-blue-500 text-[14px] font-bold text-white shadow-md shadow-blue-500/20 disabled:opacity-40 active:scale-[0.97] transition-all"
+            >
+              {waypointLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  기록 중...
+                </span>
+              ) : "거점 도착 기록"}
+            </button>
+          </div>
+        )}
+
+        {/* 인계 코드 입력 (이동 중, 중간 구간) */}
+        {isInProgress && !isLast && (
+          <HandoverInputCard
+            segmentId={segmentId}
+            onComplete={() => setStatus("completed")}
+          />
+        )}
+
+        {/* 최종 도착 기록 (이동 중, 마지막 구간) */}
+        {isInProgress && isLast && (
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-3">
+            <p className="text-[13px] font-bold text-gray-700">체크포인트 기록</p>
+            {gpsWarning && (
+              <p className="text-[11px] text-amber-500 px-1">위치 정보 없이 기록됩니다</p>
+            )}
+            <button
+              onClick={handleArrival}
+              disabled={arrivalLoading}
+              className="w-full h-12 rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 disabled:opacity-40 active:scale-[0.97] transition-all"
+            >
+              {arrivalLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  기록 중...
+                </span>
+              ) : "최종 도착 기록"}
+            </button>
+          </div>
+        )}
 
         {/* 수락/거절 */}
         {isProposed && (
@@ -599,16 +900,6 @@ export default function MatchingDetailPage() {
               className="flex-1 rounded-2xl border border-gray-200 bg-white text-[15px] font-semibold text-gray-500 active:scale-[0.97] disabled:opacity-40 transition-all py-3.5">
               거절하기
             </button>
-          </div>
-        )}
-
-        {isAccepted && (
-          <div className="flex items-center gap-2.5 rounded-2xl bg-green-50 border border-green-100 px-4 py-3.5">
-            <CheckCircle2 size={18} className="text-green-500 shrink-0" />
-            <div>
-              <p className="text-[13px] font-bold text-green-700">수락 완료!</p>
-              <p className="text-[12px] text-green-600">보호소 최종 확인 후 매칭이 확정돼요.</p>
-            </div>
           </div>
         )}
 

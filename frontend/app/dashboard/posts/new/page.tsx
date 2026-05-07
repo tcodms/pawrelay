@@ -55,15 +55,26 @@ export default function NewPostPage() {
   const [scheduledDate, setScheduledDate] = useState("");
   const [animalName, setAnimalName]       = useState("");
   const [animalSize, setAnimalSize]       = useState<AnimalSize>("small");
-  const [animalNotes, setAnimalNotes]     = useState("");
+  const [animalNotes, setAnimalNotes]       = useState("");
+  const [openchatUrl, setOpenchatUrl]       = useState("");
 
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const [photoFile, setPhotoFile]       = useState<File | null>(null);
   const fileInputRef    = useRef<HTMLInputElement>(null);
   const photoPreviewRef = useRef<string>("");   // cleanup용 — 항상 최신 URL 추적
 
+  const [openchatUrlError, setOpenchatUrlError] = useState("");
   const [errors, setErrors]   = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+
+  const KAKAO_OPENCHAT_RE = /^https:\/\/open\.kakao\.com\/.+/;
+  function validateOpenchatUrl(val: string) {
+    if (val.trim() && !KAKAO_OPENCHAT_RE.test(val.trim())) {
+      setOpenchatUrlError("카카오 오픈채팅 링크 형식이 올바르지 않아요. (https://open.kakao.com/...)");
+    } else {
+      setOpenchatUrlError("");
+    }
+  }
 
   useEffect(() => {
     return () => { if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current); };
@@ -92,6 +103,7 @@ export default function NewPostPage() {
       setErrors(fieldErrors);
       return;
     }
+    if (openchatUrlError) return;
     setLoading(true);
     try {
       let photoUrl: string | undefined;
@@ -101,6 +113,7 @@ export default function NewPostPage() {
         origin,
         destination,
         scheduled_date: scheduledDate,
+        kakao_openchat_url: openchatUrl.trim() || undefined,
         animal_info: {
           name:      animalName,
           size:      animalSize,
@@ -212,6 +225,25 @@ export default function NewPostPage() {
                 className={errors.scheduled_date ? INPUT_ERROR : INPUT_NORMAL}
               />
               {errors.scheduled_date && <p role="alert" className="text-[11px] text-red-500">{errors.scheduled_date}</p>}
+            </div>
+          </div>
+
+          {/* 오픈채팅 */}
+          <div className="rounded-3xl bg-white border border-gray-100 shadow-sm px-5 py-5 flex flex-col gap-3">
+            <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">오픈채팅</p>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="openchat_url" className="text-[13px] font-semibold text-gray-600">
+                카카오 오픈채팅 링크 <span className="font-normal text-gray-400">(선택)</span>
+              </label>
+              <input
+                id="openchat_url"
+                value={openchatUrl}
+                onChange={(e) => { setOpenchatUrl(e.target.value); validateOpenchatUrl(e.target.value); }}
+                placeholder="https://open.kakao.com/o/..."
+                className={openchatUrlError ? INPUT_ERROR : INPUT_NORMAL}
+              />
+              {openchatUrlError && <p role="alert" className="text-[11px] text-red-500">{openchatUrlError}</p>}
+              <p className="text-[11px] text-gray-400">봉사자들이 인계 장소를 협의할 채팅방 링크를 미리 만들어 입력해 주세요.</p>
             </div>
           </div>
 

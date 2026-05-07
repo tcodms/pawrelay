@@ -30,6 +30,7 @@ export interface CreatePostData {
   origin: string;
   destination: string;
   scheduled_date: string;
+  kakao_openchat_url?: string;
   animal_info: {
     name: string;
     size: "small" | "medium" | "large";
