@@ -544,6 +544,9 @@ export default function MatchingDetailPage() {
   const chainSegs = (seg as typeof DUMMY_SEGMENT & { chain_segments?: { is_me: boolean }[] }).chain_segments ?? [];
   const isLast = chainSegs.length === 0 || chainSegs[chainSegs.length - 1]?.is_me === true;
 
+  const todayStr = new Date().toLocaleDateString("sv"); // YYYY-MM-DD (local time)
+  const isScheduledToday = seg.scheduled_date === todayStr;
+
   const allWaypoints: LatLng[] = [
     ...seg.waypoints.train,
     ...seg.waypoints.rest_area,
@@ -750,6 +753,28 @@ export default function MatchingDetailPage() {
               </div>
             </div>
           </div>
+          {(isAccepted || isConfirmed) && (
+            <div className="border-t border-gray-50 px-4 py-3.5 space-y-2">
+              {!isScheduledToday && (
+                <p className="text-[11px] text-gray-400">출발 당일({seg.scheduled_date})에 활성화돼요</p>
+              )}
+              {gpsWarning && (
+                <p className="text-[11px] text-amber-500">위치 정보 없이 기록됩니다</p>
+              )}
+              <button
+                onClick={handleDeparture}
+                disabled={departureLoading || !isScheduledToday}
+                className="w-full h-11 rounded-2xl bg-[#EEA968] text-[14px] font-bold text-white shadow-md shadow-[#EEA968]/20 disabled:opacity-40 active:scale-[0.97] transition-all"
+              >
+                {departureLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    기록 중...
+                  </span>
+                ) : "출발 기록"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 지도 */}
@@ -808,35 +833,6 @@ export default function MatchingDetailPage() {
           </a>
         )}
 
-        {/* 인계 코드 */}
-        {(isAccepted || isConfirmed || isInProgress) && (
-          seg.handover_code
-            ? <HandoverCodeCard code={seg.handover_code} />
-            : <HandoverCodeLockedCard scheduledDate={seg.scheduled_date} />
-        )}
-
-        {/* 출발 기록 (수락 완료 / 확정 상태) */}
-        {(isAccepted || isConfirmed) && (
-          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-3">
-            <p className="text-[13px] font-bold text-gray-700">체크포인트 기록</p>
-            {gpsWarning && (
-              <p className="text-[11px] text-amber-500 px-1">위치 정보 없이 기록됩니다</p>
-            )}
-            <button
-              onClick={handleDeparture}
-              disabled={departureLoading}
-              className="w-full h-12 rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 disabled:opacity-40 active:scale-[0.97] transition-all"
-            >
-              {departureLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  기록 중...
-                </span>
-              ) : "출발 기록"}
-            </button>
-          </div>
-        )}
-
         {/* 거점 도착 기록 (이동 중, 중간 구간) */}
         {isInProgress && !isLast && (
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-3">
@@ -859,14 +855,6 @@ export default function MatchingDetailPage() {
           </div>
         )}
 
-        {/* 인계 코드 입력 (이동 중, 중간 구간) */}
-        {isInProgress && !isLast && (
-          <HandoverInputCard
-            segmentId={segmentId}
-            onComplete={() => setStatus("completed")}
-          />
-        )}
-
         {/* 최종 도착 기록 (이동 중, 마지막 구간) */}
         {isInProgress && isLast && (
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-3">
@@ -887,6 +875,21 @@ export default function MatchingDetailPage() {
               ) : "최종 도착 기록"}
             </button>
           </div>
+        )}
+
+        {/* 인계 코드 */}
+        {(isAccepted || isConfirmed || isInProgress) && (
+          seg.handover_code
+            ? <HandoverCodeCard code={seg.handover_code} />
+            : <HandoverCodeLockedCard scheduledDate={seg.scheduled_date} />
+        )}
+
+        {/* 인계 코드 입력 (이동 중, 중간 구간) */}
+        {isInProgress && !isLast && (
+          <HandoverInputCard
+            segmentId={segmentId}
+            onComplete={() => setStatus("completed")}
+          />
         )}
 
         {/* 수락/거절 */}
