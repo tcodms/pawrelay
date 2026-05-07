@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, not_, or_, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -82,12 +82,19 @@ async def mark_stale_handovers_as_needs_verification(
 
 async def get_delayed_segments(db: AsyncSession, cutoff: datetime) -> list[RelaySegment]:
     """scheduled_time 기준 cutoff 이상 경과했으나 출발 체크포인트가 없는 세그먼트 조회."""
+    has_departure = select(Checkpoint.id).where(
+        and_(
+            Checkpoint.segment_id == RelaySegment.id,
+            Checkpoint.type == "departure",
+        )
+    ).exists()
     result = await db.execute(
         select(RelaySegment)
         .where(
             and_(
                 RelaySegment.status == "accepted",
                 RelaySegment.scheduled_time <= cutoff,
+                not_(has_departure),
             )
         )
         .options(selectinload(RelaySegment.volunteer))

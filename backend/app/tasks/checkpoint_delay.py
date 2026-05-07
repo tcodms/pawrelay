@@ -1,11 +1,12 @@
 import json
+import os
 from datetime import datetime, timedelta, timezone
 
 from app.core.database import AsyncSessionLocal
 from app.core.redis import redis_client
 from app.repositories import relay_repo
 
-_CHECKPOINT_DELAY_MINUTES = 30
+_CHECKPOINT_DELAY_MINUTES = int(os.environ.get("CHECKPOINT_DELAY_MINUTES", "30"))
 
 
 async def detect_checkpoint_delays() -> None:

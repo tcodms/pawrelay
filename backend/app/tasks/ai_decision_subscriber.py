@@ -14,41 +14,59 @@ logger = logging.getLogger(__name__)
 
 async def run_ai_decision_subscriber() -> None:
     pubsub = redis_client.pubsub()
-    await pubsub.subscribe("pawrelay:ai:decision")
-    logger.info("AI decision subscriber started")
-    async for message in pubsub.listen():
-        if message["type"] != "message":
-            continue
-        try:
-            payload = json.loads(message["data"])
-            await _handle_decision(payload)
-        except Exception:
-            logger.exception("Error handling AI decision: %s", message.get("data"))
+    try:
+        await pubsub.subscribe("pawrelay:ai:decision")
+        logger.info("AI decision subscriber started")
+        async for message in pubsub.listen():
+            if message["type"] != "message":
+                continue
+            try:
+                payload = json.loads(message["data"])
+                await _handle_decision(payload)
+            except Exception:
+                logger.exception("Error handling AI decision: %s", message.get("data"))
+    finally:
+        await pubsub.aclose()
 
 
 async def _handle_decision(payload: dict) -> None:
     decision = payload.get("decision")
-    segment_id = payload.get("segment_id")
-    chain_id = payload.get("chain_id")
-    volunteer_id = payload.get("volunteer_id")
-
     if decision == "no_show_candidate":
-        if segment_id is None or volunteer_id is None:
-            logger.warning("no_show_candidate: missing segment_id or volunteer_id")
-            return
-        async with AsyncSessionLocal() as db:
-            await _handle_no_show(db, segment_id, volunteer_id)
+        await _handle_no_show_decision(payload)
     elif decision == "chain_break_candidate":
-        if chain_id is None:
-            logger.warning("chain_break_candidate: missing chain_id")
-            return
-        async with AsyncSessionLocal() as db:
-            await _handle_chain_break(db, chain_id)
+        await _handle_chain_break_decision(payload)
     elif decision in ("shelter_recommend", "admin_alert", "rematch_candidate"):
-        # 알림 모듈 연결 후 처리 (6주차 #133)
-        logger.info("AI decision deferred: decision=%s segment_id=%s", decision, segment_id)
+        _handle_deferred_decision(payload)
     else:
         logger.warning("Unknown AI decision: %s", decision)
+
+
+async def _handle_no_show_decision(payload: dict) -> None:
+    segment_id = payload.get("segment_id")
+    volunteer_id = payload.get("volunteer_id")
+    if segment_id is None or volunteer_id is None:
+        logger.warning("no_show_candidate: missing segment_id or volunteer_id")
+        return
+    async with AsyncSessionLocal() as db:
+        await _handle_no_show(db, segment_id, volunteer_id)
+
+
+async def _handle_chain_break_decision(payload: dict) -> None:
+    chain_id = payload.get("chain_id")
+    if chain_id is None:
+        logger.warning("chain_break_candidate: missing chain_id")
+        return
+    async with AsyncSessionLocal() as db:
+        await _handle_chain_break(db, chain_id)
+
+
+def _handle_deferred_decision(payload: dict) -> None:
+    # 알림 모듈 연결 후 처리 (6주차 #133)
+    logger.info(
+        "AI decision deferred: decision=%s segment_id=%s",
+        payload.get("decision"),
+        payload.get("segment_id"),
+    )
 
 
 async def _handle_no_show(db, segment_id: int, volunteer_id: int) -> None:
@@ -60,6 +78,7 @@ async def _handle_no_show(db, segment_id: int, volunteer_id: int) -> None:
 
     user = await user_repo.get_user_by_id(db, volunteer_id)
     if user and user.account_status == "active":
+        # TODO: User 모델에 suspended_until 컬럼 추가 후 30일 자동 해제 처리 필요
         user.account_status = "suspended"
 
     await db.commit()

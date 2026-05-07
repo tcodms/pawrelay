@@ -1,11 +1,12 @@
 import json
+import os
 from datetime import datetime, timedelta, timezone
 
 from app.core.database import AsyncSessionLocal
 from app.core.redis import redis_client
 from app.repositories import relay_repo
 
-_HANDOVER_TIMEOUT_MINUTES = 30
+_HANDOVER_TIMEOUT_MINUTES = int(os.environ.get("NEEDS_VERIFY_GRACE_MINUTES", "30"))
 
 
 async def mark_stale_handovers() -> None:

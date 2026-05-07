@@ -1,8 +1,11 @@
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -200,7 +203,10 @@ async def _publish_sos_event(redis: Redis, segment, volunteer_name: str, body: S
         "latitude": body.latitude,
         "longitude": body.longitude,
     }
-    await redis.publish("pawrelay:sos", json.dumps(payload))
+    try:
+        await redis.publish("pawrelay:sos", json.dumps(payload, ensure_ascii=False))
+    except Exception:
+        logger.exception("SOS Redis publish 실패: segment_id=%s", segment.id)
 
 
 def _schedule_sos_alert(

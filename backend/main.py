@@ -24,6 +24,10 @@ async def lifespan(app: FastAPI):
     subscriber_task = asyncio.create_task(run_ai_decision_subscriber())
     yield
     subscriber_task.cancel()
+    try:
+        await subscriber_task
+    except asyncio.CancelledError:
+        pass
     scheduler.shutdown()
 
 
