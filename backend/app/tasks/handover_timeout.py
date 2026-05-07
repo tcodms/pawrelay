@@ -12,15 +12,17 @@ async def mark_stale_handovers() -> None:
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=_HANDOVER_TIMEOUT_MINUTES)
     async with AsyncSessionLocal() as db:
         segments = await relay_repo.mark_stale_handovers_as_needs_verification(db, cutoff)
-        if segments:
-            await db.commit()
-            for segment in segments:
-                await _publish_needs_verify(segment)
+        if not segments:
+            return
+        payloads = [_build_needs_verify_payload(s) for s in segments]
+        await db.commit()
+    for payload in payloads:
+        await redis_client.publish("pawrelay:needs_verify", json.dumps(payload))
 
 
-async def _publish_needs_verify(segment) -> None:
+def _build_needs_verify_payload(segment) -> dict:
     volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{segment.volunteer_id}"
-    payload = {
+    return {
         "segment_id": segment.id,
         "chain_id": segment.chain_id,
         "volunteer_id": segment.volunteer_id,
@@ -31,4 +33,3 @@ async def _publish_needs_verify(segment) -> None:
         "handover_code_given_at": segment.handover_code_given_at.isoformat() if segment.handover_code_given_at else None,
         "handover_code_received_at": segment.handover_code_received_at.isoformat() if segment.handover_code_received_at else None,
     }
-    await redis_client.publish("pawrelay:needs_verify", json.dumps(payload))

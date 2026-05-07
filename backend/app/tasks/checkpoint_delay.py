@@ -12,8 +12,15 @@ async def detect_checkpoint_delays() -> None:
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=_CHECKPOINT_DELAY_MINUTES)
     async with AsyncSessionLocal() as db:
         segments = await relay_repo.get_delayed_segments(db, cutoff)
-    for segment in segments:
-        await _publish_checkpoint_delay(segment)
+        for segment in segments:
+            already_notified = not await redis_client.set(
+                f"checkpoint_delay_notified:{segment.id}",
+                "1",
+                nx=True,
+                ex=3600,
+            )
+            if not already_notified:
+                await _publish_checkpoint_delay(segment)
 
 
 async def _publish_checkpoint_delay(segment) -> None:

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.volunteer import VolunteerHistory
@@ -181,13 +182,13 @@ async def report_sos(db: AsyncSession, redis: Redis, user_id: int, body: SosIn) 
 
 
 async def _record_volunteer_history(db: AsyncSession, segment) -> None:
-    history = VolunteerHistory(
+    stmt = pg_insert(VolunteerHistory).values(
         volunteer_id=segment.volunteer_id,
         segment_id=segment.id,
         distance_km=0,
         completed_at=datetime.now(timezone.utc),
-    )
-    db.add(history)
+    ).on_conflict_do_nothing(index_elements=["segment_id"])
+    await db.execute(stmt)
 
 
 async def _publish_sos_event(redis: Redis, segment, volunteer_name: str, body: SosIn) -> None:

@@ -2,8 +2,12 @@ import json
 import logging
 from datetime import datetime, timezone
 
+from sqlalchemy import select
+
 from app.core.database import AsyncSessionLocal
 from app.core.redis import redis_client
+from app.models.relay import RelayChain
+from app.repositories import matching_repo, relay_repo, user_repo
 
 logger = logging.getLogger(__name__)
 
@@ -28,21 +32,26 @@ async def _handle_decision(payload: dict) -> None:
     chain_id = payload.get("chain_id")
     volunteer_id = payload.get("volunteer_id")
 
-    async with AsyncSessionLocal() as db:
-        if decision == "no_show_candidate":
+    if decision == "no_show_candidate":
+        if segment_id is None or volunteer_id is None:
+            logger.warning("no_show_candidate: missing segment_id or volunteer_id")
+            return
+        async with AsyncSessionLocal() as db:
             await _handle_no_show(db, segment_id, volunteer_id)
-        elif decision == "chain_break_candidate":
+    elif decision == "chain_break_candidate":
+        if chain_id is None:
+            logger.warning("chain_break_candidate: missing chain_id")
+            return
+        async with AsyncSessionLocal() as db:
             await _handle_chain_break(db, chain_id)
-        elif decision in ("shelter_recommend", "admin_alert", "rematch_candidate"):
-            # 알림 모듈 연결 후 처리 (6주차 #133)
-            logger.info("AI decision deferred: decision=%s segment_id=%s", decision, segment_id)
-        else:
-            logger.warning("Unknown AI decision: %s", decision)
+    elif decision in ("shelter_recommend", "admin_alert", "rematch_candidate"):
+        # 알림 모듈 연결 후 처리 (6주차 #133)
+        logger.info("AI decision deferred: decision=%s segment_id=%s", decision, segment_id)
+    else:
+        logger.warning("Unknown AI decision: %s", decision)
 
 
 async def _handle_no_show(db, segment_id: int, volunteer_id: int) -> None:
-    from app.repositories import relay_repo, user_repo
-
     segment = await relay_repo.get_segment(db, segment_id)
     if not segment or segment.status in ("no_show", "completed"):
         return
@@ -57,11 +66,6 @@ async def _handle_no_show(db, segment_id: int, volunteer_id: int) -> None:
 
 
 async def _handle_chain_break(db, chain_id: int) -> None:
-    from sqlalchemy import select
-
-    from app.models.relay import RelayChain
-    from app.repositories import matching_repo
-
     result = await db.execute(select(RelayChain).where(RelayChain.id == chain_id))
     chain = result.scalars().first()
     if not chain or chain.status == "broken":
