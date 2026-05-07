@@ -656,6 +656,33 @@ RelayChain.status.in_(["active", "completed"]),
 
 ---
 
+## 24. `GET /matching/segments/{segment_id}` waypoints에 `id` 필드 추가 요청
+
+**요청:** 기존 응답 필드 확장 (item 17의 waypoints 구조에 추가)
+
+**필요 이유:**
+`PATCH /relay/segments/{id}/handover-location` 호출 시 `{ "waypoint_id": 5 }` 형태로 ID를 보내야 합니다.
+현재 waypoints 객체에 `id`가 없어 FE에서 더미 ID를 임시 사용 중입니다.
+
+**요청 응답 (waypoint 객체에 id 추가):**
+```json
+"waypoints": {
+  "train": [
+    { "id": 1, "name": "천안아산역", "address": "...", "distance_km": 0.3, "lat": 36.7951, "lng": 127.1046 }
+  ],
+  "rest_area": [
+    { "id": 3, "name": "목천휴게소", "address": "...", "distance_km": 8.5, "lat": 36.7150, "lng": 127.1456 }
+  ]
+}
+```
+
+> `id`는 `waypoints` 테이블의 PK입니다.
+> item 17과 함께 처리해 주세요.
+
+**관련 파일:** `frontend/app/volunteer/matching/[segment_id]/page.tsx`, `frontend/lib/api/relay.ts`
+
+---
+
 ## 참고
 
 - 1·2·3·4번은 api-spec.md에 이미 반영되어 있습니다. FE에서 경로만 맞추면 바로 연동 가능합니다.

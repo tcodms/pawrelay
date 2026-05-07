@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import MatchingReasonBubble from "@/components/MatchingReasonBubble";
 import { acceptMatching, declineMatching, getSegment } from "@/lib/api/matching";
-import { recordCheckpoint, verifyHandover, requestHandover, approveHandover } from "@/lib/api/relay";
+import { recordCheckpoint, verifyHandover, requestHandover, approveHandover, changeHandoverLocation } from "@/lib/api/relay";
 import { ApiError } from "@/lib/api";
 
 declare global {
@@ -40,11 +40,11 @@ const DUMMY_SEGMENT = {
   kakao_map_url: "https://map.kakao.com/link/from/광주광역시 북구,35.1796,126.9112/to/천안아산역,36.7951,127.1046",
   waypoints: {
     train: [
-      { name: "천안아산역", address: "충남 아산시 배방읍 장재리", distance_km: 0.3, lat: 36.7951, lng: 127.1046 },
-      { name: "천안역", address: "충남 천안시 동남구 대흥동", distance_km: 4.2, lat: 36.8073, lng: 127.1520 },
+      { id: 1, name: "천안아산역", address: "충남 아산시 배방읍 장재리", distance_km: 0.3, lat: 36.7951, lng: 127.1046 },
+      { id: 2, name: "천안역", address: "충남 천안시 동남구 대흥동", distance_km: 4.2, lat: 36.8073, lng: 127.1520 },
     ],
     rest_area: [
-      { name: "목천휴게소", address: "충남 천안시 동남구 목천읍", distance_km: 8.5, lat: 36.7150, lng: 127.1456 },
+      { id: 3, name: "목천휴게소", address: "충남 천안시 동남구 목천읍", distance_km: 8.5, lat: 36.7150, lng: 127.1456 },
     ],
   },
   chain_segments: [
@@ -326,9 +326,11 @@ function HandoverCodeLockedCard({ scheduledDate }: { scheduledDate: string }) {
 function HandoverInputCard({
   segmentId,
   onComplete,
+  isLast = false,
 }: {
   segmentId: number;
   onComplete: () => void;
+  isLast?: boolean;
 }) {
   const [digits, setDigits]           = useState(["", "", "", "", "", ""]);
   const [verifyLoading, setVerifyLoading] = useState(false);
@@ -451,29 +453,112 @@ function HandoverInputCard({
       {showFallback && (
         <div className="space-y-2 border-t border-gray-100 pt-3">
           <p className="text-[11px] text-gray-400 text-center">코드 없이 인계를 완료할 수 있어요</p>
-          {requestSent ? (
-            <div className="flex items-center justify-center gap-1.5 rounded-xl bg-green-50 py-2.5">
-              <CheckCircle2 size={13} className="text-green-500" />
-              <p className="text-[12px] font-semibold text-green-600">파트너에게 요청을 보냈어요</p>
-            </div>
-          ) : (
+          {!isLast && (
+            requestSent ? (
+              <div className="flex items-center justify-center gap-1.5 rounded-xl bg-green-50 py-2.5">
+                <CheckCircle2 size={13} className="text-green-500" />
+                <p className="text-[12px] font-semibold text-green-600">파트너에게 요청을 보냈어요</p>
+              </div>
+            ) : (
+              <button
+                onClick={handleRequest}
+                disabled={fallbackLoading}
+                className="w-full h-10 rounded-xl bg-gray-100 text-[13px] font-semibold text-gray-600 disabled:opacity-40 active:scale-[0.97] transition-all"
+              >
+                인계 완료 요청 보내기
+              </button>
+            )
+          )}
+          {isLast && (
             <button
-              onClick={handleRequest}
+              onClick={handleApprove}
               disabled={fallbackLoading}
-              className="w-full h-10 rounded-xl bg-gray-100 text-[13px] font-semibold text-gray-600 disabled:opacity-40 active:scale-[0.97] transition-all"
+              className="w-full h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-500 disabled:opacity-40 active:scale-[0.97] transition-all"
             >
-              인계 완료 요청 보내기
+              파트너 요청 승인하기
             </button>
           )}
-          <button
-            onClick={handleApprove}
-            disabled={fallbackLoading}
-            className="w-full h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-500 disabled:opacity-40 active:scale-[0.97] transition-all"
-          >
-            파트너 요청 승인하기
-          </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── 인계 위치 변경 모달 ───────────────────────────────────────────────────────
+
+type WaypointEntry = { id: number; name: string; address: string; distance_km: number; lat: number; lng: number };
+
+function HandoverLocationModal({
+  waypoints,
+  currentName,
+  onSelect,
+  onClose,
+  loading,
+}: {
+  waypoints: { train: WaypointEntry[]; rest_area: WaypointEntry[] };
+  currentName: string;
+  onSelect: (id: number, name: string, address: string) => void;
+  onClose: () => void;
+  loading: boolean;
+}) {
+  const sections: { key: keyof typeof waypoints; label: string; Icon: typeof Train }[] = [
+    { key: "train",     label: "기차역", Icon: Train  },
+    { key: "rest_area", label: "휴게소", Icon: Coffee },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative w-full bg-white rounded-t-3xl px-5 pt-5 max-w-2xl mx-auto"
+        style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}>
+        <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4" />
+        <p className="text-[16px] font-bold text-gray-800 mb-1">인계 장소 변경</p>
+        <p className="text-[12px] text-gray-400 mb-4">현재: <span className="font-semibold text-gray-600">{currentName}</span></p>
+        <div className="space-y-4 max-h-[55vh] overflow-y-auto pb-2">
+          {sections.map(({ key, label, Icon }) => {
+            const items = waypoints[key];
+            if (!items.length) return null;
+            return (
+              <div key={key}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Icon size={12} className="text-gray-400" />
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
+                </div>
+                <div className="space-y-1.5">
+                  {items.map((wp) => {
+                    const isSelected = currentName === wp.name;
+                    return (
+                      <button
+                        key={wp.id}
+                        onClick={() => !isSelected && onSelect(wp.id, wp.name, wp.address)}
+                        disabled={loading || isSelected}
+                        className={`w-full flex items-center justify-between rounded-2xl px-3.5 py-3 text-left transition-all active:scale-[0.98] ${
+                          isSelected
+                            ? "bg-[#FDF3EC] border-2 border-[#EEA968]"
+                            : "bg-gray-50 border border-gray-100 hover:border-gray-200"
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <p className={`text-[13px] font-semibold truncate ${isSelected ? "text-[#C87941]" : "text-gray-700"}`}>
+                            {wp.name}
+                          </p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">{wp.distance_km}km · {wp.address}</p>
+                        </div>
+                        {isSelected
+                          ? <CheckCircle2 size={15} className="text-[#EEA968] shrink-0 ml-2" />
+                          : loading
+                            ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent shrink-0 ml-2" />
+                            : null
+                        }
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -495,6 +580,8 @@ export default function MatchingDetailPage() {
   const [waypointLoading, setWaypointLoading]   = useState(false);
   const [arrivalLoading, setArrivalLoading]     = useState(false);
   const [gpsWarning, setGpsWarning]             = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationChanging, setLocationChanging]   = useState(false);
 
   useEffect(() => {
     const segmentId = Number(params.segment_id);
@@ -647,6 +734,20 @@ export default function MatchingDetailPage() {
     }
   }
 
+  async function handleChangeLocation(waypointId: number, name: string, address: string) {
+    setLocationChanging(true);
+    try {
+      const res = await changeHandoverLocation(segmentId, waypointId);
+      setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, ...res.dropoff_location } }));
+    } catch {
+      // 백엔드 미연결 시 로컬 업데이트로 대체
+      setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, name, address } }));
+    } finally {
+      setLocationChanging(false);
+      setShowLocationModal(false);
+    }
+  }
+
   const pageTitle =
     isInProgress || isCompleted ? "봉사 진행 현황"
     : isAccepted || isConfirmed ? "매칭 확정"
@@ -738,7 +839,17 @@ export default function MatchingDetailPage() {
                   <p className="text-[11px] text-gray-400">{seg.pickup_location.address}</p>
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-gray-800">{seg.dropoff_location.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13px] font-semibold text-gray-800">{seg.dropoff_location.name}</p>
+                    {(isAccepted || isConfirmed || isInProgress) && !isLast && (
+                      <button
+                        onClick={() => setShowLocationModal(true)}
+                        className="text-[10px] font-semibold text-[#C87941] bg-[#FDF3EC] px-2 py-0.5 rounded-full shrink-0"
+                      >
+                        변경
+                      </button>
+                    )}
+                  </div>
                   <p className="text-[11px] text-gray-400">{seg.dropoff_location.address}</p>
                 </div>
               </div>
@@ -774,6 +885,58 @@ export default function MatchingDetailPage() {
                 ) : "출발 기록"}
               </button>
             </div>
+          )}
+          {isInProgress && !isLast && (
+            <div className="border-t border-gray-50 px-4 py-3.5 space-y-2">
+              {gpsWarning && (
+                <p className="text-[11px] text-amber-500">위치 정보 없이 기록됩니다</p>
+              )}
+              <button
+                onClick={handleWaypoint}
+                disabled={waypointLoading}
+                className="w-full h-11 rounded-2xl bg-[#EEA968] text-[14px] font-bold text-white shadow-md shadow-[#EEA968]/20 disabled:opacity-40 active:scale-[0.97] transition-all"
+              >
+                {waypointLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    기록 중...
+                  </span>
+                ) : "인계장소 도착 기록"}
+              </button>
+            </div>
+          )}
+          {isInProgress && isLast && (
+            <div className="border-t border-gray-50 px-4 py-3.5 space-y-2">
+              {gpsWarning && (
+                <p className="text-[11px] text-amber-500">위치 정보 없이 기록됩니다</p>
+              )}
+              <button
+                onClick={handleArrival}
+                disabled={arrivalLoading}
+                className="w-full h-11 rounded-2xl bg-[#EEA968] text-[14px] font-bold text-white shadow-md shadow-[#EEA968]/20 disabled:opacity-40 active:scale-[0.97] transition-all"
+              >
+                {arrivalLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    기록 중...
+                  </span>
+                ) : "최종 도착 기록"}
+              </button>
+            </div>
+          )}
+          {(isAccepted || isConfirmed || isInProgress) && seg.kakao_openchat_url && (
+            <a
+              href={seg.kakao_openchat_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between border-t border-gray-50 px-4 py-3.5 active:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <MessageCircle size={16} className="text-gray-400 shrink-0" />
+                <p className="text-[13px] font-semibold text-gray-700">카카오 오픈채팅 참여</p>
+              </div>
+              <ExternalLink size={13} className="text-gray-400 shrink-0" />
+            </a>
           )}
         </div>
 
@@ -814,69 +977,6 @@ export default function MatchingDetailPage() {
         {/* AI 매칭 이유 */}
         {!isInProgress && !isCompleted && <MatchingReasonBubble reason={seg.matching_reason} />}
 
-        {/* 오픈채팅 버튼 */}
-        {(isAccepted || isConfirmed || isInProgress) && seg.kakao_openchat_url && (
-          <a
-            href={seg.kakao_openchat_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between w-full rounded-2xl bg-gray-100 px-4 py-3.5 active:scale-[0.97] transition-transform"
-          >
-            <div className="flex items-center gap-2.5">
-              <MessageCircle size={18} className="text-gray-500 shrink-0" />
-              <div>
-                <p className="text-[13px] font-bold text-gray-700">카카오 오픈채팅 참여</p>
-                <p className="text-[11px] text-gray-400">{seg.partner.name}님과 인계 장소 협의</p>
-              </div>
-            </div>
-            <ExternalLink size={14} className="text-gray-400 shrink-0" />
-          </a>
-        )}
-
-        {/* 거점 도착 기록 (이동 중, 중간 구간) */}
-        {isInProgress && !isLast && (
-          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-3">
-            <p className="text-[13px] font-bold text-gray-700">거점 도착 기록</p>
-            {gpsWarning && (
-              <p className="text-[11px] text-amber-500 px-1">위치 정보 없이 기록됩니다</p>
-            )}
-            <button
-              onClick={handleWaypoint}
-              disabled={waypointLoading}
-              className="w-full h-11 rounded-2xl bg-blue-500 text-[14px] font-bold text-white shadow-md shadow-blue-500/20 disabled:opacity-40 active:scale-[0.97] transition-all"
-            >
-              {waypointLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  기록 중...
-                </span>
-              ) : "거점 도착 기록"}
-            </button>
-          </div>
-        )}
-
-        {/* 최종 도착 기록 (이동 중, 마지막 구간) */}
-        {isInProgress && isLast && (
-          <div className="rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-4 space-y-3">
-            <p className="text-[13px] font-bold text-gray-700">체크포인트 기록</p>
-            {gpsWarning && (
-              <p className="text-[11px] text-amber-500 px-1">위치 정보 없이 기록됩니다</p>
-            )}
-            <button
-              onClick={handleArrival}
-              disabled={arrivalLoading}
-              className="w-full h-12 rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 disabled:opacity-40 active:scale-[0.97] transition-all"
-            >
-              {arrivalLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  기록 중...
-                </span>
-              ) : "최종 도착 기록"}
-            </button>
-          </div>
-        )}
-
         {/* 인계 코드 */}
         {(isAccepted || isConfirmed || isInProgress) && (
           seg.handover_code
@@ -884,11 +984,12 @@ export default function MatchingDetailPage() {
             : <HandoverCodeLockedCard scheduledDate={seg.scheduled_date} />
         )}
 
-        {/* 인계 코드 입력 (이동 중, 중간 구간) */}
-        {isInProgress && !isLast && (
+        {/* 인계 코드 입력 */}
+        {isInProgress && (
           <HandoverInputCard
             segmentId={segmentId}
             onComplete={() => setStatus("completed")}
+            isLast={isLast}
           />
         )}
 
@@ -941,6 +1042,17 @@ export default function MatchingDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 인계 위치 변경 모달 */}
+      {showLocationModal && (
+        <HandoverLocationModal
+          waypoints={seg.waypoints}
+          currentName={seg.dropoff_location.name}
+          onSelect={handleChangeLocation}
+          onClose={() => setShowLocationModal(false)}
+          loading={locationChanging}
+        />
       )}
 
     </main>
