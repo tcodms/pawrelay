@@ -260,7 +260,7 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
     segment.accepted_at = datetime.now(tz=timezone.utc)
     chain = segment.chain
     scheduled_date = chain.transport_post.scheduled_date if chain and chain.transport_post else None
-    await matching_repo.mark_schedules_matched(db, [volunteer_id], scheduled_date)
+    await matching_repo.mark_schedules_matched(db, volunteer_id, scheduled_date, chain.transport_post_id)
 
     # 체인 내 전원 수락 시 post → in_transit
     all_accepted = all(s.status == "accepted" for s in chain.segments)
