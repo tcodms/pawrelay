@@ -24,6 +24,7 @@ const SCHEDULE_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
 const SEGMENT_STATUS: Record<string, { label: string; cls: string }> = {
   pending:     { label: "수락 대기 중", cls: "bg-orange-50 text-orange-500" },
   accepted:    { label: "수락 완료",    cls: "bg-green-50 text-green-600" },
+  confirmed:   { label: "매칭 확정",    cls: "bg-green-50 text-green-600" },
   in_progress: { label: "이동 중",      cls: "bg-blue-50 text-blue-600" },
   completed:   { label: "완료",         cls: "bg-gray-100 text-gray-500" },
 };

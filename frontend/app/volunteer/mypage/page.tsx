@@ -22,6 +22,7 @@ export default function MyPage() {
   useEffect(() => {
     request<Me>("/auth/me")
       .then(setMe)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

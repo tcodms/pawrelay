@@ -63,8 +63,18 @@ export default function NewPostPage() {
   const fileInputRef    = useRef<HTMLInputElement>(null);
   const photoPreviewRef = useRef<string>("");   // cleanup용 — 항상 최신 URL 추적
 
+  const [openchatUrlError, setOpenchatUrlError] = useState("");
   const [errors, setErrors]   = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+
+  const KAKAO_OPENCHAT_RE = /^https:\/\/open\.kakao\.com\/.+/;
+  function validateOpenchatUrl(val: string) {
+    if (val.trim() && !KAKAO_OPENCHAT_RE.test(val.trim())) {
+      setOpenchatUrlError("카카오 오픈채팅 링크 형식이 올바르지 않아요. (https://open.kakao.com/...)");
+    } else {
+      setOpenchatUrlError("");
+    }
+  }
 
   useEffect(() => {
     return () => { if (photoPreviewRef.current) URL.revokeObjectURL(photoPreviewRef.current); };
@@ -93,6 +103,7 @@ export default function NewPostPage() {
       setErrors(fieldErrors);
       return;
     }
+    if (openchatUrlError) return;
     setLoading(true);
     try {
       let photoUrl: string | undefined;
@@ -227,10 +238,11 @@ export default function NewPostPage() {
               <input
                 id="openchat_url"
                 value={openchatUrl}
-                onChange={(e) => setOpenchatUrl(e.target.value)}
+                onChange={(e) => { setOpenchatUrl(e.target.value); validateOpenchatUrl(e.target.value); }}
                 placeholder="https://open.kakao.com/o/..."
-                className={INPUT_NORMAL}
+                className={openchatUrlError ? INPUT_ERROR : INPUT_NORMAL}
               />
+              {openchatUrlError && <p role="alert" className="text-[11px] text-red-500">{openchatUrlError}</p>}
               <p className="text-[11px] text-gray-400">봉사자들이 인계 장소를 협의할 채팅방 링크를 미리 만들어 입력해 주세요.</p>
             </div>
           </div>

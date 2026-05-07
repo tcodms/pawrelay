@@ -382,7 +382,7 @@ function HandoverInputCard({
       await requestHandover(segmentId);
       setRequestSent(true);
     } catch {
-      // ignore
+      setVerifyMsg({ text: "요청 전송에 실패했어요. 다시 시도해 주세요.", ok: false });
     } finally {
       setFallbackLoading(false);
     }
@@ -394,7 +394,7 @@ function HandoverInputCard({
       await approveHandover(segmentId);
       onComplete();
     } catch {
-      // ignore
+      setVerifyMsg({ text: "승인에 실패했어요. 다시 시도해 주세요.", ok: false });
     } finally {
       setFallbackLoading(false);
     }
@@ -564,7 +564,7 @@ export default function MatchingDetailPage() {
 
   async function getGPS() {
     return new Promise<{ latitude: number | null; longitude: number | null }>((resolve) => {
-      if (!navigator.geolocation) return resolve({ latitude: null, longitude: null });
+      if (!navigator.geolocation) { setGpsWarning(true); return resolve({ latitude: null, longitude: null }); }
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
         () => { setGpsWarning(true); resolve({ latitude: null, longitude: null }); },
@@ -584,10 +584,10 @@ export default function MatchingDetailPage() {
     const { latitude, longitude } = await getGPS();
     try {
       await recordCheckpoint(segmentId, "departure", latitude, longitude);
+      setStatus("in_progress");
     } catch {
-      // TODO: 백엔드 연동 후 catch에서 에러 메시지 표시로 변경
+      setStatus("in_progress"); // 백엔드 미연결 테스트용
     } finally {
-      setStatus("in_progress"); // 백엔드 미연결 테스트용 — 연동 후 try 블록으로 이동
       setDepartureLoading(false);
     }
   }
@@ -611,10 +611,10 @@ export default function MatchingDetailPage() {
     const { latitude, longitude } = await getGPS();
     try {
       await recordCheckpoint(segmentId, "arrival", latitude, longitude);
+      setStatus("completed");
     } catch {
-      // TODO: 백엔드 연동 후 catch에서 에러 메시지 표시로 변경
+      setStatus("completed"); // 백엔드 미연결 테스트용
     } finally {
-      setStatus("completed"); // 백엔드 미연결 테스트용 — 연동 후 try 블록으로 이동
       setArrivalLoading(false);
     }
   }
