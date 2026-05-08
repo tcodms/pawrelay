@@ -683,6 +683,29 @@ RelayChain.status.in_(["active", "completed"]),
 
 ---
 
+## 25. `GET /matching/segments/{segment_id}` 응답에 `shelter_phone` 필드 추가 요청
+
+**요청:** 기존 응답 필드 확장
+
+**필요 이유:**
+`in_progress` 화면의 "보호소 전화하기" 버튼(`tel:{shelter_phone}`)에서 보호소 전화번호가 필요합니다.
+현재 응답에는 `partner.phone`(파트너 봉사자 번호)만 있고 보호소 전화번호는 없습니다.
+FE에서 현재 더미값(`"062-000-0000"`)으로 임시 처리 중입니다.
+
+**요청 응답 (필드 추가):**
+```json
+{
+  "segment": {
+    "shelter_phone": "062-000-0000",
+    ...
+  }
+}
+```
+
+**관련 파일:** `frontend/app/volunteer/matching/[segment_id]/page.tsx`
+
+---
+
 ## 참고
 
 - 1·2·3·4번은 api-spec.md에 이미 반영되어 있습니다. FE에서 경로만 맞추면 바로 연동 가능합니다.
