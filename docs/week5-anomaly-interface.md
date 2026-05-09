@@ -10,6 +10,9 @@
 - `pawrelay:sos`
 - `pawrelay:needs_verify`
 - `pawrelay:checkpoint_delay`
+- `pawrelay:backup_exhausted`
+- `pawrelay:ping_no_response`
+- `pawrelay:pre_departure_no_show`
 
 ## Output Channel
 
@@ -62,6 +65,47 @@
 }
 ```
 
+### `pawrelay:backup_exhausted`
+
+```json
+{
+  "segment_id": 42,
+  "chain_id": 7,
+  "volunteer_id": null,
+  "activity_regions": ["충청남도", "대전광역시"]
+}
+```
+
+### `pawrelay:ping_no_response`
+
+```json
+{
+  "segment_id": 42,
+  "chain_id": 7,
+  "volunteer_id": 101,
+  "volunteer_name": "홍길동",
+  "scheduled_time": "2026-05-07T14:00:00+09:00",
+  "ping_sent_at": "2026-05-07T12:00:00+09:00",
+  "ping_deadline_at": "2026-05-07T12:30:00+09:00",
+  "activity_regions": ["충청남도"]
+}
+```
+
+### `pawrelay:pre_departure_no_show`
+
+```json
+{
+  "segment_id": 42,
+  "chain_id": 7,
+  "volunteer_id": 101,
+  "volunteer_name": "홍길동",
+  "scheduled_time": "2026-05-07T14:00:00+09:00",
+  "ping_sent_at": "2026-05-07T12:00:00+09:00",
+  "ping_responded_at": null,
+  "activity_regions": ["충청남도"]
+}
+```
+
 ## Output Payload
 
 ```json
@@ -73,6 +117,8 @@
   "decision": "chain_break_candidate",
   "reason": "scheduled_time 기준 35분 경과했고 checkpoint 기록이 없습니다.",
   "recommended_shelters": [],
+  "requires_chain_break": true,
+  "penalty_days": null,
   "detected_at": "2026-05-07T14:35:00+09:00",
   "version": 1
 }
@@ -85,6 +131,7 @@
 - `no_show_candidate`
 - `chain_break_candidate`
 - `reematch_candidate`
+- `penalty_candidate`
 
 ## Config Assumptions
 

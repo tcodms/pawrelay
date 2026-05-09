@@ -12,7 +12,7 @@ from ai.anomaly.worker import handle_message
 
 
 def test_input_channels_count():
-    assert len(INPUT_CHANNELS) == 3
+    assert len(INPUT_CHANNELS) == 6
 
 
 def test_decode_message_ignores_subscribe_event():
@@ -59,7 +59,7 @@ def _decision():
         chain_id=7,
         volunteer_id=101,
         decision="chain_break_candidate",
-        reason="scheduled_time 기준 35분 경과",
+        reason="Delay exceeded threshold.",
         detected_at="2026-05-07T14:35:00+09:00",
     )
 
