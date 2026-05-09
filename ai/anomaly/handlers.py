@@ -1,6 +1,8 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from ai.anomaly.regions import normalize_region
+from ai.anomaly.regions import normalize_regions
 from ai.anomaly.schemas import AiDecisionEvent
 from ai.anomaly.schemas import BackupExhaustedEvent
 from ai.anomaly.schemas import CheckpointDelayEvent
@@ -8,6 +10,9 @@ from ai.anomaly.schemas import NeedsVerifyEvent
 from ai.anomaly.schemas import PingNoResponseEvent
 from ai.anomaly.schemas import PreDepartureNoShowEvent
 from ai.anomaly.schemas import SosEvent
+from ai.anomaly.settings import CHAIN_BREAK_DELAY_MINUTES
+from ai.anomaly.settings import NO_SHOW_PENALTY_DAYS
+from ai.anomaly.settings import RE_MATCH_DELAY_MINUTES
 from ai.anomaly.shelter_recommender import recommend_shelters
 
 
@@ -21,8 +26,8 @@ def _chain_id(event):
 
 def _regions(event):
     if hasattr(event, "activity_regions"):
-        return event.activity_regions
-    return [event.activity_region]
+        return normalize_regions(event.activity_regions)
+    return [normalize_region(event.activity_region)]
 
 
 def _decision(event_type, event, decision, reason, shelters, **extra):
@@ -53,18 +58,20 @@ def _needs_verify_decision(event):
 
 def _needs_verify_reason(event):
     if _is_one_sided(event):
-        return "Only one side entered the handover code, so this is a no-show candidate."
-    return "The handover code state is inconsistent and needs admin review."
+        return "\uc778\uacc4 \ucf54\ub4dc\uac00 \ud55c\ucabd\uc5d0\uc11c\ub9cc \uc785\ub825\ub418\uc5b4 \ub178\uc1fc \ud6c4\ubcf4\ub85c \ubd84\ub958\ud588\uc2b5\ub2c8\ub2e4."
+    return "\uc778\uacc4 \ucf54\ub4dc \uc0c1\ud0dc\uac00 \ube44\uc815\uc0c1\uc774\ub77c \uad00\ub9ac\uc790 \ud655\uc778\uc774 \ud544\uc694\ud569\ub2c8\ub2e4."
 
 
 def _delay_decision(delay_minutes):
-    return "chain_break_candidate" if delay_minutes >= 60 else "reematch_candidate"
+    if delay_minutes >= CHAIN_BREAK_DELAY_MINUTES:
+        return "chain_break_candidate"
+    return "reematch_candidate"
 
 
 def _delay_reason(event):
-    if event.delay_minutes >= 60:
-        return "Delay is 60 minutes or more, so a chain break candidate is returned."
-    return "Delay is 30 minutes or more, so a re-match candidate is returned."
+    if event.delay_minutes >= CHAIN_BREAK_DELAY_MINUTES:
+        return f"\uc9c0\uc5f0 \uc2dc\uac04\uc774 {CHAIN_BREAK_DELAY_MINUTES}\ubd84 \uc774\uc0c1\uc774\ub77c \uccb4\uc778 \ud574\uc81c \ud6c4\ubcf4\ub85c \ubd84\ub958\ud588\uc2b5\ub2c8\ub2e4."
+    return f"\uc9c0\uc5f0 \uc2dc\uac04\uc774 {RE_MATCH_DELAY_MINUTES}\ubd84 \uc774\uc0c1\uc774\ub77c \uc7ac\ub9e4\uce6d \ud6c4\ubcf4\ub85c \ubd84\ub958\ud588\uc2b5\ub2c8\ub2e4."
 
 
 async def handle_sos(payload, shelter_path=None):
@@ -77,8 +84,8 @@ async def handle_sos(payload, shelter_path=None):
 
 def _sos_reason(has_shelters):
     if has_shelters:
-        return "SOS was received and temporary shelter candidates were recommended."
-    return "SOS was received but no temporary shelter candidate was found."
+        return "SOS\uac00 \uc811\uc218\ub418\uc5b4 \uc784\uc2dc \ubcf4\ud638\uc18c \ud6c4\ubcf4\ub97c \ucd94\ucc9c\ud588\uc2b5\ub2c8\ub2e4."
+    return "SOS\uac00 \uc811\uc218\ub418\uc5c8\uc9c0\ub9cc \ucd94\ucc9c \uac00\ub2a5\ud55c \uc784\uc2dc \ubcf4\ud638\uc18c\ub97c \ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4."
 
 
 async def handle_needs_verify(payload, shelter_path=None):
@@ -108,8 +115,8 @@ def _backup_decision(shelters):
 
 def _backup_reason(has_shelters):
     if has_shelters:
-        return "Backup candidates are exhausted, so nearby shelters are recommended."
-    return "Backup candidates are exhausted and no nearby shelter candidate was found."
+        return "\ubc31\uc5c5 \ud6c4\ubcf4\uac00 \uc18c\uc9c4\ub418\uc5b4 \uc778\uadfc \ubcf4\ud638\uc18c \ud6c4\ubcf4\ub97c \ucd94\ucc9c\ud588\uc2b5\ub2c8\ub2e4."
+    return "\ubc31\uc5c5 \ud6c4\ubcf4\uac00 \uc18c\uc9c4\ub418\uc5c8\uc9c0\ub9cc \ucd94\ucc9c \uac00\ub2a5\ud55c \ubcf4\ud638\uc18c\ub97c \ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4."
 
 
 async def handle_ping_no_response(payload, shelter_path=None):
@@ -118,7 +125,7 @@ async def handle_ping_no_response(payload, shelter_path=None):
         "ping_no_response",
         event,
         "admin_alert",
-        "A ping was not answered, so admin review is required.",
+        "\ud551 \uc751\ub2f5\uc774 \uc5c6\uc5b4 \uad00\ub9ac\uc790 \ud655\uc778\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.",
         [],
     )
 
@@ -129,8 +136,8 @@ async def handle_pre_departure_no_show(payload, shelter_path=None):
         "pre_departure_no_show",
         event,
         "penalty_candidate",
-        "A pre-departure no-show was detected, so chain break and 30-day penalty are requested.",
+        f"\ucd9c\ubc1c \uc804 \ub178\uc1fc\uac00 \uac10\uc9c0\ub418\uc5b4 \uccb4\uc778 \ud574\uc81c\uc640 {NO_SHOW_PENALTY_DAYS}\uc77c \uc815\uc9c0 \ud6c4\ubcf4\ub85c \ubd84\ub958\ud588\uc2b5\ub2c8\ub2e4.",
         [],
-        penalty_days=30,
+        penalty_days=NO_SHOW_PENALTY_DAYS,
         requires_chain_break=True,
     )

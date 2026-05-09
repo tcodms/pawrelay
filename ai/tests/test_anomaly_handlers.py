@@ -22,7 +22,7 @@ async def test_handle_sos_returns_shelter_recommend(tmp_path):
     shelter_path = _write_shelters(tmp_path)
     decision = await handle_sos(_sos_payload(), shelter_path=shelter_path)
     assert decision.decision == "shelter_recommend"
-    assert decision.recommended_shelters[0].name == "Cheonan Shelter"
+    assert decision.recommended_shelters[0].name == "\ucc9c\uc548\uc2dc \uc720\uae30\ub3d9\ubb3c\ubcf4\ud638\uc18c"
 
 
 @pytest.mark.asyncio
@@ -55,6 +55,7 @@ async def test_handle_backup_exhausted_returns_shelter_recommend(tmp_path):
 async def test_handle_ping_no_response_returns_admin_alert():
     decision = await handle_ping_no_response(_ping_payload())
     assert decision.decision == "admin_alert"
+    assert "\ud551 \uc751\ub2f5" in decision.reason
 
 
 @pytest.mark.asyncio
@@ -63,6 +64,7 @@ async def test_handle_pre_departure_no_show_returns_penalty_candidate():
     assert decision.decision == "penalty_candidate"
     assert decision.requires_chain_break is True
     assert decision.penalty_days == 30
+    assert "30\uc77c \uc815\uc9c0" in decision.reason
 
 
 @pytest.mark.asyncio
@@ -101,7 +103,14 @@ async def test_decide_routes_by_original_channels(tmp_path):
 
 def _write_shelters(tmp_path):
     path = tmp_path / "shelter.json"
-    payload = {"shelter": [_shelter("Cheonan Shelter", "Chungcheongnam-do Cheonan")]}
+    payload = {
+        "shelter": [
+            _shelter(
+                "\ucc9c\uc548\uc2dc \uc720\uae30\ub3d9\ubb3c\ubcf4\ud638\uc18c",
+                "\ucda9\uccad\ub0a8\ub3c4 \ucc9c\uc548\uc2dc \ub3d9\ub0a8\uad6c",
+            )
+        ]
+    }
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     return path
 
@@ -116,7 +125,7 @@ def _sos_payload():
         "volunteer_id": 42,
         "latitude": 36.35,
         "longitude": 127.38,
-        "activity_region": "Chungcheongnam-do",
+        "activity_region": "\ucda9\ub0a8",
     }
 
 
@@ -154,7 +163,7 @@ def _backup_payload():
         "segment_id": 42,
         "chain_id": 7,
         "volunteer_id": None,
-        "activity_regions": ["Chungcheongnam-do"],
+        "activity_regions": ["\ucda9\uccad\ub0a8\ub3c4"],
     }
 
 
@@ -167,7 +176,7 @@ def _ping_payload():
         "scheduled_time": "2026-05-07T14:00:00+09:00",
         "ping_sent_at": "2026-05-07T12:00:00+09:00",
         "ping_deadline_at": "2026-05-07T12:30:00+09:00",
-        "activity_regions": ["Chungcheongnam-do"],
+        "activity_regions": ["\ucda9\ub0a8"],
     }
 
 

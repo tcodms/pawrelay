@@ -18,10 +18,10 @@ def test_parse_sos_event():
         volunteer_id=42,
         latitude=36.35,
         longitude=127.38,
-        activity_region="Chungcheongnam-do",
+        activity_region="\ucda9\ub0a8",
     )
     assert event.segment_id == 1
-    assert event.activity_region == "Chungcheongnam-do"
+    assert event.activity_region == "\ucda9\ub0a8"
 
 
 def test_parse_needs_verify_event():
@@ -56,7 +56,7 @@ def test_parse_backup_exhausted_event():
     event = BackupExhaustedEvent(
         segment_id=42,
         chain_id=7,
-        activity_regions=["Chungcheongnam-do", "Daejeon"],
+        activity_regions=["\ucda9\ub0a8", "\ub300\uc804"],
     )
     assert event.volunteer_id is None
     assert len(event.activity_regions) == 2
@@ -71,10 +71,10 @@ def test_parse_ping_no_response_event():
         scheduled_time="2026-05-07T14:00:00+09:00",
         ping_sent_at="2026-05-07T12:00:00+09:00",
         ping_deadline_at="2026-05-07T12:30:00+09:00",
-        activity_regions=["Chungcheongnam-do"],
+        activity_regions=["\ucda9\uccad\ub0a8\ub3c4"],
     )
     assert event.volunteer_id == 101
-    assert event.activity_regions == ["Chungcheongnam-do"]
+    assert event.activity_regions == ["\ucda9\uccad\ub0a8\ub3c4"]
 
 
 def test_parse_pre_departure_no_show_event():
@@ -99,7 +99,7 @@ def test_parse_ai_decision_event():
         chain_id=7,
         volunteer_id=101,
         decision="chain_break_candidate",
-        reason="Delay exceeded threshold.",
+        reason="\uc9c0\uc5f0 \uc2dc\uac04\uc774 \uae30\uc900\uce58\ub97c \ub118\uc5b4 \uccb4\uc778 \ud574\uc81c \ud6c4\ubcf4\ub85c \ubd84\ub958\ud588\uc2b5\ub2c8\ub2e4.",
         recommended_shelters=[_sample_shelter()],
         requires_chain_break=True,
         penalty_days=None,
@@ -124,7 +124,7 @@ def test_reject_invalid_decision():
 
 def _sample_shelter():
     return RecommendedShelter(
-        name="Cheonan Shelter",
-        address="Chungcheongnam-do Cheonan",
+        name="\ucc9c\uc548\uc2dc \uc720\uae30\ub3d9\ubb3c\ubcf4\ud638\uc18c",
+        address="\ucda9\uccad\ub0a8\ub3c4 \ucc9c\uc548\uc2dc",
         phone="041-000-0000",
     )
