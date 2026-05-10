@@ -67,6 +67,7 @@ export interface SegmentDetail {
   notified_at: string | null;
   partner: { name: string; phone: string };
   kakao_openchat_url: string;
+  shelter_phone?: string;
   chain_segments: { volunteer: string; from: string; to: string; is_me: boolean }[];
 }
 

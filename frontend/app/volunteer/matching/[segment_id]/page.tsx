@@ -570,11 +570,13 @@ function HandoverLocationModal({
 function EmergencyCard({
   shelterPhone,
   sosDone,
+  sosError,
   onDelay,
   onSOS,
 }: {
   shelterPhone: string;
   sosDone: boolean;
+  sosError: boolean;
   onDelay: () => void;
   onSOS: () => void;
 }) {
@@ -610,13 +612,18 @@ function EmergencyCard({
           <span className="text-[14px] font-semibold text-red-400">긴급 신고가 접수되었습니다</span>
         </div>
       ) : (
-        <button onClick={onSOS} className="w-full flex items-center justify-between px-4 py-3.5 active:bg-gray-50 transition-colors">
-          <div className="flex items-center gap-3">
-            <AlertTriangle size={16} className="text-red-400 shrink-0" />
-            <span className="text-[14px] font-semibold text-red-400">긴급 신고 (SOS)</span>
-          </div>
-          <ChevronRight size={15} className="text-gray-300" />
-        </button>
+        <div>
+          <button onClick={onSOS} className="w-full flex items-center justify-between px-4 py-3.5 active:bg-gray-50 transition-colors">
+            <div className="flex items-center gap-3">
+              <AlertTriangle size={16} className="text-red-400 shrink-0" />
+              <span className="text-[14px] font-semibold text-red-400">긴급 신고 (SOS)</span>
+            </div>
+            <ChevronRight size={15} className="text-gray-300" />
+          </button>
+          {sosError && (
+            <p className="text-[11px] text-red-400 px-4 pb-3">신고 전송에 실패했어요. 다시 시도해 주세요.</p>
+          )}
+        </div>
       )}
     </div>
   );
@@ -647,6 +654,7 @@ export default function MatchingDetailPage() {
   const [showSOSModal, setShowSOSModal]           = useState(false);
   const [sosSending, setSosSending]               = useState(false);
   const [sosDone, setSosDone]                     = useState(false);
+  const [sosError, setSosError]                   = useState(false);
 
   useEffect(() => {
     const segmentId = Number(params.segment_id);
@@ -670,6 +678,7 @@ export default function MatchingDetailPage() {
           notified_at: segment.notified_at || prev.notified_at,
           partner: segment.partner,
           kakao_openchat_url: segment.kakao_openchat_url,
+          shelter_phone: segment.shelter_phone ?? prev.shelter_phone,
           ...(segment.chain_segments?.length ? { chain_segments: segment.chain_segments } : {}),
         }));
         setStatus(segment.status);
@@ -815,12 +824,13 @@ export default function MatchingDetailPage() {
 
   async function handleSOS() {
     setSosSending(true);
+    setSosError(false);
     const { latitude, longitude } = await getGPS();
     try {
       await reportSOS(segmentId, latitude, longitude);
       setSosDone(true);
     } catch {
-      setSosDone(true); // 백엔드 미연결 테스트용
+      setSosError(true);
     } finally {
       setSosSending(false);
       setShowSOSModal(false);
@@ -1091,6 +1101,7 @@ export default function MatchingDetailPage() {
           <EmergencyCard
             shelterPhone={(seg as typeof DUMMY_SEGMENT).shelter_phone ?? ""}
             sosDone={sosDone}
+            sosError={sosError}
             onDelay={() => setShowDelayModal(true)}
             onSOS={() => setShowSOSModal(true)}
           />
