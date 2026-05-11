@@ -38,6 +38,14 @@ export interface UseWebSocketOptions {
 const MAX_DELAY_MS = 30_000;
 const BASE_DELAY_MS = 1_000;
 
+const VALID_WS_EVENTS = new Set<WsEventName>([
+  "checkpoint.updated",
+  "ping.confirmed",
+  "ping.no_response",
+  "delay.reported",
+  "sos.triggered",
+]);
+
 function buildWsUrl(shareToken?: string): string {
   const base = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000";
   return shareToken ? `${base}/ws?share_token=${shareToken}` : `${base}/ws`;
@@ -80,8 +88,13 @@ export function useWebSocket({
 
       ws.onmessage = (event) => {
         try {
-          const msg = JSON.parse(event.data as string) as WsMessage;
-          onEventRef.current?.(msg.event, msg.payload as never);
+          const parsed = JSON.parse(event.data as string);
+          if (
+            typeof parsed?.event !== "string" ||
+            !VALID_WS_EVENTS.has(parsed.event as WsEventName) ||
+            parsed.payload === undefined
+          ) return;
+          onEventRef.current?.(parsed.event as WsEventName, parsed.payload);
         } catch {}
       };
 
