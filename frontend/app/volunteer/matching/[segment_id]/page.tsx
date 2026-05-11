@@ -7,10 +7,11 @@ import Script from "next/script";
 import {
   ArrowLeft, Clock, Train, Coffee,
   ExternalLink, CheckCircle2, MapPin, Lock, MessageCircle, Navigation,
+  Bell, Phone, AlertTriangle, ChevronRight,
 } from "lucide-react";
 import MatchingReasonBubble from "@/components/MatchingReasonBubble";
 import { acceptMatching, declineMatching, getSegment } from "@/lib/api/matching";
-import { recordCheckpoint, verifyHandover, requestHandover, approveHandover, changeHandoverLocation } from "@/lib/api/relay";
+import { recordCheckpoint, verifyHandover, requestHandover, approveHandover, changeHandoverLocation, reportSOS, reportDelay } from "@/lib/api/relay";
 import { ApiError } from "@/lib/api";
 
 declare global {
@@ -38,6 +39,7 @@ const DUMMY_SEGMENT = {
   partner: { name: "이릴레이", phone: "010-1234-5678" },
   kakao_openchat_url: "https://open.kakao.com/o/dummy",
   kakao_map_url: "https://map.kakao.com/link/from/광주광역시 북구,35.1796,126.9112/to/천안아산역,36.7951,127.1046",
+  shelter_phone: "062-000-0000",
   waypoints: {
     train: [
       { id: 1, name: "천안아산역", address: "충남 아산시 배방읍 장재리", distance_km: 0.3, lat: 36.7951, lng: 127.1046 },
@@ -563,6 +565,70 @@ function HandoverLocationModal({
   );
 }
 
+// ── 긴급·지원 카드 ────────────────────────────────────────────────────────────
+
+function EmergencyCard({
+  shelterPhone,
+  sosDone,
+  sosError,
+  onDelay,
+  onSOS,
+}: {
+  shelterPhone: string;
+  sosDone: boolean;
+  sosError: boolean;
+  onDelay: () => void;
+  onSOS: () => void;
+}) {
+  return (
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-50">
+        <p className="text-[12px] font-semibold text-gray-400 uppercase tracking-wide">긴급 · 지원</p>
+      </div>
+
+      <button onClick={onDelay} className="w-full flex items-center justify-between px-4 py-3.5 active:bg-gray-50 transition-colors">
+        <div className="flex items-center gap-3">
+          <Bell size={16} className="text-amber-400 shrink-0" />
+          <span className="text-[14px] font-semibold text-gray-700">지연 알림</span>
+        </div>
+        <ChevronRight size={15} className="text-gray-300" />
+      </button>
+
+      <div className="border-t border-gray-50" />
+
+      <a href={`tel:${shelterPhone}`} className="flex items-center justify-between px-4 py-3.5 active:bg-gray-50 transition-colors">
+        <div className="flex items-center gap-3">
+          <Phone size={16} className="text-[#EEA968] shrink-0" />
+          <span className="text-[14px] font-semibold text-gray-700">보호소 전화하기</span>
+        </div>
+        <ChevronRight size={15} className="text-gray-300" />
+      </a>
+
+      <div className="border-t border-gray-50" />
+
+      {sosDone ? (
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <CheckCircle2 size={16} className="text-red-400 shrink-0" />
+          <span className="text-[14px] font-semibold text-red-400">긴급 신고가 접수되었습니다</span>
+        </div>
+      ) : (
+        <div>
+          <button onClick={onSOS} className="w-full flex items-center justify-between px-4 py-3.5 active:bg-gray-50 transition-colors">
+            <div className="flex items-center gap-3">
+              <AlertTriangle size={16} className="text-red-400 shrink-0" />
+              <span className="text-[14px] font-semibold text-red-400">긴급 신고 (SOS)</span>
+            </div>
+            <ChevronRight size={15} className="text-gray-300" />
+          </button>
+          {sosError && (
+            <p className="text-[11px] text-red-400 px-4 pb-3">신고 전송에 실패했어요. 다시 시도해 주세요.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 페이지 ────────────────────────────────────────────────────────────────────
 
 export default function MatchingDetailPage() {
@@ -582,6 +648,13 @@ export default function MatchingDetailPage() {
   const [gpsWarning, setGpsWarning]             = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [locationChanging, setLocationChanging]   = useState(false);
+  const [showDelayModal, setShowDelayModal]       = useState(false);
+  const [delayMessage, setDelayMessage]           = useState("");
+  const [delayLoading, setDelayLoading]           = useState(false);
+  const [showSOSModal, setShowSOSModal]           = useState(false);
+  const [sosSending, setSosSending]               = useState(false);
+  const [sosDone, setSosDone]                     = useState(false);
+  const [sosError, setSosError]                   = useState(false);
 
   useEffect(() => {
     const segmentId = Number(params.segment_id);
@@ -605,6 +678,7 @@ export default function MatchingDetailPage() {
           notified_at: segment.notified_at || prev.notified_at,
           partner: segment.partner,
           kakao_openchat_url: segment.kakao_openchat_url,
+          shelter_phone: segment.shelter_phone ?? prev.shelter_phone,
           ...(segment.chain_segments?.length ? { chain_segments: segment.chain_segments } : {}),
         }));
         setStatus(segment.status);
@@ -731,6 +805,35 @@ export default function MatchingDetailPage() {
       // ignore
     } finally {
       setActing(false);
+    }
+  }
+
+  async function handleDelay() {
+    if (!delayMessage.trim()) return;
+    setDelayLoading(true);
+    try {
+      await reportDelay(segmentId, delayMessage.trim());
+      setShowDelayModal(false);
+      setDelayMessage("");
+    } catch {
+      // ignore — 백엔드 미연결
+    } finally {
+      setDelayLoading(false);
+    }
+  }
+
+  async function handleSOS() {
+    setSosSending(true);
+    setSosError(false);
+    const { latitude, longitude } = await getGPS();
+    try {
+      await reportSOS(segmentId, latitude, longitude);
+      setSosDone(true);
+    } catch {
+      setSosError(true);
+    } finally {
+      setSosSending(false);
+      setShowSOSModal(false);
     }
   }
 
@@ -993,6 +1096,17 @@ export default function MatchingDetailPage() {
           />
         )}
 
+        {/* 긴급·지원 */}
+        {isInProgress && (
+          <EmergencyCard
+            shelterPhone={(seg as typeof DUMMY_SEGMENT).shelter_phone ?? ""}
+            sosDone={sosDone}
+            sosError={sosError}
+            onDelay={() => setShowDelayModal(true)}
+            onSOS={() => setShowSOSModal(true)}
+          />
+        )}
+
         {/* 수락/거절 */}
         {isProposed && (
           <div className="flex gap-3">
@@ -1038,6 +1152,71 @@ export default function MatchingDetailPage() {
               <button onClick={handleDecline} disabled={acting}
                 className="flex-1 h-12 rounded-2xl bg-red-400 text-[14px] font-bold text-white disabled:opacity-40">
                 거절하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 지연 알림 모달 */}
+      {showDelayModal && (
+        <div className="fixed inset-0 z-[60] flex items-end">
+          <div className="absolute inset-0 bg-black/40" onClick={() => { setShowDelayModal(false); setDelayMessage(""); }} />
+          <div className="relative w-full bg-white rounded-t-3xl px-5 pt-5 max-w-2xl mx-auto"
+            style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}>
+            <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4" />
+            <p className="text-[16px] font-bold text-gray-800 mb-1">지연 알림</p>
+            <p className="text-[12px] text-gray-400 mb-4">다음 구간 봉사자와 보호소에 알림이 전송돼요</p>
+            <textarea
+              value={delayMessage}
+              onChange={(e) => setDelayMessage(e.target.value)}
+              placeholder="예) 교통 체증으로 30분 지연 예상"
+              rows={3}
+              className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3 text-[14px] text-gray-800 placeholder:text-gray-400 focus:outline-none resize-none mb-3"
+            />
+            <button
+              onClick={handleDelay}
+              disabled={!delayMessage.trim() || delayLoading}
+              className="w-full h-12 rounded-2xl bg-[#EEA968] text-[14px] font-bold text-white disabled:opacity-40 active:scale-[0.97] transition-all"
+            >
+              {delayLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  전송 중...
+                </span>
+              ) : "전송"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SOS 확인 모달 */}
+      {showSOSModal && (
+        <div className="fixed inset-0 z-[60] flex items-end">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowSOSModal(false)} />
+          <div className="relative w-full bg-white rounded-t-3xl px-5 pt-5 max-w-2xl mx-auto"
+            style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}>
+            <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4" />
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle size={18} className="text-red-400" />
+              <p className="text-[16px] font-bold text-red-500">긴급 신고 (SOS)</p>
+            </div>
+            <p className="text-[13px] text-gray-500 mb-5">
+              현재 위치를 기반으로 긴급 재매칭 요청이 접수돼요. 인근 봉사자와 보호소에 즉시 알림이 전송됩니다.
+            </p>
+            <div className="flex gap-2.5">
+              <button onClick={() => setShowSOSModal(false)}
+                className="flex-1 h-12 rounded-2xl border border-gray-200 text-[14px] font-semibold text-gray-500">
+                취소
+              </button>
+              <button onClick={handleSOS} disabled={sosSending}
+                className="flex-1 h-12 rounded-2xl bg-red-400 text-[14px] font-bold text-white disabled:opacity-40 active:scale-[0.97] transition-all">
+                {sosSending ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    신고 중...
+                  </span>
+                ) : "긴급 신고"}
               </button>
             </div>
           </div>
