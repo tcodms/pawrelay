@@ -178,20 +178,33 @@ async def activate_chain(db: AsyncSession, chain: RelayChain) -> None:
 
 
 async def mark_schedules_matched(
-    db: AsyncSession, volunteer_ids: list[int], scheduled_date
+    db: AsyncSession, volunteer_id: int, scheduled_date, transport_post_id: int
 ) -> None:
-    schedules = await db.execute(
-        select(VolunteerSchedule).where(
-            and_(
-                VolunteerSchedule.volunteer_id.in_(volunteer_ids),
-                VolunteerSchedule.status == "available",
-                VolunteerSchedule.available_date == scheduled_date,
-            )
-        )
-    )
-    for schedule in schedules.scalars().all():
+    schedule = await _find_matched_schedule(db, volunteer_id, scheduled_date, transport_post_id)
+    if schedule:
         schedule.status = "matched"
     await db.flush()
+
+
+async def _find_matched_schedule(
+    db: AsyncSession, volunteer_id: int, scheduled_date, transport_post_id: int
+) -> VolunteerSchedule | None:
+    for post_id_filter in [transport_post_id, None]:
+        condition = VolunteerSchedule.post_id == post_id_filter if post_id_filter else VolunteerSchedule.post_id.is_(None)
+        result = await db.execute(
+            select(VolunteerSchedule).where(
+                and_(
+                    VolunteerSchedule.volunteer_id == volunteer_id,
+                    VolunteerSchedule.status == "available",
+                    VolunteerSchedule.available_date == scheduled_date,
+                    condition,
+                )
+            ).limit(1)
+        )
+        schedule = result.scalars().first()
+        if schedule:
+            return schedule
+    return None
 
 
 async def cancel_chain(db: AsyncSession, chain: RelayChain) -> None:
@@ -258,8 +271,8 @@ async def get_segments_for_volunteer(db: AsyncSession, volunteer_id: int) -> lis
         .where(
             and_(
                 RelaySegment.volunteer_id == volunteer_id,
-                RelaySegment.status.in_(["pending", "accepted"]),
-                RelayChain.status == "active",
+                RelaySegment.status.in_(["pending", "accepted", "in_progress", "completed"]),
+                RelayChain.status.in_(["active", "completed"]),
             )
         )
         .options(
