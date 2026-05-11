@@ -21,7 +21,7 @@ async def post_checkpoint(
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await relay_service.save_checkpoint(db, user_id, body)
+    return await relay_service.save_checkpoint(db, redis_client, user_id, body)
 
 
 @router.post("/handover/verify", response_model=HandoverVerifyOut)
@@ -50,7 +50,7 @@ async def approve_handover(
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await relay_service.approve_handover(db, user_id, segment_id)
+    return await relay_service.approve_handover(db, redis_client, user_id, segment_id)
 
 
 @router.patch("/segments/{segment_id}/handover-location", response_model=HandoverLocationOut)
@@ -78,4 +78,4 @@ async def emergency_delay(
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await relay_service.report_delay(db, user_id, body)
+    return await relay_service.report_delay(db, redis_client, user_id, body)

@@ -19,6 +19,7 @@ from app.schemas.relay import (
     SosIn, SosOut,
     WaypointInfo,
 )
+from app.services import ws_service
 from app.tasks.scheduler import scheduler
 from app.tasks.sos_alert import send_delayed_sos_alert
 
@@ -35,6 +36,7 @@ _SOS_ALERT_DELAY_MINUTES = 5
 
 async def save_checkpoint(
     db: AsyncSession,
+    redis: Redis,
     user_id: int,
     body: CheckpointIn,
 ) -> CheckpointOut:
@@ -55,6 +57,7 @@ async def save_checkpoint(
 
     await db.commit()
     await db.refresh(checkpoint)
+    await _publish_checkpoint_updated(db, redis, segment, checkpoint, body)
     return CheckpointOut(checkpoint_id=checkpoint.id, recorded_at=checkpoint.recorded_at)
 
 
@@ -121,6 +124,7 @@ async def request_handover(
 
 async def approve_handover(
     db: AsyncSession,
+    redis: Redis,
     user_id: int,
     segment_id: int,
 ) -> HandoverApproveOut:
@@ -142,6 +146,7 @@ async def approve_handover(
     segment.status = _SEGMENT_STATUS_DONE
     segment.handover_method = "manual_approval"
     await db.commit()
+    await _publish_ping_confirmed(db, redis, segment)
     return HandoverApproveOut(status=_SEGMENT_STATUS_DONE)
 
 
@@ -181,7 +186,62 @@ async def report_sos(db: AsyncSession, redis: Redis, user_id: int, body: SosIn) 
     volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{user_id}"
     _schedule_sos_alert(body.segment_id, volunteer_name, body.latitude, body.longitude)
     await _publish_sos_event(redis, segment, volunteer_name, body)
+    await _publish_sos_ws_event(db, redis, segment, body)
     return SosOut(message="긴급 재매칭 요청이 접수되었습니다.")
+
+
+async def _publish_checkpoint_updated(
+    db: AsyncSession, redis: Redis, segment, checkpoint, body: CheckpointIn
+) -> None:
+    post_info = await relay_repo.get_post_info_by_chain(db, segment.chain_id)
+    if not post_info:
+        return
+    shelter_id, share_token = post_info
+    await ws_service.publish_share_event(redis, str(share_token), "checkpoint.updated", {
+        "segment_order": segment.segment_order,
+        "latitude": body.latitude,
+        "longitude": body.longitude,
+        "recorded_at": checkpoint.recorded_at.isoformat(),
+    })
+
+
+async def _publish_ping_confirmed(db: AsyncSession, redis: Redis, segment) -> None:
+    post_info = await relay_repo.get_post_info_by_chain(db, segment.chain_id)
+    if not post_info:
+        return
+    shelter_id, _ = post_info
+    volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{segment.volunteer_id}"
+    await ws_service.publish_user_event(redis, shelter_id, "ping.confirmed", {
+        "segment_id": segment.id,
+        "volunteer_name": volunteer_name,
+    })
+
+
+async def _publish_delay_reported(
+    db: AsyncSession, redis: Redis, segment, message: str
+) -> None:
+    post_info = await relay_repo.get_post_info_by_chain(db, segment.chain_id)
+    if not post_info:
+        return
+    shelter_id, _ = post_info
+    await ws_service.publish_user_event(redis, shelter_id, "delay.reported", {
+        "segment_id": segment.id,
+        "message": message,
+    })
+
+
+async def _publish_sos_ws_event(
+    db: AsyncSession, redis: Redis, segment, body: SosIn
+) -> None:
+    post_info = await relay_repo.get_post_info_by_chain(db, segment.chain_id)
+    if not post_info:
+        return
+    shelter_id, _ = post_info
+    await ws_service.publish_user_event(redis, shelter_id, "sos.triggered", {
+        "segment_id": segment.id,
+        "latitude": body.latitude,
+        "longitude": body.longitude,
+    })
 
 
 async def _record_volunteer_history(db: AsyncSession, segment) -> None:
@@ -230,13 +290,13 @@ def _schedule_sos_alert(
     )
 
 
-async def report_delay(db: AsyncSession, user_id: int, body: DelayIn) -> DelayOut:
+async def report_delay(db: AsyncSession, redis: Redis, user_id: int, body: DelayIn) -> DelayOut:
     segment = await relay_repo.get_segment(db, body.segment_id)
     if not segment:
         raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
     if segment.volunteer_id != user_id:
         raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
-    # 다음 구간 봉사자 + 보호소 알림은 6주차 알림 모듈 완성 후 연결
+    await _publish_delay_reported(db, redis, segment, body.message)
     return DelayOut(ok=True)
 
 
