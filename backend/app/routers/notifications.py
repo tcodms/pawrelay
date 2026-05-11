@@ -1,5 +1,3 @@
-from datetime import timezone
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,14 +58,13 @@ async def mark_notification_read(
 
 
 def _to_item(n: Notification) -> NotificationItem:
-    payload = n.payload or {}
     return NotificationItem(
         id=n.id,
         type=n.type,
-        title=payload.get("title"),
-        body=payload.get("body"),
-        message=payload.get("message"),
-        payload=payload,
+        title=n.title,
+        body=n.body,
+        message=n.message,
+        payload=n.payload or {},
         is_read=n.read_at is not None,
         created_at=n.created_at,
     )
