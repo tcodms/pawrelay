@@ -34,6 +34,7 @@ class DashboardPostItem(BaseModel):
     animal_info: AnimalInfo
     chain_id: int | None
     chain_expires_at: datetime | None
+    chain_status: str | None
     matching_reason: str | None
     share_token: UUID
     relay_segments: list[RelaySegmentItem] | None = None

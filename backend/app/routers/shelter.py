@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +43,7 @@ async def get_shelter_dashboard(
     rows = await post_repo.get_dashboard_posts(db, current_user.id)
     chain_ids = [chain_id for _, _, chain_id, _, _ in rows if chain_id]
     segments_by_chain = await post_repo.get_segments_for_chains(db, chain_ids)
+    now = datetime.now(timezone.utc)
     posts = [
         DashboardPostItem(
             id=post.id,
@@ -56,6 +59,7 @@ async def get_shelter_dashboard(
             ),
             chain_id=chain_id,
             chain_expires_at=chain_expires_at,
+            chain_status=_resolve_chain_status(post.status, chain_id, chain_expires_at, now),
             matching_reason=matching_reason,
             share_token=post.share_token,
             relay_segments=[
@@ -86,6 +90,19 @@ async def get_relay_detail(
 
     segments = await relay_repo.get_segments_with_volunteers(db, chain.id)
     return RelayDetailResponse(segments=[_build_segment_detail(s) for s in segments])
+
+
+def _resolve_chain_status(
+    post_status: str,
+    chain_id: int | None,
+    chain_expires_at: datetime | None,
+    now: datetime,
+) -> str | None:
+    if post_status != "waiting" or chain_id is None:
+        return None
+    if chain_expires_at and chain_expires_at < now:
+        return "auto_approved"
+    return "pending_shelter"
 
 
 def _build_segment_detail(segment) -> RelaySegmentDetail:
