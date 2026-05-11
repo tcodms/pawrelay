@@ -17,6 +17,9 @@ class Notification(Base):
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
     transport_post_id = Column(BigInteger, ForeignKey("transport_posts.id"), nullable=True)
     type = Column(String(50), nullable=False)
+    title = Column(String(100), nullable=True)
+    body = Column(String(255), nullable=True)
+    message = Column(Text, nullable=True)
     channel = Column(
         Enum("in_app", "email", "push", name="notification_channel_enum"),
         nullable=False,
