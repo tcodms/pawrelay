@@ -100,7 +100,9 @@ def _resolve_chain_status(
 ) -> str | None:
     if post_status != "waiting" or chain_id is None:
         return None
-    if chain_expires_at and chain_expires_at < now:
+    if chain_expires_at is None:
+        return None
+    if chain_expires_at < now:
         return "auto_approved"
     return "pending_shelter"
 
