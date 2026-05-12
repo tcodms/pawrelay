@@ -139,7 +139,7 @@ async def get_chain_by_id(
         select(RelayChain)
         .where(RelayChain.id == chain_id)
         .options(
-            selectinload(RelayChain.segments),
+            selectinload(RelayChain.segments).selectinload(RelaySegment.volunteer),
             selectinload(RelayChain.transport_post),
         )
     )
