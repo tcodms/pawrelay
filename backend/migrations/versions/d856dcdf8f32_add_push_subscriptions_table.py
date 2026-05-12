@@ -20,10 +20,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.drop_constraint(op.f('fk_relay_segments_waypoint_id'), 'relay_segments', type_='foreignkey')
+    op.drop_constraint('fk_relay_segments_waypoint_id', 'relay_segments', type_='foreignkey')
     op.create_foreign_key('fk_relay_segments_waypoint_id', 'relay_segments', 'waypoints', ['waypoint_id'], ['id'], ondelete='SET NULL')
 
 
 def downgrade() -> None:
     op.drop_constraint('fk_relay_segments_waypoint_id', 'relay_segments', type_='foreignkey')
-    op.create_foreign_key(op.f('fk_relay_segments_waypoint_id'), 'relay_segments', 'waypoints', ['waypoint_id'], ['id'], ondelete='SET NULL')
+    op.create_foreign_key('fk_relay_segments_waypoint_id', 'relay_segments', 'waypoints', ['waypoint_id'], ['id'], ondelete='SET NULL')
