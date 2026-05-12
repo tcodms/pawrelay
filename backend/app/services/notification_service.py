@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
 from app.models.notification import Notification
+from app.repositories import notification_repo
+from app.services import push_service
 
 
 async def get_unread_for_user(db: AsyncSession, user_id: int) -> list[Notification]:
@@ -18,6 +20,39 @@ async def get_unread_for_user(db: AsyncSession, user_id: int) -> list[Notificati
         .limit(50)
     )
     return list(result.scalars().all())
+
+
+async def send_push_and_save(
+    db: AsyncSession,
+    user_id: int,
+    user_email: str,
+    transport_post_id: int | None,
+    notif_type: str,
+    title: str,
+    body: str,
+    payload: dict,
+) -> None:
+    await notification_repo.create_notification(
+        db, user_id, transport_post_id, notif_type, title, body, "push", payload
+    )
+    await push_service.send_push_or_email_fallback(
+        db, user_id, user_email, {"title": title, "message": body, **payload}
+    )
+    await db.commit()
+
+
+async def save_in_app(
+    db: AsyncSession,
+    user_id: int,
+    transport_post_id: int | None,
+    notif_type: str,
+    title: str,
+    body: str,
+    payload: dict,
+) -> None:
+    await notification_repo.create_notification(
+        db, user_id, transport_post_id, notif_type, title, body, "in_app", payload
+    )
 
 
 async def mark_as_read(db: AsyncSession, notification_id: int, user_id: int) -> None:

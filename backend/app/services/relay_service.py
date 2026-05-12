@@ -19,7 +19,7 @@ from app.schemas.relay import (
     SosIn, SosOut,
     WaypointInfo,
 )
-from app.services import ws_service
+from app.services import notification_service, ws_service
 from app.tasks.scheduler import scheduler
 from app.tasks.sos_alert import send_delayed_sos_alert
 
@@ -37,7 +37,7 @@ _SOS_ALERT_DELAY_MINUTES = 5
 async def _get_authorized_segment_for_checkpoint(
     db: AsyncSession, segment_id: int, user_id: int, checkpoint_type: str
 ):
-    segment = await relay_repo.get_segment(db, segment_id, lock=True)
+    segment = await relay_repo.get_segment(db, segment_id, lock=True, load_volunteer=True)
     if not segment:
         raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
     if segment.volunteer_id != user_id:
@@ -62,6 +62,9 @@ async def save_checkpoint(
     await db.commit()
     await db.refresh(checkpoint)
     await _publish_checkpoint_updated(db, redis, segment, checkpoint, body)
+    if body.type == "arrival":
+        await _notify_segment_completed(db, segment)
+        await db.commit()
     return CheckpointOut(checkpoint_id=checkpoint.id, recorded_at=checkpoint.recorded_at)
 
 
@@ -74,12 +77,12 @@ async def verify_handover(
 ) -> HandoverVerifyOut:
     await _check_handover_rate_limit(redis, user_id, client_ip)
 
-    segment = await relay_repo.get_segment(db, body.segment_id, lock=True)
+    segment = await relay_repo.get_segment(db, body.segment_id, lock=True, load_volunteer=True)
     if not segment:
         raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
 
     next_segment = await relay_repo.get_next_segment(
-        db, segment.chain_id, segment.segment_order, lock=True
+        db, segment.chain_id, segment.segment_order, lock=True, load_volunteer=True
     )
 
     is_giver = segment.volunteer_id == user_id
@@ -103,7 +106,14 @@ async def verify_handover(
         segment.status = _SEGMENT_STATUS_DONE
         segment.handover_method = "code"
 
+    # commit 전에 volunteer 정보 추출
+    seg_id = segment.id
+    giver_vol = (segment.volunteer.id, segment.volunteer.email) if segment.volunteer else None
+    recv_vol = (next_segment.volunteer.id, next_segment.volunteer.email) if next_segment and next_segment.volunteer else None
+
     await db.commit()
+    if not both_confirmed:
+        await _notify_handover_waiting_confirm(db, seg_id, giver_vol, recv_vol, is_giver)
     return HandoverVerifyOut(status="completed" if both_confirmed else "waiting_partner")
 
 
@@ -120,9 +130,10 @@ async def request_handover(
     if segment.status != _SEGMENT_STATUS_ACTIVE:
         raise HTTPException(status_code=409, detail={"error": "INVALID_SEGMENT_STATUS"})
 
+    chain_id, segment_order, segment_id = segment.chain_id, segment.segment_order, segment.id
     segment.ping_sent_at = datetime.now(timezone.utc)
     await db.commit()
-    # 알림 전송은 6주차 알림 모듈 완성 후 연결
+    await _notify_ping_check(db, chain_id, segment_order, segment_id)
     return HandoverRequestOut(ok=True)
 
 
@@ -176,10 +187,11 @@ async def update_handover_location(
     if not waypoint:
         raise HTTPException(status_code=404, detail={"error": "WAYPOINT_NOT_FOUND"})
 
+    chain_id, segment_order, segment_id = segment.chain_id, segment.segment_order, segment.id
     segment.dropoff_location = waypoint.name
     segment.waypoint_id = waypoint.id
     await db.commit()
-    # 뒷구간 봉사자 Web Push는 6주차 알림 모듈 완성 후 연결
+    await _notify_handover_location_changed(db, chain_id, segment_order, segment_id, waypoint.name)
     return HandoverLocationOut(dropoff_location=WaypointInfo(name=waypoint.name, address=waypoint.address))
 
 
@@ -304,6 +316,7 @@ async def report_delay(db: AsyncSession, redis: Redis, user_id: int, body: Delay
     if segment.volunteer_id != user_id:
         raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
     await _publish_delay_reported(db, redis, segment, body.message)
+    await _notify_delay_reported_to_next_volunteer(db, segment, body.message)
     return DelayOut(ok=True)
 
 
@@ -334,3 +347,80 @@ def _apply_status_transition(segment, checkpoint_type: str) -> None:
         segment.status = _SEGMENT_STATUS_ACTIVE
     elif checkpoint_type == "arrival":
         segment.status = _SEGMENT_STATUS_DONE
+
+
+async def _notify_delay_reported_to_next_volunteer(
+    db: AsyncSession, segment, message: str
+) -> None:
+    next_seg = await relay_repo.get_next_segment(
+        db, segment.chain_id, segment.segment_order, load_volunteer=True
+    )
+    if not next_seg or not next_seg.volunteer:
+        return
+    vol = next_seg.volunteer
+    await notification_service.send_push_and_save(
+        db, vol.id, vol.email, None,
+        "delay_reported", "지연 신고",
+        f"앞 구간 봉사자가 지연을 신고했습니다: {message}",
+        {"segment_id": segment.id, "message": message},
+    )
+
+
+async def _notify_segment_completed(db: AsyncSession, segment) -> None:
+    if not segment.volunteer:
+        return
+    vol = segment.volunteer
+    await notification_service.save_in_app(
+        db, vol.id, None,
+        "segment_completed", "이동봉사 완료",
+        "이동봉사 구간이 완료되었습니다. 수고하셨습니다!",
+        {"segment_id": segment.id},
+    )
+
+
+async def _notify_ping_check(
+    db: AsyncSession, chain_id: int, segment_order: int, segment_id: int
+) -> None:
+    next_seg = await relay_repo.get_next_segment(db, chain_id, segment_order, load_volunteer=True)
+    if not next_seg or not next_seg.volunteer:
+        return
+    vol = next_seg.volunteer
+    await notification_service.send_push_and_save(
+        db, vol.id, vol.email, None,
+        "ping_check", "인계 확인 요청", "앞 구간 봉사자가 인계를 요청했습니다.",
+        {"segment_id": segment_id},
+    )
+
+
+async def _notify_handover_location_changed(
+    db: AsyncSession, chain_id: int, segment_order: int, segment_id: int, new_location: str
+) -> None:
+    next_seg = await relay_repo.get_next_segment(db, chain_id, segment_order, load_volunteer=True)
+    if not next_seg or not next_seg.volunteer:
+        return
+    vol = next_seg.volunteer
+    await notification_service.send_push_and_save(
+        db, vol.id, vol.email, None,
+        "handover_location_changed", "인계 장소 변경",
+        f"인계 장소가 '{new_location}'으로 변경되었습니다.",
+        {"segment_id": segment_id, "new_location": new_location},
+    )
+
+
+async def _notify_handover_waiting_confirm(
+    db: AsyncSession,
+    segment_id: int,
+    giver_vol: tuple[int, str] | None,
+    recv_vol: tuple[int, str] | None,
+    is_giver: bool,
+) -> None:
+    target = recv_vol if is_giver else giver_vol
+    if not target:
+        return
+    vol_id, vol_email = target
+    await notification_service.send_push_and_save(
+        db, vol_id, vol_email, None,
+        "handover_waiting_confirm", "인계 코드 입력 대기",
+        "상대 봉사자가 인계 코드를 입력했습니다. 코드를 확인해주세요.",
+        {"segment_id": segment_id},
+    )

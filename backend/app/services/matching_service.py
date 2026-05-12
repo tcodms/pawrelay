@@ -5,9 +5,11 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.redis import redis_client
 from app.models.post import TransportPost
 from app.models.volunteer import VolunteerSchedule
-from app.repositories import matching_repo
+from app.repositories import matching_repo, relay_repo
+from app.services import notification_service, ws_service
 from app.services.geocoding_service import geocode
 
 # ai/ 모듈 경로 추가 (프로젝트 루트: pawrelay/)
@@ -123,6 +125,7 @@ async def approve_chain(db: AsyncSession, chain_id: int, user_id: int, role: str
     try:
         volunteer_ids = [s.volunteer_id for s in chain.segments]
         scheduled_date = chain.transport_post.scheduled_date if chain.transport_post else None
+        post_id = chain.transport_post_id
         await matching_repo.activate_chain(db, chain)
 
         conflicting = await matching_repo.get_proposed_chains_with_volunteers(
@@ -158,6 +161,8 @@ async def reject_chain(db: AsyncSession, chain_id: int, user_id: int, role: str)
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
 
     try:
+        post_id = chain.transport_post_id
+        vol_infos = _extract_volunteer_infos(chain.segments)
         await matching_repo.cancel_chain(db, chain)
 
         promoted = await matching_repo.promote_backup(
@@ -167,6 +172,8 @@ async def reject_chain(db: AsyncSession, chain_id: int, user_id: int, role: str)
             await matching_repo.restore_post_to_recruiting(db, chain.transport_post_id)
 
         await db.commit()
+        await _notify_volunteers_by_infos(db, vol_infos, post_id, "matching_cancelled", "매칭 취소",
+                                          "배정된 이동봉사 구간이 취소되었습니다.", chain_id)
         return {"chain_id": chain_id, "status": "broken", "promoted": promoted is not None}
     except HTTPException:
         raise
@@ -267,7 +274,15 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
     if all_accepted:
         await matching_repo.update_post_status(db, chain.transport_post_id, "in_transit")
 
+    shelter_id = chain.transport_post.shelter_id if chain.transport_post else None
+    post_id = chain.transport_post_id
+    volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{volunteer_id}"
+    all_vol_infos = _extract_volunteer_infos(chain.segments) if all_accepted else []
     await db.commit()
+    if shelter_id:
+        await _notify_shelter_segment_accepted(shelter_id, segment.id, volunteer_name, segment.segment_order)
+    if all_accepted and shelter_id:
+        await _notify_matching_confirmed(db, shelter_id, chain.id, post_id, all_vol_infos)
 
     return {
         "segment": {
@@ -301,12 +316,17 @@ async def decline_segment(db: AsyncSession, segment_id: int, volunteer_id: int, 
 
     chain = segment.chain
     try:
+        shelter_id = chain.transport_post.shelter_id if chain.transport_post else None
+        post_id = chain.transport_post_id
         await matching_repo.cancel_chain(db, chain)
         scheduled_date = chain.transport_post.scheduled_date if chain.transport_post else None
         promoted = await matching_repo.promote_backup(db, chain, scheduled_date)
         if not promoted:
             await matching_repo.restore_post_to_recruiting(db, chain.transport_post_id)
         await db.commit()
+        if not promoted and shelter_id:
+            await _notify_shelter_matching_failed(db, shelter_id, post_id)
+            await db.commit()
         return {"status": "declined", "promoted": promoted is not None}
     except Exception as e:
         await db.rollback()
@@ -328,6 +348,88 @@ async def run_matching(db: AsyncSession) -> dict:
             results.append(post_result)
 
     return {"posts_processed": len(results), "results": results}
+
+
+async def _notify_volunteers_matching_proposed(db: AsyncSession, chain_id: int, post_id: int) -> None:
+    segments = await relay_repo.get_segments_with_volunteers(db, chain_id)
+    for seg in segments:
+        if not seg.volunteer:
+            continue
+        vol = seg.volunteer
+        await notification_service.send_push_and_save(
+            db, vol.id, vol.email, post_id,
+            "matching_proposed", "이동봉사 매칭 제안",
+            "새 이동봉사 구간이 배정되었습니다. 수락 여부를 확인해주세요.",
+            {"segment_id": seg.id, "chain_id": chain_id},
+        )
+
+
+async def _notify_matching_confirmed(
+    db: AsyncSession,
+    shelter_id: int,
+    chain_id: int,
+    post_id: int,
+    vol_infos: list[dict],
+) -> None:
+    await ws_service.publish_user_event(redis_client, shelter_id, "matching.confirmed", {
+        "chain_id": chain_id,
+    })
+    await _notify_volunteers_by_infos(
+        db, vol_infos, post_id,
+        "matching_confirmed", "이동봉사 매칭 확정",
+        "이동봉사 매칭이 확정되었습니다.", chain_id,
+    )
+
+
+async def _notify_matching_proposed_to_shelter(shelter_id: int, post_id: int, animal_name: str) -> None:
+    await ws_service.publish_user_event(redis_client, shelter_id, "matching.proposed", {
+        "post_id": post_id,
+        "animal_name": animal_name,
+    })
+
+
+def _extract_volunteer_infos(segments) -> list[dict]:
+    return [
+        {"user_id": seg.volunteer_id, "email": seg.volunteer.email, "segment_id": seg.id}
+        for seg in segments
+        if seg.volunteer
+    ]
+
+
+async def _notify_volunteers_by_infos(
+    db: AsyncSession,
+    vol_infos: list[dict],
+    post_id: int | None,
+    notif_type: str,
+    title: str,
+    body: str,
+    chain_id: int,
+) -> None:
+    for info in vol_infos:
+        await notification_service.send_push_and_save(
+            db, info["user_id"], info["email"], post_id,
+            notif_type, title, body,
+            {"segment_id": info["segment_id"], "chain_id": chain_id},
+        )
+
+
+async def _notify_shelter_segment_accepted(
+    shelter_id: int, segment_id: int, volunteer_name: str, segment_order: int
+) -> None:
+    await ws_service.publish_user_event(redis_client, shelter_id, "segment.accepted", {
+        "segment_id": segment_id,
+        "volunteer_name": volunteer_name,
+        "segment_order": segment_order,
+    })
+
+
+async def _notify_shelter_matching_failed(db: AsyncSession, shelter_id: int, post_id: int) -> None:
+    await notification_service.save_in_app(
+        db, shelter_id, post_id,
+        "matching_failed", "매칭 실패",
+        "이동봉사 매칭에 실패했습니다. 공고가 재모집 상태로 전환됩니다.",
+        {"post_id": post_id},
+    )
 
 
 async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
@@ -396,11 +498,14 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
         db, post.id, primary, backups, post.scheduled_date, matching_reason
     )
     await matching_repo.update_post_status(db, post.id, "waiting")
+    shelter_id, post_id, animal_name = post.shelter_id, post.id, post.animal_name
     await db.commit()
-    logger.info(f"[매칭] 공고 {post.id} → relay_chain {saved_chain.id} 저장 완료")
+    logger.info(f"[매칭] 공고 {post_id} → relay_chain {saved_chain.id} 저장 완료")
+    await _notify_matching_proposed_to_shelter(shelter_id, post_id, animal_name)
+    await _notify_volunteers_matching_proposed(db, saved_chain.id, post_id)
 
     return {
-        "post_id": post.id,
+        "post_id": post_id,
         "candidate_count": len(candidates),
         "chain_id": saved_chain.id,
         "segments": len(primary),

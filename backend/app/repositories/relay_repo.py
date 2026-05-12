@@ -21,12 +21,18 @@ async def get_segment(
 
 
 async def get_next_segment(
-    db: AsyncSession, chain_id: int, segment_order: int, lock: bool = False
+    db: AsyncSession,
+    chain_id: int,
+    segment_order: int,
+    lock: bool = False,
+    load_volunteer: bool = False,
 ) -> RelaySegment | None:
     query = select(RelaySegment).where(
         RelaySegment.chain_id == chain_id,
         RelaySegment.segment_order == segment_order + 1,
     )
+    if load_volunteer:
+        query = query.options(selectinload(RelaySegment.volunteer))
     if lock:
         query = query.with_for_update()
     result = await db.execute(query)
