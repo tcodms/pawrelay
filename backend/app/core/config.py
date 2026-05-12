@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         password = quote_plus(self.postgres_password)
-        ssl = "" if self.environment == "production" else "?ssl=disable"
+        ssl = "?ssl=require" if self.environment == "production" else "?ssl=disable"
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}{ssl}"
