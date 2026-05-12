@@ -37,7 +37,7 @@ _SOS_ALERT_DELAY_MINUTES = 5
 async def _get_authorized_segment_for_checkpoint(
     db: AsyncSession, segment_id: int, user_id: int, checkpoint_type: str
 ):
-    segment = await relay_repo.get_segment(db, segment_id, lock=True)
+    segment = await relay_repo.get_segment(db, segment_id, lock=True, load_volunteer=True)
     if not segment:
         raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
     if segment.volunteer_id != user_id:
@@ -62,6 +62,8 @@ async def save_checkpoint(
     await db.commit()
     await db.refresh(checkpoint)
     await _publish_checkpoint_updated(db, redis, segment, checkpoint, body)
+    if body.type == "arrival":
+        await _notify_segment_completed(db, segment)
     return CheckpointOut(checkpoint_id=checkpoint.id, recorded_at=checkpoint.recorded_at)
 
 
@@ -313,6 +315,7 @@ async def report_delay(db: AsyncSession, redis: Redis, user_id: int, body: Delay
     if segment.volunteer_id != user_id:
         raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
     await _publish_delay_reported(db, redis, segment, body.message)
+    await _notify_delay_reported_to_next_volunteer(db, segment, body.message)
     return DelayOut(ok=True)
 
 
@@ -343,6 +346,36 @@ def _apply_status_transition(segment, checkpoint_type: str) -> None:
         segment.status = _SEGMENT_STATUS_ACTIVE
     elif checkpoint_type == "arrival":
         segment.status = _SEGMENT_STATUS_DONE
+
+
+async def _notify_delay_reported_to_next_volunteer(
+    db: AsyncSession, segment, message: str
+) -> None:
+    next_seg = await relay_repo.get_next_segment(
+        db, segment.chain_id, segment.segment_order, load_volunteer=True
+    )
+    if not next_seg or not next_seg.volunteer:
+        return
+    vol = next_seg.volunteer
+    await notification_service.send_push_and_save(
+        db, vol.id, vol.email, None,
+        "delay_reported", "지연 신고",
+        f"앞 구간 봉사자가 지연을 신고했습니다: {message}",
+        {"segment_id": segment.id, "message": message},
+    )
+
+
+async def _notify_segment_completed(db: AsyncSession, segment) -> None:
+    if not segment.volunteer:
+        return
+    vol = segment.volunteer
+    await notification_service.save_in_app(
+        db, vol.id, None,
+        "segment_completed", "이동봉사 완료",
+        "이동봉사 구간이 완료되었습니다. 수고하셨습니다!",
+        {"segment_id": segment.id},
+    )
+    await db.commit()
 
 
 async def _notify_ping_check(

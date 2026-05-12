@@ -140,7 +140,6 @@ async def approve_chain(db: AsyncSession, chain_id: int, user_id: int, role: str
                 await matching_repo.restore_post_to_recruiting(db, conflicted.transport_post_id)
 
         await db.commit()
-        await _notify_volunteers_matching_confirmed(db, chain_id, post_id)
         return {"chain_id": chain_id, "status": "active", "cancelled_chains": len(conflicting)}
     except HTTPException:
         raise
@@ -277,9 +276,12 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
 
     shelter_id = chain.transport_post.shelter_id if chain.transport_post else None
     volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{volunteer_id}"
+    all_vol_infos = _extract_volunteer_infos(chain.segments) if all_accepted else []
     await db.commit()
     if shelter_id:
         await _notify_shelter_segment_accepted(shelter_id, segment.id, volunteer_name, segment.segment_order)
+    if all_accepted and shelter_id:
+        await _notify_matching_confirmed(db, shelter_id, chain.id, post_id, all_vol_infos)
 
     return {
         "segment": {
@@ -346,14 +348,7 @@ async def run_matching(db: AsyncSession) -> dict:
     return {"posts_processed": len(results), "results": results}
 
 
-async def _notify_matching_proposed_to_shelter(shelter_id: int, post_id: int, animal_name: str) -> None:
-    await ws_service.publish_user_event(redis_client, shelter_id, "matching.proposed", {
-        "post_id": post_id,
-        "animal_name": animal_name,
-    })
-
-
-async def _notify_volunteers_matching_confirmed(db: AsyncSession, chain_id: int, post_id: int) -> None:
+async def _notify_volunteers_matching_proposed(db: AsyncSession, chain_id: int, post_id: int) -> None:
     segments = await relay_repo.get_segments_with_volunteers(db, chain_id)
     for seg in segments:
         if not seg.volunteer:
@@ -361,10 +356,34 @@ async def _notify_volunteers_matching_confirmed(db: AsyncSession, chain_id: int,
         vol = seg.volunteer
         await notification_service.send_push_and_save(
             db, vol.id, vol.email, post_id,
-            "matching_confirmed", "이동봉사 배정 완료",
+            "matching_proposed", "이동봉사 매칭 제안",
             "새 이동봉사 구간이 배정되었습니다. 수락 여부를 확인해주세요.",
             {"segment_id": seg.id, "chain_id": chain_id},
         )
+
+
+async def _notify_matching_confirmed(
+    db: AsyncSession,
+    shelter_id: int,
+    chain_id: int,
+    post_id: int,
+    vol_infos: list[dict],
+) -> None:
+    await ws_service.publish_user_event(redis_client, shelter_id, "matching.confirmed", {
+        "chain_id": chain_id,
+    })
+    await _notify_volunteers_by_infos(
+        db, vol_infos, post_id,
+        "matching_confirmed", "이동봉사 매칭 확정",
+        "이동봉사 매칭이 확정되었습니다.", chain_id,
+    )
+
+
+async def _notify_matching_proposed_to_shelter(shelter_id: int, post_id: int, animal_name: str) -> None:
+    await ws_service.publish_user_event(redis_client, shelter_id, "matching.proposed", {
+        "post_id": post_id,
+        "animal_name": animal_name,
+    })
 
 
 def _extract_volunteer_infos(segments) -> list[dict]:
@@ -482,6 +501,7 @@ async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:
     await db.commit()
     logger.info(f"[매칭] 공고 {post_id} → relay_chain {saved_chain.id} 저장 완료")
     await _notify_matching_proposed_to_shelter(shelter_id, post_id, animal_name)
+    await _notify_volunteers_matching_proposed(db, saved_chain.id, post_id)
 
     return {
         "post_id": post_id,

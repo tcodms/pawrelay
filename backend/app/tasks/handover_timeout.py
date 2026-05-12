@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from app.core.database import AsyncSessionLocal
 from app.core.redis import redis_client
 from app.repositories import relay_repo
-from app.services import ws_service
+from app.services import notification_service, ws_service
 
 _HANDOVER_TIMEOUT_MINUTES = int(os.environ.get("NEEDS_VERIFY_GRACE_MINUTES", "30"))
 
@@ -22,23 +22,29 @@ async def mark_stale_handovers() -> None:
             for s in segments
         }
         await db.commit()
-    await _publish_needs_verify_events(segments, payloads, post_infos)
+        await _publish_needs_verify_events(db, segments, payloads, post_infos)
 
 
-async def _publish_needs_verify_events(segments, payloads, post_infos) -> None:
+async def _publish_needs_verify_events(db, segments, payloads, post_infos) -> None:
     for segment, payload in zip(segments, payloads):
         await redis_client.publish("pawrelay:needs_verify", json.dumps(payload))
         info = post_infos.get(segment.id)
         if not info:
             continue
         shelter_id, _ = info
-        await ws_service.publish_user_event(
-            redis_client, shelter_id, "ping.no_response", {
-                "segment_id": segment.id,
-                "volunteer_name": payload["volunteer_name"],
-                "scheduled_time": payload["scheduled_time"],
-            }
+        ws_payload = {
+            "segment_id": segment.id,
+            "volunteer_name": payload["volunteer_name"],
+            "scheduled_time": payload["scheduled_time"],
+        }
+        await ws_service.publish_user_event(redis_client, shelter_id, "ping.no_response", ws_payload)
+        await notification_service.save_in_app(
+            db, shelter_id, None,
+            "ping_no_response", "핑 미응답",
+            f"{payload['volunteer_name']} 봉사자가 인계 코드를 입력하지 않았습니다.",
+            ws_payload,
         )
+    await db.commit()
 
 
 def _build_needs_verify_payload(segment) -> dict:
