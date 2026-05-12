@@ -298,6 +298,21 @@ async def get_segment_by_id(db: AsyncSession, segment_id: int) -> RelaySegment |
     return result.scalar_one_or_none()
 
 
+async def get_expiring_chains(db: AsyncSession, cutoff: datetime) -> list[RelayChain]:
+    """만료까지 12시간 이내인 proposed 체인 조회 (승인 리마인더용)"""
+    now = datetime.now(tz=timezone.utc)
+    result = await db.execute(
+        select(RelayChain)
+        .options(selectinload(RelayChain.transport_post))
+        .where(
+            RelayChain.status == "proposed",
+            RelayChain.chain_expires_at > now,   # 아직 만료되지 않은 것만
+            RelayChain.chain_expires_at <= cutoff,
+        )
+    )
+    return list(result.scalars().all())
+
+
 async def get_partner_segment(db: AsyncSession, segment: RelaySegment) -> RelaySegment | None:
     """인접 구간 봉사자 조회 (인계 파트너)"""
     result = await db.execute(

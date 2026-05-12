@@ -294,12 +294,13 @@ def _schedule_sos_alert(
     latitude: float | None,
     longitude: float | None,
 ) -> None:
-    # TODO: 영속 jobstore(RedisJobStore/SQLAlchemyJobStore) 적용 필요 — 현재 메모리 기반으로 재시작 시 잡 유실 가능
+    # SOS 잡은 단기 일회성이므로 memory jobstore 사용 (재시작 시 유실 허용)
     run_at = datetime.now(timezone.utc) + timedelta(minutes=_SOS_ALERT_DELAY_MINUTES)
     scheduler.add_job(
         send_delayed_sos_alert,
         trigger="date",
         run_date=run_at,
+        jobstore="memory",
         kwargs={
             "segment_id": segment_id,
             "volunteer_name": volunteer_name,
