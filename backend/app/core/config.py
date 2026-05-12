@@ -1,5 +1,6 @@
 from urllib.parse import quote_plus
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -31,6 +32,20 @@ class Settings(BaseSettings):
     vapid_private_key: str = ""
     vapid_public_key: str = ""
     vapid_email: str = ""
+
+    @model_validator(mode="after")
+    def validate_vapid_in_production(self) -> "Settings":
+        if self.environment == "production":
+            missing = [
+                name for name, val in [
+                    ("VAPID_PRIVATE_KEY", self.vapid_private_key),
+                    ("VAPID_PUBLIC_KEY", self.vapid_public_key),
+                    ("VAPID_EMAIL", self.vapid_email),
+                ] if not val
+            ]
+            if missing:
+                raise ValueError(f"Production 환경에서 필수 VAPID 설정 누락: {', '.join(missing)}")
+        return self
 
     @property
     def is_production(self) -> bool:

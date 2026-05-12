@@ -20,7 +20,7 @@ def get_vapid_public_key() -> str:
 
 async def subscribe(db: AsyncSession, user_id: int, body: PushSubscribeIn) -> None:
     await push_repo.upsert_subscription(
-        db, user_id, body.endpoint, body.keys.p256dh, body.keys.auth
+        db, user_id, str(body.endpoint), body.keys.p256dh, body.keys.auth
     )
 
 
@@ -47,23 +47,34 @@ async def send_push_or_email_fallback(
         )
 
 
+_WEB_PUSH_TIMEOUT = 10.0
+
+
 async def _send_web_push(subscription, payload: dict) -> bool:
     loop = asyncio.get_running_loop()
+    masked = _mask_endpoint(subscription.endpoint)
     try:
-        await loop.run_in_executor(
-            None,
-            functools.partial(
-                webpush,
-                subscription_info={
-                    "endpoint": subscription.endpoint,
-                    "keys": {"p256dh": subscription.p256dh, "auth": subscription.auth},
-                },
-                data=json.dumps(payload, ensure_ascii=False),
-                vapid_private_key=settings.vapid_private_key,
-                vapid_claims={"sub": settings.vapid_email},
+        await asyncio.wait_for(
+            loop.run_in_executor(
+                None,
+                functools.partial(
+                    webpush,
+                    subscription_info={
+                        "endpoint": subscription.endpoint,
+                        "keys": {"p256dh": subscription.p256dh, "auth": subscription.auth},
+                    },
+                    data=json.dumps(payload, ensure_ascii=False),
+                    vapid_private_key=settings.vapid_private_key,
+                    vapid_claims={"sub": settings.vapid_email},
+                ),
             ),
+            timeout=_WEB_PUSH_TIMEOUT,
         )
         return True
-    except WebPushException as e:
-        logger.warning("Web Push 발송 실패 endpoint=%s: %s", subscription.endpoint, e)
+    except Exception as e:
+        logger.warning("Web Push 발송 실패 endpoint=%s: %s", masked, e)
         return False
+
+
+def _mask_endpoint(endpoint: str) -> str:
+    return endpoint[:30] + "..." if len(endpoint) > 30 else endpoint

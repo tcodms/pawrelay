@@ -5,7 +5,7 @@ from app.core.dependencies import get_current_user, get_current_user_id, get_db
 from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.notification import NotificationItem, UnreadNotificationsResponse
-from app.schemas.push import PushSubscribeIn, VapidKeyOut
+from app.schemas.push import PushEndpointIn, PushSubscribeIn, VapidKeyOut
 from app.services import notification_service, push_service
 
 router = APIRouter()
@@ -49,11 +49,11 @@ async def push_subscribe(
 
 @router.delete("/push/subscribe")
 async def push_unsubscribe(
-    body: PushSubscribeIn,
+    body: PushEndpointIn,
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    await push_service.unsubscribe(db, user_id, body.endpoint)
+    await push_service.unsubscribe(db, user_id, str(body.endpoint))
     return {"ok": True}
 
 

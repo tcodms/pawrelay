@@ -1,3 +1,4 @@
+import html
 import resend
 
 from app.core.config import settings
@@ -38,7 +39,7 @@ async def send_notification_email(to: str, message: str) -> None:
         "from": settings.email_from,
         "to": to,
         "subject": "[PawRelay] 새 알림",
-        "html": f"<p>{message}</p>",
+        "html": f"<p>{html.escape(message)}</p>",
     })
 
 
