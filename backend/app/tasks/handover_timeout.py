@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from app.core.database import AsyncSessionLocal
 from app.core.redis import redis_client
 from app.repositories import relay_repo
+from app.services import ws_service
 
 _HANDOVER_TIMEOUT_MINUTES = int(os.environ.get("NEEDS_VERIFY_GRACE_MINUTES", "30"))
 
@@ -16,9 +17,28 @@ async def mark_stale_handovers() -> None:
         if not segments:
             return
         payloads = [_build_needs_verify_payload(s) for s in segments]
+        post_infos = {
+            s.id: await relay_repo.get_post_info_by_chain(db, s.chain_id)
+            for s in segments
+        }
         await db.commit()
-    for payload in payloads:
+    await _publish_needs_verify_events(segments, payloads, post_infos)
+
+
+async def _publish_needs_verify_events(segments, payloads, post_infos) -> None:
+    for segment, payload in zip(segments, payloads):
         await redis_client.publish("pawrelay:needs_verify", json.dumps(payload))
+        info = post_infos.get(segment.id)
+        if not info:
+            continue
+        shelter_id, _ = info
+        await ws_service.publish_user_event(
+            redis_client, shelter_id, "ping.no_response", {
+                "segment_id": segment.id,
+                "volunteer_name": payload["volunteer_name"],
+                "scheduled_time": payload["scheduled_time"],
+            }
+        )
 
 
 def _build_needs_verify_payload(segment) -> dict:

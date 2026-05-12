@@ -4,6 +4,7 @@ from sqlalchemy import and_, not_, or_, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.post import TransportPost
 from app.models.relay import Checkpoint, RelayChain, RelaySegment
 
 
@@ -100,6 +101,16 @@ async def get_delayed_segments(db: AsyncSession, cutoff: datetime) -> list[Relay
         .options(selectinload(RelaySegment.volunteer))
     )
     return list(result.scalars().all())
+
+
+async def get_post_info_by_chain(db: AsyncSession, chain_id: int) -> tuple[int, str] | None:
+    """chain_id로 shelter_id와 share_token 조회"""
+    result = await db.execute(
+        select(TransportPost.shelter_id, TransportPost.share_token)
+        .join(RelayChain, RelayChain.transport_post_id == TransportPost.id)
+        .where(RelayChain.id == chain_id)
+    )
+    return result.first()
 
 
 async def create_checkpoint(

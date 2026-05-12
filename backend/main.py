@@ -15,19 +15,22 @@ from app.routers import auth, posts, volunteers, matching, relay, chatbot, notif
 from app.tasks.ai_decision_subscriber import run_ai_decision_subscriber
 from app.tasks.scheduler import setup_scheduler
 from app.websocket import router as ws_router
+from app.websocket.subscriber import run_ws_subscriber
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler = setup_scheduler()
     scheduler.start()
-    subscriber_task = asyncio.create_task(run_ai_decision_subscriber())
+    ai_task = asyncio.create_task(run_ai_decision_subscriber())
+    ws_task = asyncio.create_task(run_ws_subscriber())
     yield
-    subscriber_task.cancel()
-    try:
-        await subscriber_task
-    except asyncio.CancelledError:
-        pass
+    for task in (ai_task, ws_task):
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
     scheduler.shutdown()
 
 
