@@ -119,6 +119,21 @@ async def get_post_info_by_chain(db: AsyncSession, chain_id: int) -> tuple[int, 
     return result.first()
 
 
+async def get_accepted_segments_departing_soon(
+    db: AsyncSession, cutoff: datetime
+) -> list[RelaySegment]:
+    """scheduled_time ≤ cutoff이고 아직 accepted 상태인 세그먼트 조회 (출발 전 핑 발송용)"""
+    result = await db.execute(
+        select(RelaySegment)
+        .options(selectinload(RelaySegment.volunteer))
+        .where(
+            RelaySegment.status == "accepted",
+            RelaySegment.scheduled_time <= cutoff,
+        )
+    )
+    return list(result.scalars().all())
+
+
 async def create_checkpoint(
     db: AsyncSession,
     segment_id: int,

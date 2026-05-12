@@ -1,4 +1,5 @@
 import zoneinfo
+from datetime import date, timedelta
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -180,6 +181,17 @@ async def update_post(
     )
     await db.commit()
     return result.rowcount > 0
+
+
+async def get_recruiting_posts_by_days_until(db: AsyncSession, days: int) -> list[TransportPost]:
+    target_date = date.today() + timedelta(days=days)
+    result = await db.execute(
+        select(TransportPost).where(
+            TransportPost.status == "recruiting",
+            TransportPost.scheduled_date == target_date,
+        )
+    )
+    return list(result.scalars().all())
 
 
 async def cancel_post(db: AsyncSession, post_id: int) -> bool:
