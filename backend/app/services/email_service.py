@@ -1,3 +1,4 @@
+import html
 import resend
 
 from app.core.config import settings
@@ -27,6 +28,19 @@ async def send_sos_alert(segment_id: int, volunteer_name: str, latitude: float |
 
 def _configure() -> None:
     resend.api_key = settings.resend_api_key
+
+
+async def send_notification_email(to: str, message: str) -> None:
+    if settings.environment == "development":
+        return
+
+    _configure()
+    await resend.Emails.send_async({
+        "from": settings.email_from,
+        "to": to,
+        "subject": "[PawRelay] 새 알림",
+        "html": f"<p>{html.escape(message)}</p>",
+    })
 
 
 async def send_verification_email(to: str, token: str) -> None:
