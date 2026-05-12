@@ -210,5 +210,5 @@ export interface PublicPost {
 }
 
 export async function getPublicPost(shareToken: string): Promise<PublicPost> {
-  return request<PublicPost>(`/posts/public/${shareToken}`);
+  return request<PublicPost>(`/posts/public/${encodeURIComponent(shareToken)}`);
 }

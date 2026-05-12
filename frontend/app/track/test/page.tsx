@@ -3,10 +3,6 @@
 import { TrackContent } from "@/app/track/[token]/page";
 import type { PublicPost, PublicPostCheckpoint } from "@/lib/api/posts";
 
-if (process.env.NODE_ENV === "production") {
-  throw new Error("테스트 페이지는 개발 환경에서만 접근 가능합니다.");
-}
-
 const DUMMY_POST: PublicPost = {
   animal_info: {
     name: "초코",
@@ -31,5 +27,6 @@ const DUMMY_CHECKPOINTS: PublicPostCheckpoint[] = [
 ];
 
 export default function TrackTestPage() {
+  if (process.env.NODE_ENV === "production") return null;
   return <TrackContent post={DUMMY_POST} checkpoints={DUMMY_CHECKPOINTS} />;
 }

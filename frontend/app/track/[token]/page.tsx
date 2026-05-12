@@ -68,7 +68,7 @@ function getSegmentsToShow(post: PublicPost): number[] {
   const current = post.current_segment?.order ?? null;
   const max = Math.max(...completed, current ?? 0, 0);
   if (max === 0) return [1];
-  const until = current !== null ? Math.min(max + 1, 2) : max;
+  const until = max;
   return Array.from({ length: until }, (_, i) => i + 1);
 }
 
@@ -261,7 +261,10 @@ export default function TrackPage() {
       if (name !== "checkpoint.updated") return;
       const { latitude, longitude, recorded_at } = payload as WsPayloadMap["checkpoint.updated"];
       if (latitude == null || longitude == null) return;
-      setCheckpoints((prev) => [...prev, { latitude, longitude, recorded_at }]);
+      setCheckpoints((prev) => {
+        if (prev.some((c) => c.recorded_at === recorded_at && c.latitude === latitude && c.longitude === longitude)) return prev;
+        return [...prev, { latitude, longitude, recorded_at }];
+      });
     },
   });
 
