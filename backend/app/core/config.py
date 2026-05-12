@@ -54,9 +54,10 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         password = quote_plus(self.postgres_password)
+        ssl = "" if self.environment == "production" else "?ssl=disable"
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}{ssl}"
         )
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
