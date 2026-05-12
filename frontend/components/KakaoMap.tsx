@@ -8,11 +8,75 @@ declare global {
   }
 }
 
+export interface LatLng {
+  latitude: number;
+  longitude: number;
+}
+
+export type MarkerType = "departure" | "arrival" | "checkpoint";
+
+export interface MapMarker extends LatLng {
+  type: MarkerType;
+}
+
 interface KakaoMapProps {
   latitude?: number;
   longitude?: number;
   level?: number;
   className?: string;
+  markers?: MapMarker[];
+  polyline?: LatLng[];
+}
+
+const MARKER_COLORS: Record<MarkerType, string> = {
+  departure:  "#22c55e",
+  arrival:    "#ef4444",
+  checkpoint: "#3b82f6",
+};
+
+function makeMarkerImage(type: MarkerType) {
+  const color = MARKER_COLORS[type];
+  const size = 14;
+  const radius = size / 2 - 1;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">` +
+    `<circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="${color}" stroke="white" stroke-width="2"/>` +
+    `</svg>`;
+  return new window.kakao.maps.MarkerImage(
+    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    new window.kakao.maps.Size(size, size),
+    { offset: new window.kakao.maps.Point(size / 2, size / 2) },
+  );
+}
+
+function renderMarkers(map: any, markers: MapMarker[], existing: any[]): any[] {
+  existing.forEach((m) => m.setMap(null));
+  if (!markers.length) return [];
+
+  const bounds = new window.kakao.maps.LatLngBounds();
+  const created = markers.map(({ latitude: lat, longitude: lng, type }) => {
+    const position = new window.kakao.maps.LatLng(lat, lng);
+    bounds.extend(position);
+    return new window.kakao.maps.Marker({ map, position, image: makeMarkerImage(type) });
+  });
+  map.setBounds(bounds);
+  return created;
+}
+
+function renderPolyline(map: any, path: LatLng[], existing: any | null): any | null {
+  if (existing) existing.setMap(null);
+  if (!path.length) return null;
+
+  return new window.kakao.maps.Polyline({
+    map,
+    path: path.map(({ latitude: lat, longitude: lng }) =>
+      new window.kakao.maps.LatLng(lat, lng)
+    ),
+    strokeWeight: 4,
+    strokeColor: "#6366f1",
+    strokeOpacity: 0.8,
+    strokeStyle: "solid",
+  });
 }
 
 export default function KakaoMap({
@@ -20,9 +84,13 @@ export default function KakaoMap({
   longitude = 126.978,
   level = 5,
   className = "w-full h-[400px]",
+  markers,
+  polyline,
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
+  const kakaoMarkersRef = useRef<any[]>([]);
+  const kakaoPolylineRef = useRef<any>(null);
 
   const [mapState, setMapState] = useState<"loading" | "ready" | "no-key" | "error">("loading");
 
@@ -73,6 +141,16 @@ export default function KakaoMap({
     const center = new window.kakao.maps.LatLng(latitude, longitude);
     mapRef.current.setCenter(center);
   }, [latitude, longitude]);
+
+  useEffect(() => {
+    if (mapState !== "ready") return;
+    kakaoMarkersRef.current = renderMarkers(mapRef.current, markers ?? [], kakaoMarkersRef.current);
+  }, [markers, mapState]);
+
+  useEffect(() => {
+    if (mapState !== "ready") return;
+    kakaoPolylineRef.current = renderPolyline(mapRef.current, polyline ?? [], kakaoPolylineRef.current);
+  }, [polyline, mapState]);
 
   if (mapState === "no-key") {
     return (
