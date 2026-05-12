@@ -22,7 +22,8 @@ _jobstores = {
     "default": RedisJobStore(
         host=_redis.hostname or "localhost",
         port=_redis.port or 6379,
-        db=0,
+        db=int(_redis.path.lstrip("/") or "0"),
+        password=_redis.password,
     ),
     # SOS date-trigger 잡은 메모리 jobstore 사용 (단기 일회성)
     "memory": MemoryJobStore(),

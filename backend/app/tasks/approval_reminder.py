@@ -19,18 +19,23 @@ async def send_approval_reminders() -> None:
         chains = await matching_repo.get_expiring_chains(db, cutoff)
         count = 0
         for chain in chains:
-            already_sent = not await redis_client.set(
-                f"approval_reminder_sent:{chain.id}", "1", nx=True, ex=_DEDUP_TTL_SECONDS
-            )
-            if already_sent:
-                continue
-            shelter_id = chain.transport_post.shelter_id
-            await ws_service.publish_user_event(
-                redis_client, shelter_id, "matching.approval_reminder",
-                {
-                    "chain_id": chain.id,
-                    "expires_at": chain.chain_expires_at.isoformat() if chain.chain_expires_at else None,
-                },
-            )
-            count += 1
+            if await _send_reminder_for_chain(chain):
+                count += 1
         logger.info("[승인 리마인더] %d건 발송", count)
+
+
+async def _send_reminder_for_chain(chain) -> bool:
+    already_sent = not await redis_client.set(
+        f"approval_reminder_sent:{chain.id}", "1", nx=True, ex=_DEDUP_TTL_SECONDS
+    )
+    if already_sent:
+        return False
+    shelter_id = chain.transport_post.shelter_id
+    await ws_service.publish_user_event(
+        redis_client, shelter_id, "matching.approval_reminder",
+        {
+            "chain_id": chain.id,
+            "expires_at": chain.chain_expires_at.isoformat() if chain.chain_expires_at else None,
+        },
+    )
+    return True
