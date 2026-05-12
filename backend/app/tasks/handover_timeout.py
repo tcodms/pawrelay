@@ -22,20 +22,23 @@ async def mark_stale_handovers() -> None:
             for s in segments
         }
         await db.commit()
+    await _publish_needs_verify_events(segments, payloads, post_infos)
+
+
+async def _publish_needs_verify_events(segments, payloads, post_infos) -> None:
     for segment, payload in zip(segments, payloads):
         await redis_client.publish("pawrelay:needs_verify", json.dumps(payload))
         info = post_infos.get(segment.id)
-        if info:
-            shelter_id, _ = info
-            volunteer_name = payload["volunteer_name"]
-            scheduled_time = payload["scheduled_time"]
-            await ws_service.publish_user_event(
-                redis_client, shelter_id, "ping.no_response", {
-                    "segment_id": segment.id,
-                    "volunteer_name": volunteer_name,
-                    "scheduled_time": scheduled_time,
-                }
-            )
+        if not info:
+            continue
+        shelter_id, _ = info
+        await ws_service.publish_user_event(
+            redis_client, shelter_id, "ping.no_response", {
+                "segment_id": segment.id,
+                "volunteer_name": payload["volunteer_name"],
+                "scheduled_time": payload["scheduled_time"],
+            }
+        )
 
 
 def _build_needs_verify_payload(segment) -> dict:

@@ -1,9 +1,8 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import decode_access_token
-from app.models.post import TransportPost
+from app.services import ws_service
 from app.websocket.manager import manager
 
 router = APIRouter()
@@ -22,10 +21,7 @@ async def websocket_endpoint(
 
 async def _handle_share_connection(ws: WebSocket, share_token: str) -> None:
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(TransportPost.id).where(TransportPost.share_token == share_token)
-        )
-        if not result.scalar_one_or_none():
+        if not await ws_service.is_valid_share_token(db, share_token):
             await ws.close(code=4004)
             return
 
@@ -34,6 +30,8 @@ async def _handle_share_connection(ws: WebSocket, share_token: str) -> None:
         while True:
             await ws.receive_text()
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect_share(ws, share_token)
 
 
@@ -49,4 +47,6 @@ async def _handle_user_connection(ws: WebSocket) -> None:
         while True:
             await ws.receive_text()
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect_user(ws, user_id)

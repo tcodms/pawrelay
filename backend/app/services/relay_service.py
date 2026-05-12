@@ -34,27 +34,31 @@ _RL_WINDOW = 60  # seconds
 _SOS_ALERT_DELAY_MINUTES = 5
 
 
+async def _get_authorized_segment_for_checkpoint(
+    db: AsyncSession, segment_id: int, user_id: int, checkpoint_type: str
+):
+    segment = await relay_repo.get_segment(db, segment_id, lock=True)
+    if not segment:
+        raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
+    if segment.volunteer_id != user_id:
+        raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
+    _validate_checkpoint_transition(segment.status, checkpoint_type)
+    return segment
+
+
 async def save_checkpoint(
     db: AsyncSession,
     redis: Redis,
     user_id: int,
     body: CheckpointIn,
 ) -> CheckpointOut:
-    segment = await relay_repo.get_segment(db, body.segment_id, lock=True)
-    if not segment:
-        raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
-    if segment.volunteer_id != user_id:
-        raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
-
-    _validate_checkpoint_transition(segment.status, body.type)
-
+    segment = await _get_authorized_segment_for_checkpoint(db, body.segment_id, user_id, body.type)
     checkpoint = await relay_repo.create_checkpoint(
         db, body.segment_id, body.type, body.latitude, body.longitude
     )
     _apply_status_transition(segment, body.type)
     if body.type == "arrival":
         await _record_volunteer_history(db, segment)
-
     await db.commit()
     await db.refresh(checkpoint)
     await _publish_checkpoint_updated(db, redis, segment, checkpoint, body)
@@ -122,16 +126,10 @@ async def request_handover(
     return HandoverRequestOut(ok=True)
 
 
-async def approve_handover(
-    db: AsyncSession,
-    redis: Redis,
-    user_id: int,
-    segment_id: int,
-) -> HandoverApproveOut:
+async def _validate_approve_handover(db: AsyncSession, segment_id: int, user_id: int):
     segment = await relay_repo.get_segment(db, segment_id, lock=True)
     if not segment:
         raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
-
     next_segment = await relay_repo.get_next_segment(
         db, segment.chain_id, segment.segment_order, lock=True
     )
@@ -141,7 +139,16 @@ async def approve_handover(
         raise HTTPException(status_code=409, detail={"error": "INVALID_SEGMENT_STATUS"})
     if not segment.ping_sent_at:
         raise HTTPException(status_code=409, detail={"error": "HANDOVER_NOT_REQUESTED"})
+    return segment
 
+
+async def approve_handover(
+    db: AsyncSession,
+    redis: Redis,
+    user_id: int,
+    segment_id: int,
+) -> HandoverApproveOut:
+    segment = await _validate_approve_handover(db, segment_id, user_id)
     segment.ping_responded_at = datetime.now(timezone.utc)
     segment.status = _SEGMENT_STATUS_DONE
     segment.handover_method = "manual_approval"
