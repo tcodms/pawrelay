@@ -16,10 +16,11 @@ const DUMMY_POST: PublicPost = {
   origin: "광주광역시 북구",
   destination: "서울특별시 마포구",
   scheduled_date: "2026-05-15",
-  current_segment: { order: 2, status: "in_progress" },
+  current_segment: null,
   checkpoints: [],
   timeline: [
     { segment_order: 1, completed_at: "2026-05-15T09:30:00Z" },
+    { segment_order: 2, completed_at: "2026-05-15T13:00:00Z" },
   ],
 };
 

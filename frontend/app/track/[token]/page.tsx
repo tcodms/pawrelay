@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { CheckCircle2, Car, AlertTriangle, Circle, Loader2 } from "lucide-react";
+import { CheckCircle2, Car, AlertTriangle, Circle, Loader2, Clock } from "lucide-react";
 import KakaoMap from "@/components/KakaoMap";
 import type { MapMarker, LatLng } from "@/components/KakaoMap";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -27,7 +27,10 @@ function formatDate(dateStr: string): string {
 }
 
 function formatTime(isoStr: string): string {
-  return new Date(isoStr).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+  const date = new Date(isoStr);
+  const h = date.getHours().toString().padStart(2, "0");
+  const m = date.getMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 function buildMarkers(checkpoints: PublicPostCheckpoint[]): MapMarker[] {
@@ -40,6 +43,14 @@ function buildPolyline(checkpoints: PublicPostCheckpoint[]): LatLng[] {
   return checkpoints
     .filter((cp) => cp.latitude != null && cp.longitude != null)
     .map((cp) => ({ latitude: cp.latitude, longitude: cp.longitude }));
+}
+
+type RelayStatus = "pre_transit" | "in_transit" | "completed";
+
+function getRelayStatus(post: PublicPost): RelayStatus {
+  if (post.current_segment) return "in_transit";
+  if (post.timeline.length > 0) return "completed";
+  return "pre_transit";
 }
 
 type SegmentStatus = "completed" | "in_progress" | "delayed" | "waiting";
@@ -91,27 +102,34 @@ function ErrorScreen() {
 }
 
 function AnimalCard({ post }: { post: PublicPost }) {
-  const { animal_info, scheduled_date } = post;
+  const { animal_info, scheduled_date, origin, destination } = post;
   return (
-    <div className="mx-4 mt-3 flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm border border-gray-100">
-      {animal_info.photo_url ? (
-        <Image
-          src={animal_info.photo_url}
-          alt={animal_info.name}
-          width={48}
-          height={48}
-          className="h-12 w-12 rounded-xl object-cover shrink-0"
-        />
-      ) : (
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 shrink-0">
-          <span className="text-xl">🐾</span>
+    <div className="mx-4 mt-3 rounded-2xl bg-white p-3 shadow-sm border border-gray-100">
+      <div className="flex items-center gap-3">
+        {animal_info.photo_url ? (
+          <Image
+            src={animal_info.photo_url}
+            alt={animal_info.name}
+            width={48}
+            height={48}
+            className="h-12 w-12 rounded-xl object-cover shrink-0"
+          />
+        ) : (
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 shrink-0">
+            <span className="text-xl">🐾</span>
+          </div>
+        )}
+        <div>
+          <p className="text-[15px] font-bold text-gray-700">{animal_info.name}</p>
+          <p className="text-[12px] text-gray-400 mt-0.5">
+            {SIZE_LABEL[animal_info.size]} · {formatDate(scheduled_date)}
+          </p>
         </div>
-      )}
-      <div>
-        <p className="text-[15px] font-bold text-gray-700">{animal_info.name}</p>
-        <p className="text-[12px] text-gray-400 mt-0.5">
-          {SIZE_LABEL[animal_info.size]} · {formatDate(scheduled_date)}
-        </p>
+      </div>
+      <div className="mt-2.5 pt-2.5 border-t border-gray-100 flex items-center gap-1.5">
+        <span className="text-[12px] font-medium text-gray-600">{origin}</span>
+        <span className="text-gray-300 text-[11px]">→</span>
+        <span className="text-[12px] font-medium text-gray-600">{destination}</span>
       </div>
     </div>
   );
@@ -161,6 +179,22 @@ function SegmentItem({
   );
 }
 
+function StatusBanner({ status }: { status: RelayStatus }) {
+  if (status === "pre_transit") return (
+    <div className="mx-4 mt-2.5 flex items-center gap-2 rounded-2xl bg-gray-50 border border-gray-100 px-4 py-2.5">
+      <Clock className="h-4 w-4 text-gray-400 shrink-0" />
+      <p className="text-[12px] text-gray-500">아직 이송이 시작되지 않았습니다</p>
+    </div>
+  );
+  if (status === "completed") return (
+    <div className="mx-4 mt-2.5 flex items-center gap-2 rounded-2xl bg-green-50 border border-green-100 px-4 py-2.5">
+      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+      <p className="text-[12px] font-semibold text-green-600">이송이 완료되었습니다</p>
+    </div>
+  );
+  return null;
+}
+
 export function TrackContent({
   post,
   checkpoints,
@@ -171,6 +205,7 @@ export function TrackContent({
   const segments = getSegmentsToShow(post);
   const markers = buildMarkers(checkpoints);
   const polyline = buildPolyline(checkpoints);
+  const relayStatus = getRelayStatus(post);
 
   return (
     <main className="min-h-screen bg-gray-50 pb-8">
@@ -182,22 +217,16 @@ export function TrackContent({
       </div>
 
       <AnimalCard post={post} />
+      <StatusBanner status={relayStatus} />
 
-      <div className="mx-4 mt-2.5 flex items-center gap-1.5 rounded-2xl bg-white px-4 py-2.5 shadow-sm border border-gray-100">
-        <span className="text-[12px] font-medium text-gray-700">{post.origin}</span>
-        <span className="text-gray-300">→</span>
-        <span className="text-[12px] font-medium text-gray-700">{post.destination}</span>
-      </div>
-
-      <div className="mx-4 mt-2.5 rounded-2xl overflow-hidden">
+      <div className="mx-4 mt-2.5 rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
         <KakaoMap className="w-full h-[220px]" markers={markers} polyline={polyline} />
-      </div>
-
-      <div className="mx-4 mt-2.5 rounded-2xl bg-white px-4 shadow-sm border border-gray-100">
-        <p className="text-[12px] font-bold text-gray-500 pt-3 pb-1">이송 현황</p>
-        {segments.map((order) => (
-          <SegmentItem key={order} order={order} post={post} totalSegments={segments.length} />
-        ))}
+        <div className="px-4 pb-1">
+          <p className="text-[12px] font-bold text-gray-500 pt-3 pb-1">이송 현황</p>
+          {segments.map((order) => (
+            <SegmentItem key={order} order={order} post={post} totalSegments={segments.length} />
+          ))}
+        </div>
       </div>
 
       <p className="mt-5 px-4 text-center text-[11px] text-gray-300">
