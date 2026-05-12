@@ -275,6 +275,7 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
         await matching_repo.update_post_status(db, chain.transport_post_id, "in_transit")
 
     shelter_id = chain.transport_post.shelter_id if chain.transport_post else None
+    post_id = chain.transport_post_id
     volunteer_name = segment.volunteer.name if segment.volunteer else f"봉사자#{volunteer_id}"
     all_vol_infos = _extract_volunteer_infos(chain.segments) if all_accepted else []
     await db.commit()
@@ -325,6 +326,7 @@ async def decline_segment(db: AsyncSession, segment_id: int, volunteer_id: int, 
         await db.commit()
         if not promoted and shelter_id:
             await _notify_shelter_matching_failed(db, shelter_id, post_id)
+            await db.commit()
         return {"status": "declined", "promoted": promoted is not None}
     except Exception as e:
         await db.rollback()
@@ -428,7 +430,6 @@ async def _notify_shelter_matching_failed(db: AsyncSession, shelter_id: int, pos
         "이동봉사 매칭에 실패했습니다. 공고가 재모집 상태로 전환됩니다.",
         {"post_id": post_id},
     )
-    await db.commit()
 
 
 async def _process_post(db: AsyncSession, post: TransportPost) -> dict | None:

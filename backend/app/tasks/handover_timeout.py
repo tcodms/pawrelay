@@ -26,7 +26,7 @@ async def mark_stale_handovers() -> None:
 
 
 async def _publish_needs_verify_events(db, segments, payloads, post_infos) -> None:
-    for segment, payload in zip(segments, payloads):
+    for segment, payload in zip(segments, payloads, strict=True):
         await redis_client.publish("pawrelay:needs_verify", json.dumps(payload))
         info = post_infos.get(segment.id)
         if not info:

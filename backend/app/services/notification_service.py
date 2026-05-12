@@ -35,10 +35,10 @@ async def send_push_and_save(
     await notification_repo.create_notification(
         db, user_id, transport_post_id, notif_type, title, body, "push", payload
     )
-    await db.commit()
     await push_service.send_push_or_email_fallback(
         db, user_id, user_email, {"title": title, "message": body, **payload}
     )
+    await db.commit()
 
 
 async def save_in_app(

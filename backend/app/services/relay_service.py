@@ -64,6 +64,7 @@ async def save_checkpoint(
     await _publish_checkpoint_updated(db, redis, segment, checkpoint, body)
     if body.type == "arrival":
         await _notify_segment_completed(db, segment)
+        await db.commit()
     return CheckpointOut(checkpoint_id=checkpoint.id, recorded_at=checkpoint.recorded_at)
 
 
@@ -375,7 +376,6 @@ async def _notify_segment_completed(db: AsyncSession, segment) -> None:
         "이동봉사 구간이 완료되었습니다. 수고하셨습니다!",
         {"segment_id": segment.id},
     )
-    await db.commit()
 
 
 async def _notify_ping_check(
