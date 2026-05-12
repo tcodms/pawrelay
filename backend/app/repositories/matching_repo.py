@@ -299,12 +299,14 @@ async def get_segment_by_id(db: AsyncSession, segment_id: int) -> RelaySegment |
 
 
 async def get_expiring_chains(db: AsyncSession, cutoff: datetime) -> list[RelayChain]:
-    """chain_expires_at이 cutoff 이전인 proposed 상태 체인 조회 (승인 리마인더용)"""
+    """만료까지 12시간 이내인 proposed 체인 조회 (승인 리마인더용)"""
+    now = datetime.now(tz=timezone.utc)
     result = await db.execute(
         select(RelayChain)
         .options(selectinload(RelayChain.transport_post))
         .where(
             RelayChain.status == "proposed",
+            RelayChain.chain_expires_at > now,   # 아직 만료되지 않은 것만
             RelayChain.chain_expires_at <= cutoff,
         )
     )
