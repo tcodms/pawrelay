@@ -28,6 +28,10 @@ class Settings(BaseSettings):
 
     kakao_rest_api_key: str
 
+    vapid_private_key: str = ""
+    vapid_public_key: str = ""
+    vapid_email: str = ""
+
     @property
     def is_production(self) -> bool:
         return self.environment == "production"

@@ -29,6 +29,19 @@ def _configure() -> None:
     resend.api_key = settings.resend_api_key
 
 
+async def send_notification_email(to: str, message: str) -> None:
+    if settings.environment == "development":
+        return
+
+    _configure()
+    await resend.Emails.send_async({
+        "from": settings.email_from,
+        "to": to,
+        "subject": "[PawRelay] 새 알림",
+        "html": f"<p>{message}</p>",
+    })
+
+
 async def send_verification_email(to: str, token: str) -> None:
     # TODO: 배포 시 이 분기 제거하고 Resend 도메인 인증 후 실제 발송으로 교체
     # 현재 로컬(development) 환경에서는 이메일 발송을 스킵함
