@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -45,6 +46,12 @@ async def _alert_for_segment(db, segment) -> bool:
         "volunteer_name": volunteer_name,
         "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
     }
+    await redis_client.publish("pawrelay:ping_no_response", json.dumps({
+        "segment_id": segment.id,
+        "volunteer_id": segment.volunteer_id,
+        "volunteer_name": volunteer_name,
+        "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
+    }))
     await ws_service.publish_user_event(redis_client, shelter_id, "departure.no_response", ws_payload)
     await notification_service.save_in_app(
         db, shelter_id, None,
