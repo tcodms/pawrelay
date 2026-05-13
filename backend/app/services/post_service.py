@@ -30,6 +30,7 @@ async def create_post(db: AsyncSession, shelter_id: int, data) -> PostCreateResp
         animal_size=data.animal_info.size,
         animal_photo_url=data.animal_info.photo_url,
         animal_notes=data.animal_info.notes,
+        kakao_openchat_url=data.kakao_openchat_url,
     )
     return PostCreateResponse(id=post.id, share_token=post.share_token, status=post.status)
 

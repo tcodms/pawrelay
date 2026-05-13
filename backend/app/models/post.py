@@ -32,6 +32,7 @@ class TransportPost(Base):
     origin = Column(String(255), nullable=False)
     destination = Column(String(255), nullable=False)
     scheduled_date = Column(Date, nullable=False)
+    kakao_openchat_url = Column(String(500), nullable=True)
     share_token = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
