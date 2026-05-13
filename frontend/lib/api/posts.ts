@@ -50,6 +50,37 @@ export interface PhotoUploadUrl {
   photo_url: string;
 }
 
+export interface PublicCheckpoint {
+  latitude: number;
+  longitude: number;
+  recorded_at: string;
+}
+
+export interface PublicCurrentSegment {
+  order: number;
+  status: string;
+}
+
+export interface PublicTimelineItem {
+  segment_order: number;
+  completed_at: string;
+}
+
+export interface PublicPostResponse {
+  animal_info: {
+    name: string;
+    size: "small" | "medium" | "large";
+    photo_url?: string | null;
+    notes?: string | null;
+  };
+  origin: string;
+  destination: string;
+  scheduled_date: string;
+  current_segment: PublicCurrentSegment | null;
+  checkpoints: PublicCheckpoint[];
+  timeline: PublicTimelineItem[];
+}
+
 // ── API 함수 ──────────────────────────────────────────────────────────────────
 
 interface DashboardRelaySegment {
@@ -184,4 +215,8 @@ export async function getPhotoUploadUrl(filename: string): Promise<PhotoUploadUr
   return request<PhotoUploadUrl>(
     `/posts/upload-url?filename=${encodeURIComponent(filename)}`
   );
+}
+
+export async function getPublicPost(shareToken: string): Promise<PublicPostResponse> {
+  return request<PublicPostResponse>(`/posts/public/${shareToken}`);
 }
