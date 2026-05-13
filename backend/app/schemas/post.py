@@ -16,6 +16,7 @@ class PostCreateRequest(BaseModel):
     destination: str
     scheduled_date: date
     animal_info: AnimalInfo
+    kakao_openchat_url: str | None = None
 
 
 class AnimalInfoUpdate(BaseModel):

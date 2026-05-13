@@ -266,7 +266,7 @@ def _build_segment_response(segment, partner, chain, post, waypoint_rows, volunt
             "expires_at": expires_at,
             "partner": {"name": partner.volunteer.name if partner and partner.volunteer else ""},
             "shelter_phone": shelter.shelter_profile.phone if shelter and shelter.shelter_profile else None,
-            "kakao_openchat_url": "",
+            "kakao_openchat_url": post.kakao_openchat_url if post else None,
             "waypoints": _build_waypoints_dict(waypoint_rows),
             "chain_segments": _build_chain_segments(chain_segments, volunteer_id),
         }
@@ -335,9 +335,9 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
             "dropoff_location": {"name": segment.dropoff_location, "address": segment.dropoff_location},
             "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
             "handover_code": segment.handover_code,
-            "partner": {"name": "", "phone": ""},
-            "kakao_openchat_url": "",
-            "waypoints": {"train": [], "bus": [], "rest_area": []},
+            "partner": {"name": ""},
+            "kakao_openchat_url": chain.transport_post.kakao_openchat_url if chain and chain.transport_post else None,
+            "waypoints": {},
         }
     }
 

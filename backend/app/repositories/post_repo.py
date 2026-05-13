@@ -81,6 +81,7 @@ async def create_post(
     animal_size: str,
     animal_photo_url: str | None,
     animal_notes: str | None,
+    kakao_openchat_url: str | None = None,
 ) -> TransportPost:
     post = TransportPost(
         shelter_id=shelter_id,
@@ -91,6 +92,7 @@ async def create_post(
         animal_size=animal_size,
         animal_photo_url=animal_photo_url,
         animal_notes=animal_notes,
+        kakao_openchat_url=kakao_openchat_url,
     )
     db.add(post)
     await db.commit()
