@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
   ArrowLeft, ArrowRight, ArrowUp, MapPin, Calendar, PawPrint,
@@ -659,6 +659,7 @@ function PostSummaryCard({ postContext, registered }: { postContext: PostContext
 export default function ChatRoomPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const sessionId = params.session_id as string;
   const isDemo = sessionId === "session-001";
   const isDemo2 = sessionId === "session-002";
@@ -821,6 +822,36 @@ export default function ChatRoomPage() {
     navigator.serviceWorker?.addEventListener("message", handleSwMessage);
     return () => navigator.serviceWorker?.removeEventListener("message", handleSwMessage);
   }, [isDemo, isDemo2]);
+
+  // ?openMatching 파라미터 → 알림 버블 추가 (알림 클릭 or SW_NAVIGATE로 진입 시)
+  const handledOpenMatchingRef = useRef<string | null>(null);
+  useEffect(() => {
+    const openMatchingId = searchParams.get("openMatching");
+    if (!openMatchingId || initializing) return;
+    if (handledOpenMatchingRef.current === openMatchingId) return;
+    handledOpenMatchingRef.current = openMatchingId;
+
+    const notifType = searchParams.get("notifType") ?? "matching_proposed";
+    const message =
+      notifType === "matching_confirmed"
+        ? "매칭이 확정됐어요! 봉사 상세 내용을 확인해 주세요. 🎉"
+        : "새로운 매칭이 제안됐어요! 수락 여부를 결정해 주세요.";
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "bot" as const,
+        type: "notification" as const,
+        notif_id: Date.now(),
+        notif_type: notifType,
+        message,
+        segment_id: Number(openMatchingId),
+        url: `/volunteer/matching/${openMatchingId}`,
+      },
+    ]);
+
+    router.replace(`/volunteer/chat/${sessionId}`);
+  }, [searchParams, initializing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 마지막 메시지를 localStorage에 저장 (채팅 목록에서 미리보기용)
   useEffect(() => {

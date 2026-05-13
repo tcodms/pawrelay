@@ -20,16 +20,7 @@ export default function SwNavigateHandler() {
 
       if (url.origin !== window.location.origin) return;
 
-      const openMatching = url.searchParams.get("openMatching");
-      const chatMatch = url.pathname.match(/\/volunteer\/chat\/([^/]+)/);
-      const chatSessionId = chatMatch?.[1];
-
-      if (openMatching && chatSessionId && url.pathname.startsWith("/volunteer/chat/")) {
-        sessionStorage.setItem("matchingChatSession", chatSessionId);
-        router.push(`/volunteer/matching/${openMatching}`);
-      } else {
-        router.push(url.pathname + url.search);
-      }
+      router.push(url.pathname + url.search);
     }
     navigator.serviceWorker?.addEventListener("message", handleMessage);
     return () => navigator.serviceWorker?.removeEventListener("message", handleMessage);
