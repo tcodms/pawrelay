@@ -7,11 +7,15 @@ export interface Volunteer {
   to: string;
 }
 
+export type PingStatus = "confirmed" | "no_response" | "pending";
+
 export interface RelaySegment {
+  segment_id?: number;
   volunteer: string;
   from: string;
   to: string;
   time: string;
+  ping_status?: PingStatus;
 }
 
 export interface Post {

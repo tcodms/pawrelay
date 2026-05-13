@@ -1,0 +1,126 @@
+"use client";
+
+import { createContext, useContext, useRef, useState } from "react";
+import { AlertTriangle, AlertOctagon, Bell } from "lucide-react";
+import { useWebSocket, type WsEventName, type WsPayloadMap } from "@/hooks/useWebSocket";
+import type { AppNotification } from "@/lib/api/notifications";
+import type { PingStatus } from "@/lib/dummy-posts";
+export type { PingStatus };
+
+interface WsToast {
+  id: number;
+  type: "delay" | "sos";
+  message: string;
+}
+
+interface DashboardWsContextValue {
+  pingStatusMap: Record<number, PingStatus>;
+  unreadCount: number;
+}
+
+const DashboardWsContext = createContext<DashboardWsContextValue>({
+  pingStatusMap: {},
+  unreadCount: 0,
+});
+
+export function useDashboardWs() {
+  return useContext(DashboardWsContext);
+}
+
+export function DashboardWsProvider({ children }: { children: React.ReactNode }) {
+  const [pingStatusMap, setPingStatusMap] = useState<Record<number, PingStatus>>({});
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [wsToasts, setWsToasts] = useState<WsToast[]>([]);
+  const nextIdRef = useRef(0);
+
+  function addToast(type: WsToast["type"], message: string) {
+    const id = ++nextIdRef.current;
+    setWsToasts((prev) => [...prev, { id, type, message }]);
+    setTimeout(
+      () => setWsToasts((prev) => prev.filter((t) => t.id !== id)),
+      5000
+    );
+  }
+
+  function handleEvent<K extends WsEventName>(event: K, payload: WsPayloadMap[K]) {
+    if (event === "ping.confirmed") {
+      const { segment_id } = payload as WsPayloadMap["ping.confirmed"];
+      setPingStatusMap((prev) => ({ ...prev, [segment_id]: "confirmed" }));
+    } else if (event === "ping.no_response") {
+      const { segment_id } = payload as WsPayloadMap["ping.no_response"];
+      setPingStatusMap((prev) => ({ ...prev, [segment_id]: "no_response" }));
+    } else if (event === "delay.reported") {
+      addToast("delay", (payload as WsPayloadMap["delay.reported"]).message);
+    } else if (event === "sos.triggered") {
+      addToast("sos", "SOS! 긴급 재매칭 요청이 발생했습니다.");
+    }
+  }
+
+  function handleUnread(notifications: AppNotification[]) {
+    setUnreadCount(notifications.length);
+  }
+
+  useWebSocket({ onEvent: handleEvent, onUnreadNotifications: handleUnread });
+
+  return (
+    <DashboardWsContext.Provider value={{ pingStatusMap, unreadCount }}>
+      {unreadCount > 0 && (
+        <div
+          aria-label={`읽지 않은 알림 ${unreadCount}개`}
+          className="fixed top-4 right-14 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm"
+        >
+          <Bell size={15} className="text-gray-400" />
+          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        </div>
+      )}
+
+      {children}
+
+      <div
+        aria-live="assertive"
+        style={{
+          position: "fixed",
+          bottom: "32px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 999999,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "8px",
+          pointerEvents: "none",
+        }}
+      >
+        {wsToasts.map((t) => (
+          <div
+            key={t.id}
+            role="alert"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: "rgba(243, 244, 246, 0.97)",
+              color: "#111827",
+              padding: "12px 20px",
+              borderRadius: "16px",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+              fontSize: "13px",
+              fontWeight: 500,
+              whiteSpace: "nowrap",
+              pointerEvents: "auto",
+            }}
+          >
+            {t.type === "sos" ? (
+              <AlertOctagon size={14} style={{ color: "#ef4444", flexShrink: 0 }} />
+            ) : (
+              <AlertTriangle size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
+            )}
+            {t.message}
+          </div>
+        ))}
+      </div>
+    </DashboardWsContext.Provider>
+  );
+}
