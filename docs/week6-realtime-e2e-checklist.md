@@ -4,7 +4,7 @@
 
 - 출발 2시간 전 `ping_check` Web Push 발송 확인
 - 봉사자 응답 후 `ping.confirmed` 반영 확인
-- 미응답 경고 시 `ping.no_response` 반영 확인
+- 미응답 경고 시 `handover.no_response`, `departure.no_response` 반영 확인
 - `checkpoint.updated` 입양자 실시간 조회 반영 확인
 - Anomaly Detector 이벤트 입력과 decision 연결 확인
 
@@ -19,8 +19,9 @@
 
 - `ping_check`는 `departure_ping` 스케줄러에서 push 발송된다.
 - `ping.confirmed`는 현재 `approve_handover()` 이후 websocket 이벤트로 발행된다.
-- `ping.no_response`는 현재 stale handover timeout 이후 websocket/in-app으로 발행된다.
-- 따라서 Week 6 요구사항 검증 시, `출발 전 ping` 의미와 `handover timeout` 의미가 같은지 별도 확인이 필요하다.
+- `handover.no_response`는 현재 stale handover timeout 이후 websocket/in-app으로 발행된다.
+- `departure.no_response`는 Week 6의 출발 전 미응답 경고용 신규 이벤트로 분리하는 것을 전제로 한다.
+- 따라서 Week 6 검증 시 두 이벤트를 같은 것으로 보지 않고, 트리거 조건을 구분해서 확인해야 한다.
 
 ## Payload Contracts
 
@@ -58,11 +59,30 @@ Expected fields:
 - `payload.segment_id`
 - `payload.volunteer_name`
 
-### WebSocket `ping.no_response`
+### WebSocket `handover.no_response`
 
 ```json
 {
-  "event": "ping.no_response",
+  "event": "handover.no_response",
+  "payload": {
+    "segment_id": 42,
+    "volunteer_name": "홍길동",
+    "scheduled_time": "2026-05-15T11:00:00+09:00"
+  }
+}
+```
+
+Expected fields:
+- `event`
+- `payload.segment_id`
+- `payload.volunteer_name`
+- `payload.scheduled_time`
+
+### WebSocket `departure.no_response`
+
+```json
+{
+  "event": "departure.no_response",
   "payload": {
     "segment_id": 42,
     "volunteer_name": "홍길동",
@@ -104,7 +124,7 @@ Expected fields:
 
 | source event | AI input channel | expected AI decision |
 |--------------|------------------|----------------------|
-| `ping.no_response` | `pawrelay:ping_no_response` | `admin_alert` or `penalty_candidate` |
+| `departure.no_response` | `pawrelay:ping_no_response` | `admin_alert` or `penalty_candidate` |
 | delayed checkpoint | `pawrelay:checkpoint_delay` | `reematch_candidate` or `chain_break_candidate` |
 | SOS report | `pawrelay:sos` | `shelter_recommend` or `admin_alert` |
 | stale handover | `pawrelay:needs_verify` | `no_show_candidate` |
@@ -152,7 +172,7 @@ Expected:
 - `notifications` unread 목록에도 반영되는지 확인한다.
 
 Expected:
-- `ping.no_response` 이벤트 수신
+- `departure.no_response` 또는 `handover.no_response` 이벤트 수신
 - shelter dashboard 상태가 주황으로 전환
 - 필요 시 in-app notification도 함께 생성
 
@@ -168,7 +188,7 @@ Expected:
 
 ### 6. AI Integration
 
-- `ping.no_response`, `checkpoint_delay`, `needs_verify`, `sos`를 각각 발생시킨다.
+- `departure.no_response`, `checkpoint_delay`, `needs_verify`, `sos`를 각각 발생시킨다.
 - Redis publish 이후 AI worker와 `pawrelay:ai:decision` subscriber 로그를 확인한다.
 - backend subscriber가 실제 후속 처리하는 decision과 deferred 처리하는 decision을 구분해서 본다.
 
@@ -179,8 +199,8 @@ Expected:
 
 ## Open Checks
 
-- `ping.confirmed`가 handover approve 재사용인지, 출발 전 ping 응답 전용 흐름인지 확인 필요
-- `ping.no_response`가 handover timeout 기반인지, 출발 1시간 전 무응답 경고와 동일 의미인지 확인 필요
+- `ping.confirmed`가 handover approve 재사용인지, 출발 전 ping 응답 전용 흐름인지 최종 명시 필요
+- `handover.no_response`와 `departure.no_response`의 프론트 처리 분기 방식 확정 필요
 - AI decision subscriber에서 `shelter_recommend`, `admin_alert`, `rematch_candidate` 후속 처리 범위 확인 필요
 
 ## Quick Pass Criteria
@@ -188,7 +208,7 @@ Expected:
 - push 구독 성공
 - `ping_check` 1회 이상 수신
 - `ping.confirmed` 이벤트 수신
-- `ping.no_response` 이벤트 수신
+- `handover.no_response` 또는 `departure.no_response` 이벤트 수신
 - `checkpoint.updated` 이벤트 수신
 - AI decision 로그 1회 이상 확인
 

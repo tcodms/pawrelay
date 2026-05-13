@@ -19,7 +19,8 @@
 
 - `ping_check`는 현재 백엔드에서 실제 push 알림으로 사용 중이다.
 - `ping.confirmed`는 현재 `approve_handover()` 흐름에서 WebSocket 이벤트로 발행된다.
-- `ping.no_response`는 현재 `handover_timeout` 기반 WebSocket/in-app 알림으로 발행된다.
+- `handover.no_response`는 현재 `handover_timeout` 기반 WebSocket/in-app 알림으로 본다.
+- `departure.no_response`는 Week 6의 출발 전 미응답 경고용 신규 이벤트로 분리하는 것을 전제로 한다.
 - `checkpoint.updated`는 현재 입양자 조회용 WebSocket 이벤트로 발행된다.
 - 따라서 아래 템플릿은 Week 6 목표와 현재 구현 상태를 함께 맞추는 기준 문구로 본다.
 
@@ -90,14 +91,23 @@
 - payload: `{ segment_id, volunteer_name }`
 - notes: 보호소 대시보드에서 초록 상태 전환에 사용한다.
 
-### `ping.no_response`
+### `handover.no_response`
 
-- event: `ping.no_response`
-- title: `봉사자 응답이 지연되고 있어요`
-- message: `{volunteer_name} 님의 출발 응답이 아직 없어요. 일정 확인이 필요합니다.`
+- event: `handover.no_response`
+- title: `인계 확인 응답이 지연되고 있어요`
+- message: `{volunteer_name} 님이 인계 확인에 아직 응답하지 않았어요. 인계 진행 상황을 확인해주세요.`
 - channel: `WebSocket`
 - payload: `{ segment_id, volunteer_name, scheduled_time }`
-- notes: 보호소 대시보드에서 주황 경고 상태 전환에 사용한다.
+- notes: 인계 코드 입력 이후 30분 이상 응답이 없는 상황용 경고 이벤트다.
+
+### `departure.no_response`
+
+- event: `departure.no_response`
+- title: `출발 확인 응답이 지연되고 있어요`
+- message: `{volunteer_name} 님이 출발 확인에 아직 응답하지 않았어요. 출발 가능 여부를 확인해주세요.`
+- channel: `WebSocket`
+- payload: `{ segment_id, volunteer_name, scheduled_time }`
+- notes: 출발 2시간 전 ping_check 발송 후, 출발 1시간 전까지 응답이 없는 상황용 경고 이벤트다.
 
 ### `delay_reported`
 
@@ -164,7 +174,8 @@
 | volunteer | `handover_location_changed` | push + in-app |
 | shelter | `matching_failed` | in-app |
 | shelter | `ping.confirmed` | websocket |
-| shelter | `ping.no_response` | websocket |
+| shelter | `handover.no_response` | websocket |
+| shelter | `departure.no_response` | websocket |
 | shelter | `delay_reported` | websocket |
 | shelter | `sos_triggered` | websocket |
 | adopter | `checkpoint.updated` | websocket |
