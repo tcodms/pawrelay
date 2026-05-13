@@ -19,8 +19,11 @@ async def send_departure_no_response_alerts() -> None:
         segments = await relay_repo.get_accepted_segments_ping_no_response(db, cutoff)
         count = 0
         for segment in segments:
-            if await _alert_for_segment(db, segment):
-                count += 1
+            try:
+                if await _alert_for_segment(db, segment):
+                    count += 1
+            except Exception:
+                logger.exception("segment_id=%s 출발 핑 미응답 알림 발행 실패", segment.id)
         logger.info("[출발 핑 미응답] %d건 경고 발행", count)
 
 

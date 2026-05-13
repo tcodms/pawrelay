@@ -154,6 +154,7 @@ async def confirm_departure_ping(
     if not segment.ping_sent_at:
         raise HTTPException(status_code=409, detail={"error": "PING_NOT_SENT"})
     if segment.ping_responded_at:
+        await _publish_ping_confirmed(db, redis, segment)
         return PingConfirmOut(ok=True)
     segment.ping_responded_at = datetime.now(timezone.utc)
     await db.commit()
