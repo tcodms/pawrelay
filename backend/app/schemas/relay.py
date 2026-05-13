@@ -39,6 +39,10 @@ class HandoverApproveOut(BaseModel):
     status: Literal["completed"]
 
 
+class PingConfirmOut(BaseModel):
+    ok: bool
+
+
 class HandoverLocationIn(BaseModel):
     waypoint_id: int
 

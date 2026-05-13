@@ -30,6 +30,7 @@ async def _send_ping_for_segment(db, segment) -> bool:
     )
     if already_sent or not segment.volunteer:
         return False
+    segment.ping_sent_at = datetime.now(timezone.utc)
     vol = segment.volunteer
     await notification_service.send_push_and_save(
         db, vol.id, vol.email, None,
@@ -37,4 +38,5 @@ async def _send_ping_for_segment(db, segment) -> bool:
         "출발 예정 시간이 2시간 이내입니다. 준비해 주세요.",
         {"segment_id": segment.id, "scheduled_time": segment.scheduled_time.isoformat()},
     )
+    await db.commit()
     return True

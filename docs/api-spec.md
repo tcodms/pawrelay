@@ -514,6 +514,20 @@ Response 200: { "status": "completed" }
 
 ---
 
+### POST `/relay/segments/{id}/ping/confirm`
+봉사자 인증 필요. (출발 전 핑 응답)
+
+조건: 해당 segment의 volunteer만 가능. segment status = `accepted`.
+
+```json
+Response 200: { "ok": true }
+```
+
+> 출발 2시간 전 핑 push를 수신한 봉사자가 "확인했음"을 응답하는 엔드포인트.
+> 응답 시 `ping_responded_at` 저장 → 보호소 WebSocket `ping.confirmed` 발행.
+
+---
+
 ### PATCH `/relay/segments/{id}/handover-location`
 봉사자 인증 필요. **앞 구간 봉사자만 가능.**
 
@@ -592,7 +606,8 @@ Response 200:
 | `matching_proposed` | 매칭 제안 |
 | `matching_confirmed` | 매칭 확정 |
 | `ping_check` | 핑 체크 (출발 확인 요청) |
-| `ping_no_response` | 핑 미응답 경고 (보호소용) |
+| `departure_no_response` | 출발 전 핑 미응답 경고 — 출발 1시간 전까지 봉사자 미응답 (보호소용) |
+| `handover_no_response` | 인계 코드 미응답 경고 — 코드 입력 후 30분 내 상대방 미입력 (보호소용) |
 | `delay_reported` | 지연 신고 알림 |
 | `sos_triggered` | SOS 발생 |
 | `handover_waiting_confirm` | 인계 코드 대기 |
@@ -702,16 +717,21 @@ Response 200:
       "pickup_location": { "name": "광주역", "address": "..." },
       "dropoff_location": { "name": "천안역", "address": "..." },
       "status": "in_progress",
-      "ping_status": "confirmed" | "no_response" | "pending"
+      "ping_status": "confirmed" | "departure_no_response" | "handover_no_response" | "pending"
     }
   ]
 }
 ```
 
-> FE: WebSocket `ping.confirmed` / `ping.no_response` 이벤트 수신 시
-> ping_status 실시간 갱신.
-> `no_response` → 주황색 경고 표시.
-> 봉사자 뒤늦게 응답 시 `confirmed`로 전환.
+> FE: WebSocket 이벤트 수신 시 `ping_status` 실시간 갱신.
+>
+> | WebSocket 이벤트 | ping_status 갱신값 | UI |
+> |---|---|---|
+> | `ping.confirmed` | `"confirmed"` | 초록색 |
+> | `departure.no_response` | `"departure_no_response"` | 주황색 — "출발 전 미응답" |
+> | `handover.no_response` | `"handover_no_response"` | 주황색 — "인계 코드 미응답" |
+>
+> 봉사자 뒤늦게 응답 시 `ping.confirmed` 수신 → `"confirmed"`로 전환.
 
 ---
 
@@ -929,7 +949,8 @@ ws://api/ws?share_token=xxxx       (입양자 조회 페이지, 인증 없음)
 |-------|--------|---------|
 | `checkpoint.updated` | 입양자 조회 페이지 | `{ transport_post_id, segment_order, latitude, longitude, recorded_at }` |
 | `ping.confirmed` | 보호소 대시보드 | `{ segment_id, volunteer_name }` |
-| `ping.no_response` | 보호소 대시보드 | `{ segment_id, volunteer_name, scheduled_time }` |
+| `departure.no_response` | 보호소 대시보드 | `{ segment_id, volunteer_name, scheduled_time }` — 출발 1시간 전까지 봉사자 핑 미응답 |
+| `handover.no_response` | 보호소 대시보드 | `{ segment_id, volunteer_name, scheduled_time }` — 인계 코드 입력 후 30분 내 상대방 미입력 |
 | `delay.reported` | 보호소 대시보드 | `{ segment_id, message }` |
 | `sos.triggered` | 보호소 대시보드 | `{ segment_id, latitude, longitude }` |
 
@@ -948,3 +969,39 @@ ws://api/ws?share_token=xxxx       (입양자 조회 페이지, 인증 없음)
 
 > FE: 알림 클릭 시 `url` 경로로 이동.
 > PWA 미설치(iOS) 또는 Push 권한 거부 시 이메일 자동 대체 발송.
+
+---
+
+## 12. FE 변경 요청 — ping 이벤트 분리 대응
+
+### 변경 배경
+
+`ping.no_response` 단일 이벤트가 두 가지 시나리오를 처리하고 있었으나, UI 처리 방식이 달라 이벤트 타입을 분리함.
+
+### FE 변경 필요 사항
+
+**1. WebSocket 이벤트 핸들러 분리**
+
+기존: `ping.no_response` 단일 핸들러
+변경:
+- `departure.no_response` — 출발 전 봉사자 핑 미응답. 보호소 대시보드에서 주황색 + "출발 전 미응답" 표시.
+- `handover.no_response` — 인계 코드 미응답. 보호소 대시보드에서 주황색 + "인계 코드 미응답" 표시.
+
+**2. `GET /shelter/posts/{id}/relay` ping_status 값 변경**
+
+기존: `"confirmed" | "no_response" | "pending"`
+변경: `"confirmed" | "departure_no_response" | "handover_no_response" | "pending"`
+
+렌더링 기준:
+| ping_status | UI |
+|---|---|
+| `pending` | 회색 (대기) |
+| `departure_no_response` | 주황색 — "출발 전 미응답" |
+| `handover_no_response` | 주황색 — "인계 코드 미응답" |
+| `confirmed` | 초록색 — "확인 완료" |
+
+**3. 봉사자 — 출발 핑 확인 버튼 추가**
+
+출발 2시간 전 push 알림 수신 후 봉사자 앱에서 확인 버튼 노출.
+버튼 클릭 시: `POST /relay/segments/{id}/ping/confirm` 호출.
+응답 성공 시 버튼 비활성화 + "확인 완료" 표시.
