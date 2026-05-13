@@ -5,6 +5,8 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from geoalchemy2.shape import to_shape
+
 from app.core.redis import redis_client
 from app.models.post import TransportPost
 from app.models.volunteer import VolunteerSchedule
@@ -214,7 +216,6 @@ def _build_location(name: str, lat, lng) -> dict:
 
 
 def _build_waypoints_dict(waypoint_rows: list) -> dict:
-    from geoalchemy2.shape import to_shape
     result: dict[str, list] = {}
     for waypoint, distance_m in waypoint_rows:
         pt = to_shape(waypoint.geom)

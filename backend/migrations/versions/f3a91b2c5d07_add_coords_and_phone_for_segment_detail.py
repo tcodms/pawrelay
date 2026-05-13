@@ -1,4 +1,4 @@
-"""add_coords_and_phone_for_segment_detail
+"""add_pickup_dropoff_coords_to_relay_segments
 
 Revision ID: f3a91b2c5d07
 Revises: d856dcdf8f32
