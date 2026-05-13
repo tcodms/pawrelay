@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 
 class AnimalInfo(BaseModel):
@@ -17,6 +17,13 @@ class PostCreateRequest(BaseModel):
     scheduled_date: date
     animal_info: AnimalInfo
     kakao_openchat_url: str | None = None
+
+    @validator("kakao_openchat_url", pre=True, always=True)
+    def normalize_openchat_url(cls, v):
+        if v is None:
+            return None
+        stripped = v.strip()
+        return stripped if stripped else None
 
 
 class AnimalInfoUpdate(BaseModel):

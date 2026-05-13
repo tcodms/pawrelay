@@ -327,19 +327,15 @@ async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -
     if all_accepted and shelter_id:
         await _notify_matching_confirmed(db, shelter_id, chain.id, post_id, all_vol_infos)
 
-    return {
-        "segment": {
-            "order": segment.segment_order,
-            "status": segment.status,
-            "pickup_location": {"name": segment.pickup_location, "address": segment.pickup_location},
-            "dropoff_location": {"name": segment.dropoff_location, "address": segment.dropoff_location},
-            "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
-            "handover_code": segment.handover_code,
-            "partner": {"name": ""},
-            "kakao_openchat_url": chain.transport_post.kakao_openchat_url if chain and chain.transport_post else None,
-            "waypoints": {},
-        }
-    }
+    segment = await matching_repo.get_segment_by_id(db, segment_id)
+    partner = await matching_repo.get_partner_segment(db, segment)
+    post = segment.chain.transport_post if segment.chain else None
+    waypoint_rows = []
+    if segment.pickup_lat and segment.pickup_lng:
+        waypoint_rows = await matching_repo.get_waypoints_near(
+            db, float(segment.pickup_lat), float(segment.pickup_lng)
+        )
+    return _build_segment_response(segment, partner, segment.chain, post, waypoint_rows, volunteer_id)
 
 
 async def decline_segment(db: AsyncSession, segment_id: int, volunteer_id: int, reason: str) -> dict:
