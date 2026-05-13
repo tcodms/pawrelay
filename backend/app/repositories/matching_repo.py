@@ -1,13 +1,16 @@
 from datetime import datetime, timedelta, timezone
 
+from geoalchemy2 import Geography
 from geoalchemy2.functions import ST_DWithin, ST_EndPoint, ST_Length, ST_MakePoint, ST_SetSRID, ST_StartPoint
-from sqlalchemy import and_, case, select
+from sqlalchemy import and_, case, cast, func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.post import TransportPost
 from app.models.relay import RelayChain, RelaySegment
+from app.models.user import User, ShelterProfile
 from app.models.volunteer import VolunteerSchedule
+from app.models.waypoint import Waypoint
 
 POST_SIZE_RANK = {
     "small": 1,
@@ -289,7 +292,10 @@ async def get_segment_by_id(db: AsyncSession, segment_id: int) -> RelaySegment |
         .where(RelaySegment.id == segment_id)
         .options(
             selectinload(RelaySegment.volunteer),
-            selectinload(RelaySegment.chain).selectinload(RelayChain.transport_post),
+            selectinload(RelaySegment.chain)
+                .selectinload(RelayChain.transport_post)
+                .selectinload(TransportPost.shelter)
+                .selectinload(User.shelter_profile),
             selectinload(RelaySegment.chain)
                 .selectinload(RelayChain.segments)
                 .selectinload(RelaySegment.volunteer),
@@ -326,3 +332,27 @@ async def get_partner_segment(db: AsyncSession, segment: RelaySegment) -> RelayS
         .options(selectinload(RelaySegment.volunteer))
     )
     return result.scalar_one_or_none()
+
+
+async def get_waypoints_near(
+    db: AsyncSession, lat: float, lng: float, radius_km: float = 30.0
+) -> list[tuple]:
+    """pickup/dropoff 좌표 기준 반경 내 waypoints 조회 (waypoint, distance_m)"""
+    point = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+    distance_m = func.ST_Distance(
+        cast(Waypoint.geom, Geography),
+        cast(point, Geography),
+    )
+    result = await db.execute(
+        select(Waypoint, distance_m.label("distance_m"))
+        .where(
+            func.ST_DWithin(
+                cast(Waypoint.geom, Geography),
+                cast(point, Geography),
+                radius_km * 1000,
+            )
+        )
+        .order_by(distance_m)
+        .limit(20)
+    )
+    return result.all()

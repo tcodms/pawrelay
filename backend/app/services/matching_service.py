@@ -5,6 +5,8 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from geoalchemy2.shape import to_shape
+
 from app.core.redis import redis_client
 from app.models.post import TransportPost
 from app.models.volunteer import VolunteerSchedule
@@ -204,6 +206,73 @@ async def get_my_segments(db: AsyncSession, volunteer_id: int) -> dict:
     }
 
 
+def _build_location(name: str, lat, lng) -> dict:
+    return {
+        "name": name,
+        "address": name,
+        "lat": float(lat) if lat is not None else None,
+        "lng": float(lng) if lng is not None else None,
+    }
+
+
+def _build_waypoints_dict(waypoint_rows: list) -> dict:
+    result: dict[str, list] = {}
+    for waypoint, distance_m in waypoint_rows:
+        pt = to_shape(waypoint.geom)
+        entry = {
+            "id": waypoint.id,
+            "name": waypoint.name,
+            "address": waypoint.address,
+            "lat": pt.y,
+            "lng": pt.x,
+            "distance_km": round(distance_m / 1000, 2),
+        }
+        result.setdefault(waypoint.type, []).append(entry)
+    return result
+
+
+def _build_chain_segments(chain_segments: list, volunteer_id: int) -> list:
+    return [
+        {
+            "volunteer": seg.volunteer.name if seg.volunteer else "",
+            "from": seg.pickup_location,
+            "to": seg.dropoff_location,
+            "is_me": seg.volunteer_id == volunteer_id,
+        }
+        for seg in chain_segments
+    ]
+
+
+def _build_segment_response(segment, partner, chain, post, waypoint_rows, volunteer_id) -> dict:
+    shelter = post.shelter if post else None
+    chain_segments = sorted(chain.segments, key=lambda s: s.segment_order) if chain else []
+    expires_at = (chain.created_at + timedelta(hours=24)).isoformat() if chain else None
+    return {
+        "segment": {
+            "order": segment.segment_order,
+            "status": segment.status,
+            "animal_name": post.animal_name if post else "",
+            "animal_photo_url": post.animal_photo_url if post else None,
+            "animal_size": post.animal_size if post else "small",
+            "scheduled_date": post.scheduled_date.isoformat() if post else None,
+            "pickup_location": _build_location(segment.pickup_location, segment.pickup_lat, segment.pickup_lng),
+            "dropoff_location": _build_location(segment.dropoff_location, segment.dropoff_lat, segment.dropoff_lng),
+            "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
+            "depart_time": segment.scheduled_time.strftime("%H:%M") if segment.scheduled_time else None,
+            "estimated_arrival_time": segment.estimated_arrival.strftime("%H:%M") if segment.estimated_arrival else None,
+            "handover_code": segment.handover_code,
+            "matching_reason": chain.matching_reason if chain else None,
+            "notified_at": chain.created_at.isoformat() if chain else None,
+            "expires_at": expires_at,
+            "partner": {"name": partner.volunteer.name if partner and partner.volunteer else ""},
+            "shelter_phone": shelter.shelter_profile.phone if shelter and shelter.shelter_profile else None,
+            "kakao_openchat_url": "",
+            "waypoints": _build_waypoints_dict(waypoint_rows),
+            "chain_segments": _build_chain_segments(chain_segments, volunteer_id),
+        }
+    }
+
+
 async def get_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> dict:
     from fastapi import HTTPException
 
@@ -216,40 +285,14 @@ async def get_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> d
     partner = await matching_repo.get_partner_segment(db, segment)
     chain = segment.chain
     post = chain.transport_post if chain else None
-    chain_segments = sorted(chain.segments, key=lambda s: s.segment_order) if chain else []
 
-    return {
-        "segment": {
-            "order": segment.segment_order,
-            "status": segment.status,
-            "animal_name": post.animal_name if post else "",
-            "animal_photo_url": post.animal_photo_url if post else None,
-            "animal_size": post.animal_size if post else "small",
-            "scheduled_date": post.scheduled_date.isoformat() if post else None,
-            "pickup_location": {"name": segment.pickup_location, "address": segment.pickup_location},
-            "dropoff_location": {"name": segment.dropoff_location, "address": segment.dropoff_location},
-            "scheduled_time": segment.scheduled_time.isoformat() if segment.scheduled_time else None,
-            "depart_time": segment.scheduled_time.strftime("%H:%M") if segment.scheduled_time else None,
-            "estimated_arrival_time": segment.estimated_arrival.strftime("%H:%M") if segment.estimated_arrival else None,
-            "handover_code": segment.handover_code,
-            "matching_reason": chain.matching_reason if chain else None,
-            "notified_at": chain.created_at.isoformat() if chain else None,
-            "partner": {
-                "name": partner.volunteer.name if partner and partner.volunteer else "",
-                "phone": "",
-            },
-            "kakao_openchat_url": "",
-            "chain_segments": [
-                {
-                    "volunteer": seg.volunteer.name if seg.volunteer else "",
-                    "from": seg.pickup_location,
-                    "to": seg.dropoff_location,
-                    "is_me": seg.volunteer_id == volunteer_id,
-                }
-                for seg in chain_segments
-            ],
-        }
-    }
+    waypoint_rows = []
+    if segment.pickup_lat and segment.pickup_lng:
+        waypoint_rows = await matching_repo.get_waypoints_near(
+            db, float(segment.pickup_lat), float(segment.pickup_lng)
+        )
+
+    return _build_segment_response(segment, partner, chain, post, waypoint_rows, volunteer_id)
 
 
 async def accept_segment(db: AsyncSession, segment_id: int, volunteer_id: int) -> dict:
