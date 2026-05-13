@@ -16,6 +16,7 @@ from app.schemas.relay import (
     DelayIn, DelayOut,
     HandoverApproveOut, HandoverLocationIn, HandoverLocationOut,
     HandoverRequestOut, HandoverVerifyIn, HandoverVerifyOut,
+    PingConfirmOut,
     SosIn, SosOut,
     WaypointInfo,
 )
@@ -135,6 +136,29 @@ async def request_handover(
     await db.commit()
     await _notify_ping_check(db, chain_id, segment_order, segment_id)
     return HandoverRequestOut(ok=True)
+
+
+async def confirm_departure_ping(
+    db: AsyncSession,
+    redis: Redis,
+    user_id: int,
+    segment_id: int,
+) -> PingConfirmOut:
+    segment = await relay_repo.get_segment(db, segment_id, lock=True, load_volunteer=True)
+    if not segment:
+        raise HTTPException(status_code=404, detail={"error": "SEGMENT_NOT_FOUND"})
+    if segment.volunteer_id != user_id:
+        raise HTTPException(status_code=403, detail={"error": "FORBIDDEN"})
+    if segment.status != _SEGMENT_STATUS_ON_DEPARTURE:
+        raise HTTPException(status_code=409, detail={"error": "INVALID_SEGMENT_STATUS"})
+    if not segment.ping_sent_at:
+        raise HTTPException(status_code=409, detail={"error": "PING_NOT_SENT"})
+    if segment.ping_responded_at:
+        return PingConfirmOut(ok=True)
+    segment.ping_responded_at = datetime.now(timezone.utc)
+    await db.commit()
+    await _publish_ping_confirmed(db, redis, segment)
+    return PingConfirmOut(ok=True)
 
 
 async def _validate_approve_handover(db: AsyncSession, segment_id: int, user_id: int):

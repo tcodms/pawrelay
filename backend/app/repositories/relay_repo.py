@@ -134,6 +134,23 @@ async def get_accepted_segments_departing_soon(
     return list(result.scalars().all())
 
 
+async def get_accepted_segments_ping_no_response(
+    db: AsyncSession, cutoff: datetime
+) -> list[RelaySegment]:
+    """출발 1시간 전까지 핑을 보냈지만 응답 없는 accepted 세그먼트 조회"""
+    result = await db.execute(
+        select(RelaySegment)
+        .options(selectinload(RelaySegment.volunteer))
+        .where(
+            RelaySegment.status == "accepted",
+            RelaySegment.ping_sent_at.isnot(None),
+            RelaySegment.ping_responded_at.is_(None),
+            RelaySegment.scheduled_time <= cutoff,
+        )
+    )
+    return list(result.scalars().all())
+
+
 async def create_checkpoint(
     db: AsyncSession,
     segment_id: int,

@@ -8,6 +8,7 @@ from app.schemas.relay import (
     DelayIn, DelayOut,
     HandoverApproveOut, HandoverLocationIn, HandoverLocationOut,
     HandoverRequestOut, HandoverVerifyIn, HandoverVerifyOut,
+    PingConfirmOut,
     SosIn, SosOut,
 )
 from app.services import relay_service
@@ -51,6 +52,15 @@ async def approve_handover(
     db: AsyncSession = Depends(get_db),
 ):
     return await relay_service.approve_handover(db, redis_client, user_id, segment_id)
+
+
+@router.post("/segments/{segment_id}/ping/confirm", response_model=PingConfirmOut)
+async def confirm_departure_ping(
+    segment_id: int,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    return await relay_service.confirm_departure_ping(db, redis_client, user_id, segment_id)
 
 
 @router.patch("/segments/{segment_id}/handover-location", response_model=HandoverLocationOut)

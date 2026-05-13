@@ -123,5 +123,7 @@ def _resolve_ping_status(segment) -> str:
     if segment.ping_responded_at:
         return "confirmed"
     if segment.ping_sent_at:
-        return "no_response"
+        if segment.status == "accepted":
+            return "departure_no_response"
+        return "handover_no_response"
     return "pending"
