@@ -83,3 +83,7 @@ export async function reportDelay(
     body: JSON.stringify({ segment_id: segmentId, message }),
   });
 }
+
+export async function confirmPing(segmentId: number): Promise<void> {
+  await request<{ ok: boolean }>(`/relay/segments/${segmentId}/ping/confirm`, { method: "POST" });
+}

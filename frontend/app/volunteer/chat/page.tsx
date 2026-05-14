@@ -6,6 +6,7 @@ import Image from "next/image";
 import { MessageCircle, Plus, Bell, CheckCircle2, X, Trash2 } from "lucide-react";
 import { CHATBOT_SESSION_KEY, CHATBOT_POST_CONTEXT_KEY, sendChatMessage, getChatSessions, deleteChatSession } from "@/lib/api/chatbot";
 import type { PostContext } from "@/lib/api/chatbot";
+import { getUnreadNotifications, markNotificationRead } from "@/lib/api/notifications";
 import type { AppNotification } from "@/lib/api/notifications";
 
 // ── 채팅방 목록 ────────────────────────────────────────────────────────────────
@@ -20,34 +21,18 @@ interface ChatRoom {
   post_context?: PostContext;
 }
 
-// ── 더미 알림 ─────────────────────────────────────────────────────────────────
-
-const DUMMY_NOTIFICATIONS: AppNotification[] = [
-  {
-    id: 1,
-    type: "matching_proposed",
-    message: "새로운 매칭 제안이 도착했어요.",
-    payload: { segment_id: 1, url: "/volunteer/matching/1", chat_session_id: "session-001" },
-    created_at: "2026-04-10T09:00:00Z",
-  },
-  {
-    id: 2,
-    type: "matching_confirmed",
-    message: "[초코] 매칭이 확정됐어요! 상세 내용을 확인하세요.",
-    payload: { segment_id: 42, url: "/volunteer/matching/42", chat_session_id: "session-001" },
-    created_at: "2026-04-09T15:30:00Z",
-  },
-];
 
 const NOTIF_TYPE_LABEL: Record<string, string> = {
   matching_proposed: "매칭 제안",
   matching_confirmed: "매칭 확정",
+  matching_cancelled: "매칭 취소",
   ping_check: "출발 확인",
   delay_reported: "지연 알림",
   sos_triggered: "SOS 발생",
   handover_waiting_confirm: "인계 대기",
   handover_location_changed: "장소 변경",
   matching_failed: "매칭 실패",
+  segment_completed: "봉사 완료",
 };
 
 function formatRoomTime(isoString: string) {
@@ -79,7 +64,7 @@ function formatNotifTime(isoString: string) {
 export default function ChatPage() {
   const router = useRouter();
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>(DUMMY_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<number>>(new Set());
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
 
@@ -98,17 +83,21 @@ export default function ChatPage() {
       .catch(() => setRooms([]));
   }, []);
 
+  useEffect(() => {
+    getUnreadNotifications().then(setNotifications).catch(() => {});
+  }, []);
+
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
   function handleNotifClick(notif: AppNotification) {
     setReadIds((prev) => { const next = new Set(prev); next.add(notif.id); return next; });
+    markNotificationRead(notif.id).catch(() => {});
     setNotifOpen(false);
     if (notif.payload.chat_session_id) {
       sessionStorage.setItem("matchingChatSession", notif.payload.chat_session_id);
     }
-    if (notif.payload.url) {
-      router.push(notif.payload.url);
-    }
+    const url = notif.payload.url ?? (notif.payload.segment_id ? `/volunteer/matching/${notif.payload.segment_id}` : null);
+    if (url) router.push(url);
   }
 
   useEffect(() => {

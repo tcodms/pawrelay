@@ -706,6 +706,138 @@ FE에서 현재 더미값(`"062-000-0000"`)으로 임시 처리 중입니다.
 
 ---
 
+## 26. `GET /posts` 응답에 `animal_name` 필드 추가 요청
+
+**요청:** 기존 엔드포인트 응답 확장
+
+**필요 이유:**
+봉사자 공고 목록(`/volunteer/posts`)의 각 카드에 동물 이름을 표시해야 합니다.
+현재 `GET /posts` 응답에 `animal_name` 필드가 없어 공고 카드에서 동물 이름이 보이지 않습니다.
+FE `VolunteerPost` 인터페이스에는 이미 `animal_name: string`이 선언되어 있고, 렌더링 코드도 준비되어 있습니다.
+
+**현재 응답 (api-spec.md 섹션 2):**
+```json
+{
+  "posts": [
+    {
+      "id": 1,
+      "origin": "광주광역시",
+      "destination": "서울특별시",
+      "scheduled_date": "2026-04-10",
+      "animal_size": "small",
+      "status": "recruiting",
+      "animal_photo_url": "https://s3.../dog.jpg"
+    }
+  ]
+}
+```
+
+**요청 응답 (추가 필요 필드):**
+```json
+{
+  "posts": [
+    {
+      "id": 1,
+      "origin": "광주광역시",
+      "destination": "서울특별시",
+      "scheduled_date": "2026-04-10",
+      "animal_name": "초코",
+      "animal_size": "small",
+      "status": "recruiting",
+      "animal_photo_url": "https://s3.../dog.jpg"
+    }
+  ]
+}
+```
+
+> `animal_name`은 `transport_posts` → `animal_info.name` 값입니다. api-spec.md 섹션 2에도 반영 완료.
+
+**관련 파일:** `frontend/app/volunteer/posts/page.tsx`, `frontend/lib/api/posts.ts`
+
+---
+
+## 27. `GET /notifications/unread` — `push` 채널 알림도 반환 요청
+
+**요청:** 버그 수정
+
+**현상:**
+`notification_service.py`의 `get_unread_for_user` 함수가 `channel = 'in_app'`인 알림만 조회합니다.
+그러나 매칭 배치에서 알림을 `channel = 'push'`로 저장하고 있어 `GET /notifications/unread`가 항상 빈 배열을 반환합니다.
+
+**수정 내용 (`notification_service.py` `get_unread_for_user`):**
+```python
+# 현재 — in_app 채널만 조회
+.where(
+    Notification.user_id == user_id,
+    Notification.channel == "in_app",   # ← 이 필터 제거
+    Notification.read_at.is_(None),
+)
+
+# 수정 — 채널 무관 조회
+.where(
+    Notification.user_id == user_id,
+    Notification.read_at.is_(None),
+)
+```
+
+**관련 파일:** `backend/app/services/notification_service.py:get_unread_for_user`
+
+---
+
+## 28. `relay_segments.handover_code` 자동 생성 요청
+
+**요청:** 버그 수정
+
+**현상:**
+매칭 확정 후 `relay_segments.handover_code` 컬럼이 NULL인 채로 남아 있습니다.
+FE는 `handover_code`가 있을 때만 코드를 표시하므로, 출발 당일이 돼도 봉사자에게 코드가 보이지 않습니다.
+
+**필요한 변경:**
+segment 생성 시 또는 봉사자가 수락(`accepted` 상태 전환) 시점에 6자리 랜덤 숫자 코드를 생성해서 저장.
+
+```python
+import random
+handover_code = f"{random.randint(0, 999999):06d}"
+```
+
+**관련 파일:** `backend/app/services/matching_service.py` (segment 생성 또는 수락 처리 부분)
+
+---
+
+## 29. `ping_check` 알림 payload — segment_id 오류 및 필드 추가 요청
+
+**요청:** 버그 수정 + 응답 필드 확장
+
+**현상 1 — 잘못된 segment_id (버그):**
+`relay_service.py`의 `_notify_ping_check`에서 payload에 **앞 구간(주는 쪽) volunteer의 segment_id**를 담아 보냅니다.
+뒷 구간 봉사자가 알림을 탭하면 남의 봉사 상세 페이지로 이동합니다.
+
+```python
+# 현재 (잘못됨)
+{"segment_id": segment_id}  # 앞 구간 segment_id
+
+# 수정 필요
+{"segment_id": next_seg.id}  # 뒷 구간(수신자) 본인 segment_id
+```
+
+**현상 2 — 필드 부족:**
+FE 채팅방에서 `ping_check` 전용 버블(`PingCheckBubble`)을 표시하려면 동물 이름·출발 시각·출발지가 필요합니다.
+현재 payload에 없어 기본 문구("앞 구간 봉사자가 인계를 요청했습니다.")로 대체 중입니다.
+
+**요청 payload (추가 필요 필드):**
+```json
+{
+  "segment_id": 89,
+  "animal_name": "초코",
+  "depart_time": "09:00",
+  "from_area": "광주광역시 북구"
+}
+```
+
+**관련 파일:** `backend/app/services/relay_service.py:_notify_ping_check`
+
+---
+
 ## 참고
 
 - 1·2·3·4번은 api-spec.md에 이미 반영되어 있습니다. FE에서 경로만 맞추면 바로 연동 가능합니다.
@@ -716,5 +848,6 @@ FE에서 현재 더미값(`"062-000-0000"`)으로 임시 처리 중입니다.
 - 17번은 매칭 상세 페이지에서 더미 없이 동작하기 위한 `GET /matching/segments/{segment_id}` 응답 확장 요청입니다. item 11의 구조와 함께 처리하면 됩니다.
 - 20번은 코드 버그 수정이라 빠르게 처리 가능합니다. 한 줄 수정입니다.
 - 21번은 상태값 통일 확인 요청입니다. FE는 이미 `no_show`를 처리하도록 수정했습니다.
+- 26번은 봉사자 공고 목록 카드 동물 이름 표시를 위한 필드 추가입니다. `animal_info.name`을 flat하게 내려주면 됩니다.
 - 위 항목들은 `frontend/lib/api/` 하위 파일에 TODO 주석으로 표시되어 있습니다.
 - 엔드포인트 확정 시 해당 파일의 TODO를 해제하면 바로 연동 가능합니다.

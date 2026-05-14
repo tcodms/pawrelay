@@ -16,22 +16,29 @@ sw.addEventListener("push", (event: any) => {
     chat_session_id?: string;
   };
 
-  // 앱이 열려 있으면 채팅방에 postMessage로 버블 추가 요청
   const MATCHING_TYPES = ["matching_proposed", "matching_confirmed", "ping_check"];
-  if (data.type && MATCHING_TYPES.includes(data.type)) {
-    sw.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients: any[]) => {
-      clients.forEach((client: any) => client.postMessage({ type: "PUSH_NOTIFICATION", payload: data }));
-    });
-  }
+
+  // 앱이 열려 있으면 채팅방에 버블 추가 요청 — waitUntil에 포함해야 SW 종료 전 전달 보장
+  const notifyOpenClients =
+    data.type && MATCHING_TYPES.includes(data.type)
+      ? sw.clients
+          .matchAll({ type: "window", includeUncontrolled: true })
+          .then((clients: any[]) =>
+            clients.forEach((c: any) => c.postMessage({ type: "PUSH_NOTIFICATION", payload: data }))
+          )
+      : Promise.resolve();
 
   event.waitUntil(
-    sw.registration.showNotification("PawRelay 🐾", {
-      body: data.message,
-      icon: "/icons/icon-192x192.svg",
-      badge: "/icons/icon-192x192.svg",
-      data: { url: data.url ?? "/volunteer", chat_session_id: data.chat_session_id, notif_type: data.type },
-      vibrate: [200, 100, 200],
-    })
+    Promise.all([
+      notifyOpenClients,
+      sw.registration.showNotification("PawRelay 🐾", {
+        body: data.message,
+        icon: "/icons/icon-192x192.svg",
+        badge: "/icons/icon-192x192.svg",
+        data: { url: data.url ?? "/volunteer", chat_session_id: data.chat_session_id, notif_type: data.type },
+        vibrate: [200, 100, 200],
+      }),
+    ])
   );
 });
 
@@ -61,7 +68,7 @@ sw.addEventListener("notificationclick", (event: any) => {
           clients.forEach((c: any) => c.postMessage({ type: "SW_NAVIGATE", url: destination }));
           return clients[0].focus();
         }
-        return sw.clients.openWindow(destination);
+        return sw.clients.openWindow(new URL(destination, sw.location.origin).href);
       })
   );
 });

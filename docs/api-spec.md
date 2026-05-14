@@ -154,6 +154,7 @@ Response 200:
       "origin": "광주광역시",
       "destination": "서울특별시",
       "scheduled_date": "2026-04-10",
+      "animal_name": "초코",
       "animal_size": "small",
       "status": "recruiting",
       "animal_photo_url": "https://s3.../dog.jpg"

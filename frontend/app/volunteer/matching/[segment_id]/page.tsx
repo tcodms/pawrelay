@@ -75,6 +75,7 @@ function KakaoMap({ pickup, dropoff, waypointList }: { pickup: LatLng; dropoff: 
 
   useEffect(() => {
     if (!mapRef.current || !window.kakao?.maps) return;
+    if (!pickup.lat || !pickup.lng || !dropoff.lat || !dropoff.lng) return;
     const { maps } = window.kakao;
     const pickupPos  = new maps.LatLng(pickup.lat,  pickup.lng);
     const dropoffPos = new maps.LatLng(dropoff.lat, dropoff.lng);
@@ -103,17 +104,24 @@ function KakaoMap({ pickup, dropoff, waypointList }: { pickup: LatLng; dropoff: 
 function MapCard({ mapReady, pickup, dropoff, waypointList, kakaoMapUrl }: {
   mapReady: boolean; pickup: LatLng; dropoff: LatLng; waypointList: LatLng[]; kakaoMapUrl: string;
 }) {
+  const hasCoords = !!(pickup.lat && pickup.lng && dropoff.lat && dropoff.lng);
+
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
       <div className="relative w-full h-[220px] bg-gray-100">
-        {mapReady ? (
+        {!hasCoords ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
+            <MapPin size={24} strokeWidth={1.5} />
+            <p className="text-[13px]">지도 정보를 불러올 수 없습니다</p>
+          </div>
+        ) : mapReady ? (
           <KakaoMap pickup={pickup} dropoff={dropoff} waypointList={waypointList} />
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
           </div>
         )}
-        {mapReady && (
+        {hasCoords && mapReady && (
           <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1">
             <div className="flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 shadow-sm backdrop-blur-sm">
               <div className="h-2.5 w-2.5 rounded-full bg-[#EEA968] shrink-0" />
