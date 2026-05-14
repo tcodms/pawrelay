@@ -838,6 +838,46 @@ FE 채팅방에서 `ping_check` 전용 버블(`PingCheckBubble`)을 표시하려
 
 ---
 
+## 30. `GET /matching/segments/{segment_id}` 응답에 `ping_status` 필드 추가 요청
+
+**요청:** 기존 엔드포인트 응답 확장
+
+**필요 이유:**
+봉사자 릴레이 상세 페이지(`/volunteer/matching/[segment_id]`)에 출발 핑 확인 바텀시트를 구현했습니다.
+바텀시트는 핑 상태에 따라 "출발 확인 요청"(pending) / "확인 완료"(confirmed) 두 가지로 분기합니다.
+현재 응답에 `ping_status`가 없어 페이지 진입 시 핑 상태를 알 수 없고, 바텀시트가 항상 숨겨진 채로 표시됩니다.
+
+**추가 요청 필드:**
+```json
+{
+  "segment": {
+    "ping_status": "pending"
+  }
+}
+```
+
+> `ping_status` 가능 값: `"pending"` | `"confirmed"` | `"departure_no_response"` | `"handover_no_response"` | `null`
+> - `null`: 핑이 아직 발송되지 않은 상태 (출발 2시간 전 이전)
+> - `"pending"`: 핑 발송됨, 봉사자 응답 대기 중
+> - `"confirmed"`: 봉사자가 출발 확인 응답 완료
+> - `"departure_no_response"` / `"handover_no_response"`: 응답 없음 (지연 처리 또는 다음 봉사자 알림 발송)
+>
+> `accepted` 또는 `in_progress` 상태 세그먼트에만 의미 있는 값. 그 외 상태(`proposed`, `completed`)는 `null`.
+
+**FE 처리 방식:**
+```ts
+// ping_status가 "pending"이면 바텀시트 표시 (확인 버튼 활성)
+// ping_status가 "confirmed"면 바텀시트를 완료 상태로 잠깐 표시 후 자동 닫힘
+// null 또는 그 외 값이면 바텀시트 미표시
+```
+
+**관련 파일:**
+- `frontend/app/volunteer/matching/[segment_id]/page.tsx` — `pingStatus` state, 바텀시트 렌더 조건
+- `frontend/lib/api/matching.ts` — `SegmentDetail.ping_status` 타입 선언 (이미 반영됨)
+- `backend/app/services/relay_service.py` — ping 발송 및 상태 관리 로직
+
+---
+
 ## 참고
 
 - 1·2·3·4번은 api-spec.md에 이미 반영되어 있습니다. FE에서 경로만 맞추면 바로 연동 가능합니다.

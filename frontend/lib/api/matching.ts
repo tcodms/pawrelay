@@ -53,6 +53,7 @@ export async function declineMatching(segmentId: number, reason: string): Promis
 export interface SegmentDetail {
   order: number;
   status: string;
+  ping_status?: "pending" | "confirmed" | "departure_no_response" | "handover_no_response";
   animal_name: string;
   animal_photo_url: string | null;
   animal_size: "small" | "medium" | "large";

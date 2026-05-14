@@ -25,7 +25,7 @@
 - **연결 주소 (2가지 분기)**:
   - 로그인 유저 (보호소 대시보드): `ws://api/ws` (쿠키로 자동 인증)
   - 입양자 조회 (비로그인): `ws://api/ws?share_token={token}`
-- **이벤트 처리**: `ping.confirmed`, `ping.no_response`, `checkpoint.updated` 등의 이벤트를 수신하여 전역 상태를 업데이트하세요.
+- **이벤트 처리**: `ping.confirmed`, `departure.no_response`, `handover.no_response`, `checkpoint.updated` 등의 이벤트를 수신하여 전역 상태를 업데이트하세요.
 - **재연결 폴백**: 소켓 재연결 시 반드시 `GET /notifications/unread`를 호출하여 밀린 알림을 동기화하세요.
 
 ## 📱 5. 디렉토리 및 주요 화면 라우팅

@@ -14,7 +14,6 @@ import {
 } from "@/lib/api/chatbot";
 import { getMe } from "@/lib/api";
 import type { PostContext, PostSuggestion } from "@/lib/api/chatbot";
-import { confirmPing } from "@/lib/api/relay";
 import { getUnreadNotifications } from "@/lib/api/notifications";
 import type { AppNotification } from "@/lib/api/notifications";
 
@@ -26,7 +25,6 @@ type Message =
   | { role: "bot"; type: "recommendation"; rec: RecommendedPost }
   | { role: "bot"; type: "matching_confirmed"; info: MatchingInfo }
   | { role: "bot"; type: "matching_reason"; reason: string; chain: ChainSegment[] }
-  | { role: "bot"; type: "ping_check"; segment_id: number; animal_name?: string; depart_time?: string; from?: string }
   | { role: "bot"; type: "notification"; notif_id: number; notif_type: string; message: string; segment_id?: number; url?: string };
 
 interface RecommendedPost {
@@ -180,11 +178,12 @@ const DEMO_MESSAGES_1_ACCEPT: Message[] = [
     text: "인계 코드는 릴레이 상세 페이지에서 출발 당일 00:00에 공개돼요.",
   },
   {
-    role: "bot", type: "ping_check",
+    role: "bot", type: "notification",
+    notif_id: 98,
+    notif_type: "ping_check",
+    message: "[초코] 출발 2시간 전이에요! 정상 출발하실 수 있나요?",
     segment_id: 42,
-    animal_name: "초코",
-    depart_time: "09:00",
-    from: "광주광역시 북구",
+    url: "/volunteer/matching/42",
   },
   {
     role: "bot", type: "notification",
@@ -585,7 +584,7 @@ const NOTIF_CONFIG: Record<string, { label: string; headerClass: string; icon: R
     label: "출발 확인 요청",
     headerClass: "bg-orange-400",
     icon: <div className="h-2 w-2 rounded-full bg-white animate-pulse" />,
-    btnLabel: "매칭 상세 보기",
+    btnLabel: "릴레이 상세 보기",
   },
   matching_cancelled: {
     label: "매칭 취소",
@@ -701,7 +700,7 @@ export default function ChatRoomPage() {
   const [confirmOptions, setConfirmOptions] = useState<string[] | null>(null);
   const [registeredFields, setRegisteredFields] = useState<RegisteredFields | undefined>(undefined);
   const [matchingDecided, setMatchingDecided] = useState(false);
-  const [pingAnswered, setPingAnswered] = useState(false);
+
   const [userName, setUserName] = useState("나");
 
   useEffect(() => {
@@ -714,13 +713,6 @@ export default function ChatRoomPage() {
     return notifs
       .filter((n) => ["matching_proposed", "matching_confirmed", "ping_check", "matching_cancelled", "segment_completed"].includes(n.type))
       .flatMap((n) => {
-        if (n.type === "ping_check") {
-          return [{
-            role: "bot" as const,
-            type: "ping_check" as const,
-            segment_id: n.payload.segment_id ?? 0,
-          }];
-        }
         const notifMsg: Message = {
           role: "bot" as const,
           type: "notification" as const,
@@ -758,7 +750,7 @@ export default function ChatRoomPage() {
   function saveDemoState() {
     if (!(isDemo || isDemo2) || messages.length === 0) return;
     sessionStorage.setItem(DEMO_CACHE_KEY, JSON.stringify({
-      messages, matchingDecided, pingAnswered, registeredFields, confirmOptions,
+      messages, matchingDecided, registeredFields, confirmOptions,
     }));
   }
 
@@ -773,7 +765,6 @@ export default function ChatRoomPage() {
       const s = JSON.parse(raw2);
       setMessages(s.messages ?? []);
       setMatchingDecided(s.matchingDecided ?? false);
-      setPingAnswered(s.pingAnswered ?? false);
       setRegisteredFields(s.registeredFields);
       setConfirmOptions(s.confirmOptions ?? null);
       setInitializing(false);
@@ -862,21 +853,15 @@ export default function ChatRoomPage() {
       if (payload.segment_id && payload.type) {
         handledOpenMatchingRef.current = `${payload.segment_id}:${payload.type}`;
       }
-      const newMsg: Message = payload.type === "ping_check"
-        ? {
-            role: "bot" as const,
-            type: "ping_check" as const,
-            segment_id: payload.segment_id ?? 0,
-          }
-        : {
-            role: "bot" as const,
-            type: "notification" as const,
-            notif_id: Date.now(),
-            notif_type: payload.type ?? "",
-            message: payload.message ?? "",
-            segment_id: payload.segment_id,
-            url: payload.url ?? (payload.segment_id ? `/volunteer/matching/${payload.segment_id}` : undefined),
-          };
+      const newMsg: Message = {
+        role: "bot" as const,
+        type: "notification" as const,
+        notif_id: Date.now(),
+        notif_type: payload.type ?? "",
+        message: payload.message ?? "",
+        segment_id: payload.segment_id,
+        url: payload.url ?? (payload.segment_id ? `/volunteer/matching/${payload.segment_id}` : undefined),
+      };
       setMessages((prev) => [...prev, newMsg]);
     }
     navigator.serviceWorker?.addEventListener("message", handleSwMessage);
@@ -1127,42 +1112,6 @@ export default function ChatRoomPage() {
                   saveDemoState();
                   sessionStorage.setItem("matchingChatSession", sessionId);
                   router.push(`/volunteer/matching/${msg.info.segment_id}`);
-                }}
-              />
-            </BotRow>
-          );
-          if (msg.type === "ping_check") return (
-            <BotRow key={i}>
-              <PingCheckBubble
-                animalName={msg.animal_name}
-                departTime={msg.depart_time}
-                from={msg.from}
-                answered={pingAnswered}
-                onConfirm={() => {
-                  setPingAnswered(true);
-                  if (isDemo) {
-                    setMessages((prev) => [...prev,
-                      { role: "bot", type: "text", text: "출발 확인 완료! 안전하게 출발하세요. 🐾\n이동 중 체크포인트를 눌러 진행 상황을 기록해 주세요." },
-                    ]);
-                  } else {
-                    confirmPing(msg.segment_id).catch(() => {});
-                    setMessages((prev) => [...prev,
-                      { role: "bot", type: "text", text: "출발 확인 완료! 안전하게 출발하세요. 🐾" },
-                    ]);
-                  }
-                }}
-                onDelay={() => {
-                  setPingAnswered(true);
-                  if (isDemo) {
-                    setMessages((prev) => [...prev,
-                      { role: "bot", type: "text", text: "알겠어요. 지연 사유를 입력해 주시면 보호소와 다음 봉사자에게 안내해 드릴게요." },
-                    ]);
-                  } else {
-                    setMessages((prev) => [...prev,
-                      { role: "bot", type: "text", text: "알겠어요. 릴레이 상세 페이지에서 지연 신고를 해주세요." },
-                    ]);
-                    setTimeout(() => router.push(`/volunteer/matching/${msg.segment_id}`), 1200);
-                  }
                 }}
               />
             </BotRow>
