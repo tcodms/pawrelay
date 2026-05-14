@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,33 +41,7 @@ async def get_shelter_dashboard(
     if current_user.role != "shelter":
         raise HTTPException(status_code=403, detail={"error": "UNAUTHORIZED"})
     rows = await post_repo.get_dashboard_posts(db, current_user.id)
-    chain_ids = [chain_id for _, _, chain_id, _, _ in rows if chain_id]
-    segments_by_chain = await post_repo.get_segments_for_chains(db, chain_ids)
-    now = datetime.now(timezone.utc)
-    posts = [
-        DashboardPostItem(
-            id=post.id,
-            origin=post.origin,
-            destination=post.destination,
-            scheduled_date=post.scheduled_date,
-            status=post.status,
-            volunteer_count=count,
-            animal_info=AnimalInfo(
-                name=post.animal_name,
-                size=post.animal_size,
-                photo_url=post.animal_photo_url,
-            ),
-            chain_id=chain_id,
-            chain_expires_at=chain_expires_at,
-            chain_status=_resolve_chain_status(post.status, chain_id, chain_expires_at, now),
-            matching_reason=matching_reason,
-            share_token=post.share_token,
-            relay_segments=[
-                RelaySegmentItem(**s) for s in segments_by_chain.get(chain_id, [])
-            ] if chain_id else None,
-        )
-        for post, count, chain_id, matching_reason, chain_expires_at in rows
-    ]
+    posts = await _build_dashboard_posts(db, rows)
     return ShelterDashboardResponse(posts=posts)
 
 
@@ -107,8 +81,51 @@ def _resolve_chain_status(
     return "pending_shelter"
 
 
+async def _build_dashboard_posts(db: AsyncSession, rows: list) -> list[DashboardPostItem]:
+    chain_ids = [chain_id for _, _, chain_id, _, _ in rows if chain_id]
+    segments_by_chain = await post_repo.get_segments_for_chains(db, chain_ids)
+    now = datetime.now(timezone.utc)
+    return [_build_dashboard_post_item(row, segments_by_chain, now) for row in rows]
+
+
+def _build_dashboard_post_item(row: tuple, segments_by_chain: dict, now: datetime) -> DashboardPostItem:
+    post, count, chain_id, matching_reason, chain_expires_at = row
+    return DashboardPostItem(
+        id=post.id,
+        origin=post.origin,
+        destination=post.destination,
+        scheduled_date=post.scheduled_date,
+        status=post.status,
+        volunteer_count=count,
+        animal_info=_build_animal_info(post),
+        chain_id=chain_id,
+        chain_expires_at=chain_expires_at,
+        chain_status=_resolve_chain_status(post.status, chain_id, chain_expires_at, now),
+        matching_reason=matching_reason,
+        share_token=post.share_token,
+        relay_segments=_build_relay_segment_items(chain_id, segments_by_chain),
+    )
+
+
+def _build_animal_info(post) -> AnimalInfo:
+    return AnimalInfo(
+        name=post.animal_name,
+        size=post.animal_size,
+        photo_url=post.animal_photo_url,
+    )
+
+
+def _build_relay_segment_items(
+    chain_id: int | None,
+    segments_by_chain: dict,
+) -> list[RelaySegmentItem] | None:
+    if chain_id is None:
+        return None
+    return [RelaySegmentItem(**segment) for segment in segments_by_chain.get(chain_id, [])]
+
+
 def _build_segment_detail(segment) -> RelaySegmentDetail:
-    ping_status = _resolve_ping_status(segment)
+    ping_status = _resolve_ping_status(segment, datetime.now(timezone.utc))
     return RelaySegmentDetail(
         order=segment.segment_order,
         volunteer_name=segment.volunteer.name if segment.volunteer else "",
@@ -119,11 +136,23 @@ def _build_segment_detail(segment) -> RelaySegmentDetail:
     )
 
 
-def _resolve_ping_status(segment) -> str:
+def _resolve_ping_status(segment, now: datetime) -> str:
     if segment.ping_responded_at:
         return "confirmed"
     if segment.ping_sent_at:
-        if segment.status == "accepted":
+        if _is_departure_no_response(segment, now):
             return "departure_no_response"
+        if segment.status == "accepted":
+            return "pending"
         return "handover_no_response"
     return "pending"
+
+
+def _is_departure_no_response(segment, now: datetime) -> bool:
+    if segment.status != "accepted":
+        return False
+    if segment.ping_sent_at is None or segment.ping_responded_at is not None:
+        return False
+    if segment.scheduled_time is None:
+        return False
+    return segment.scheduled_time <= now + timedelta(hours=1)
