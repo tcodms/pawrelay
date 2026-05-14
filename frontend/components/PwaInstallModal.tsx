@@ -46,6 +46,104 @@ function StepList({ steps }: { steps: string[] }) {
   );
 }
 
+// ── 플랫폼별 내용 ─────────────────────────────────────────────────────────────
+
+function IosSafariContent() {
+  return (
+    <>
+      <StepList steps={IOS_STEPS} />
+      <p className="mt-4 text-center text-[11px] text-gray-300">iOS 16.4 이상 + Safari 전용</p>
+    </>
+  );
+}
+
+function IosOtherContent() {
+  return (
+    <div className="rounded-2xl bg-amber-50 px-4 py-4 text-center">
+      <p className="text-[13px] leading-relaxed text-gray-500">
+        현재 브라우저에서는 설치 불가합니다.<br />
+        <span className="font-semibold text-gray-700">Safari</span>로 다시 열기.
+      </p>
+    </div>
+  );
+}
+
+function AndroidContent({
+  deferredPrompt,
+  installing,
+  onInstall,
+}: {
+  deferredPrompt: BeforeInstallPromptEvent | null;
+  installing: boolean;
+  onInstall: () => void;
+}) {
+  if (deferredPrompt) {
+    return (
+      <button
+        type="button"
+        onClick={onInstall}
+        disabled={installing}
+        className="h-14 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] disabled:bg-gray-100 disabled:text-gray-400"
+      >
+        {installing ? "설치 중..." : "홈 화면에 설치하기"}
+      </button>
+    );
+  }
+  return <StepList steps={ANDROID_STEPS} />;
+}
+
+// ── 모달 껍데기 ───────────────────────────────────────────────────────────────
+
+function ModalShell({
+  platform,
+  onDismiss,
+  children,
+}: {
+  platform: Platform;
+  onDismiss: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm" onClick={onDismiss} />
+      <div className="fixed bottom-0 inset-x-0 z-[9999] mx-auto max-w-lg rounded-t-3xl bg-white px-6 pt-4 pb-10 shadow-2xl">
+        <div className="mb-6 flex justify-center">
+          <div className="h-1 w-10 rounded-full bg-gray-200" />
+        </div>
+        <div className="mb-6 flex items-center gap-3.5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EEA968] shadow-md shadow-[#EEA968]/20">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <ellipse cx="12" cy="17" rx="4" ry="3" />
+              <ellipse cx="7.5" cy="12" rx="1.5" ry="2" />
+              <ellipse cx="16.5" cy="12" rx="1.5" ry="2" />
+              <ellipse cx="9" cy="8.5" rx="1.3" ry="1.8" />
+              <ellipse cx="15" cy="8.5" rx="1.3" ry="1.8" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[16px] font-bold text-gray-900 leading-tight">PawRelay 앱 설치</p>
+            <p className="text-[12px] text-gray-400 mt-0.5">
+              {platform === "ios-other"
+                ? "Safari에서만 설치 가능합니다"
+                : "홈 화면 추가 시 알림 수신이 가능해요"}
+            </p>
+          </div>
+        </div>
+        {children}
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="mt-6 w-full text-center text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          나중에 하기
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
+
 interface Props {
   onDismiss: () => void;
 }
@@ -58,9 +156,7 @@ export default function PwaInstallModal({ onDismiss }: Props) {
   useEffect(() => { onDismissRef.current = onDismiss; }, [onDismiss]);
 
   useEffect(() => {
-    function handlePrompt(e: Event) {
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    }
+    function handlePrompt(e: Event) { setDeferredPrompt(e as BeforeInstallPromptEvent); }
     window.addEventListener("beforeinstallprompt", handlePrompt);
     return () => window.removeEventListener("beforeinstallprompt", handlePrompt);
   }, []);
@@ -94,73 +190,10 @@ export default function PwaInstallModal({ onDismiss }: Props) {
   if (!platform || platform === "other") return null;
 
   return (
-    <>
-      {/* 배경 */}
-      <div className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm" onClick={handleDismiss} />
-
-      {/* 바텀 시트 */}
-      <div className="fixed bottom-0 inset-x-0 z-[9999] mx-auto max-w-lg rounded-t-3xl bg-white px-6 pt-4 pb-10 shadow-2xl">
-        {/* 핸들 */}
-        <div className="mb-6 flex justify-center">
-          <div className="h-1 w-10 rounded-full bg-gray-200" />
-        </div>
-
-        {/* 앱 헤더 */}
-        <div className="mb-6 flex items-center gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EEA968] shadow-md shadow-[#EEA968]/20">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <ellipse cx="12" cy="17" rx="4" ry="3" />
-              <ellipse cx="7.5" cy="12" rx="1.5" ry="2" />
-              <ellipse cx="16.5" cy="12" rx="1.5" ry="2" />
-              <ellipse cx="9" cy="8.5" rx="1.3" ry="1.8" />
-              <ellipse cx="15" cy="8.5" rx="1.3" ry="1.8" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-[16px] font-bold text-gray-900 leading-tight">PawRelay 앱 설치</p>
-            <p className="text-[12px] text-gray-400 mt-0.5">
-              {platform === "ios-other"
-                ? "Safari에서만 설치 가능합니다"
-                : "홈 화면 추가 시 알림 수신이 가능해요"}
-            </p>
-          </div>
-        </div>
-
-        {/* 내용 */}
-        {platform === "ios-safari" ? (
-          <>
-            <StepList steps={IOS_STEPS} />
-            <p className="mt-4 text-center text-[11px] text-gray-300">iOS 16.4 이상 + Safari 전용</p>
-          </>
-        ) : platform === "ios-other" ? (
-          <div className="rounded-2xl bg-amber-50 px-4 py-4 text-center">
-            <p className="text-[13px] leading-relaxed text-gray-500">
-              현재 브라우저에서는 설치 불가합니다.<br />
-              <span className="font-semibold text-gray-700">Safari</span>로 다시 열기.
-            </p>
-          </div>
-        ) : deferredPrompt ? (
-          <button
-            type="button"
-            onClick={handleInstall}
-            disabled={installing}
-            className="h-13 w-full rounded-2xl bg-[#EEA968] text-[15px] font-bold text-white shadow-md shadow-[#EEA968]/20 transition-all active:scale-[0.97] disabled:bg-gray-100 disabled:text-gray-400"
-          >
-            {installing ? "설치 중..." : "홈 화면에 설치하기"}
-          </button>
-        ) : (
-          <StepList steps={ANDROID_STEPS} />
-        )}
-
-        {/* 닫기 */}
-        <button
-          type="button"
-          onClick={handleDismiss}
-          className="mt-6 w-full text-center text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          나중에 하기
-        </button>
-      </div>
-    </>
+    <ModalShell platform={platform} onDismiss={handleDismiss}>
+      {platform === "ios-safari" ? <IosSafariContent /> :
+       platform === "ios-other"  ? <IosOtherContent /> :
+       <AndroidContent deferredPrompt={deferredPrompt} installing={installing} onInstall={handleInstall} />}
+    </ModalShell>
   );
 }

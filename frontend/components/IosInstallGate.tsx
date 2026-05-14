@@ -8,18 +8,26 @@ const PwaInstallModal = dynamic(() => import("@/components/PwaInstallModal"), { 
 
 const PROMPTED_KEY = "pwa_ios_install_prompted";
 
+function safeGetItem(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch {}
+}
+
 export default function IosInstallGate() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     if (!isIos()) return;
     if (isStandalone()) return;
-    if (localStorage.getItem(PROMPTED_KEY)) return;
+    if (safeGetItem(PROMPTED_KEY)) return;
     setShow(true);
   }, []);
 
   function handleDismiss() {
-    localStorage.setItem(PROMPTED_KEY, "1");
+    safeSetItem(PROMPTED_KEY, "1");
     setShow(false);
   }
 
