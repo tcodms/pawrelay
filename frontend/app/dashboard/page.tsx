@@ -10,6 +10,7 @@ import { approveShelterMatching, rejectShelterMatching, cancelAutoApprovedMatchi
 import { getShelterProfile } from "@/lib/api/shelter";
 import { StatusBadge, SizeBadge } from "@/components/ui/PostBadges";
 import MatchingReasonBubble from "@/components/MatchingReasonBubble";
+import { useDashboardWs, type PingStatus } from "@/contexts/DashboardWsContext";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -285,9 +286,35 @@ function PostCard({
   );
 }
 
+// ── Ping Status Indicator ──────────────────────────────────────────────────────
+
+function ConfirmedDot() {
+  return <span title="출발 확인됨" className="h-2 w-2 rounded-full bg-green-400 shrink-0" />;
+}
+
+function NoResponseIcon({ title }: { title: string }) {
+  return (
+    <svg aria-label={title} title={title} className="shrink-0 text-orange-400"
+      width="12" height="12" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    >
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+function PingStatusIndicator({ status }: { status?: PingStatus }) {
+  if (status === "confirmed") return <ConfirmedDot />;
+  if (status === "departure_no_response") return <NoResponseIcon title="출발 전 미응답" />;
+  if (status === "handover_no_response") return <NoResponseIcon title="인계 코드 미응답" />;
+  return null;
+}
+
 // ── In-Progress Card ───────────────────────────────────────────────────────────
 
-function InProgressCard({ post }: { post: Post }) {
+function InProgressCard({ post, pingStatusMap }: { post: Post; pingStatusMap: Record<number, PingStatus> }) {
   return (
     <div className="rounded-2xl bg-white border border-gray-100 transition-shadow hover:shadow-md">
       <Link href={`/dashboard/posts/${post.id}`} className="block p-5 pb-3">
@@ -321,19 +348,28 @@ function InProgressCard({ post }: { post: Post }) {
         {/* 릴레이 봉사자 */}
         {post.relayChain && post.relayChain.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            {post.relayChain.map((seg, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
-                  <span className="text-[9px] font-bold text-[#7A4A28]">{i + 1}</span>
+            {post.relayChain.map((seg, i) => {
+              const effectivePingStatus =
+                seg.segment_id !== undefined
+                  ? (pingStatusMap[seg.segment_id] ?? seg.ping_status)
+                  : seg.ping_status;
+              return (
+                <div key={seg.segment_id ?? i} className="flex items-center gap-2">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
+                    <span className="text-[9px] font-bold text-[#7A4A28]">{i + 1}</span>
+                  </div>
+                  <div className="flex items-center gap-1 w-16 shrink-0">
+                    <p className="text-[12px] font-semibold text-gray-700 truncate">{seg.volunteer}</p>
+                    <PingStatusIndicator status={effectivePingStatus} />
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-gray-400 min-w-0">
+                    <span className="truncate">{seg.from}</span>
+                    <ArrowRight size={9} className="text-gray-300 shrink-0" />
+                    <span className="truncate">{seg.to}</span>
+                  </div>
                 </div>
-                <p className="text-[12px] font-semibold text-gray-700 w-16 shrink-0 truncate">{seg.volunteer}</p>
-                <div className="flex items-center gap-1 text-[11px] text-gray-400 min-w-0">
-                  <span className="truncate">{seg.from}</span>
-                  <ArrowRight size={9} className="text-gray-300 shrink-0" />
-                  <span className="truncate">{seg.to}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Link>
@@ -361,6 +397,7 @@ function InProgressCard({ post }: { post: Post }) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { pingStatusMap } = useDashboardWs();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [shelterName, setShelterName] = useState("행복동물 보호소");
@@ -614,7 +651,7 @@ export default function DashboardPage() {
         ) : (
           filtered.map((post) =>
             post.status === "in_transit" ? (
-              <InProgressCard key={post.id} post={post} />
+              <InProgressCard key={post.id} post={post} pingStatusMap={pingStatusMap} />
             ) : (
               <PostCard
                 key={post.id}

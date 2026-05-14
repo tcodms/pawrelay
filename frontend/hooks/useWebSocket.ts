@@ -6,7 +6,8 @@ import { getUnreadNotifications, type AppNotification } from "@/lib/api/notifica
 export type WsEventName =
   | "checkpoint.updated"
   | "ping.confirmed"
-  | "ping.no_response"
+  | "departure.no_response"
+  | "handover.no_response"
   | "delay.reported"
   | "sos.triggered";
 
@@ -19,7 +20,8 @@ export interface WsPayloadMap {
     recorded_at: string;
   };
   "ping.confirmed": { segment_id: number; volunteer_name: string };
-  "ping.no_response": { segment_id: number; volunteer_name: string; scheduled_time: string };
+  "departure.no_response": { segment_id: number; volunteer_name: string; scheduled_time: string };
+  "handover.no_response": { segment_id: number; volunteer_name: string; scheduled_time: string };
   "delay.reported": { segment_id: number; message: string };
   "sos.triggered": { segment_id: number; latitude: number | null; longitude: number | null };
 }
@@ -41,7 +43,8 @@ const BASE_DELAY_MS = 1_000;
 const VALID_WS_EVENTS = new Set<WsEventName>([
   "checkpoint.updated",
   "ping.confirmed",
-  "ping.no_response",
+  "departure.no_response",
+  "handover.no_response",
   "delay.reported",
   "sos.triggered",
 ]);

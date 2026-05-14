@@ -29,7 +29,7 @@ sw.addEventListener("push", (event: any) => {
       body: data.message,
       icon: "/icons/icon-192x192.svg",
       badge: "/icons/icon-192x192.svg",
-      data: { url: data.url ?? "/volunteer", chat_session_id: data.chat_session_id },
+      data: { url: data.url ?? "/volunteer", chat_session_id: data.chat_session_id, notif_type: data.type },
       vibrate: [200, 100, 200],
     })
   );
@@ -40,15 +40,18 @@ sw.addEventListener("push", (event: any) => {
 sw.addEventListener("notificationclick", (event: any) => {
   event.notification.close();
 
-  const { url, chat_session_id } = event.notification.data ?? {};
-  const segmentMatch = (url ?? "").match(/\/volunteer\/matching\/(\d+)/);
+  const { url, chat_session_id, notif_type } = event.notification.data ?? {};
+
+  // 외부 도메인 URL 차단 — 슬래시로 시작하는 경로만 허용
+  const safePath = typeof url === "string" && url.startsWith("/") ? url : "/volunteer";
+  const segmentMatch = safePath.match(/\/volunteer\/matching\/(\d+)/);
   const segmentId = segmentMatch?.[1];
 
-  // chat_session_id + segment_id 있으면 채팅방 먼저 열고 매칭 상세로 자동 이동
+  // chat_session_id + segment_id 있으면 채팅방으로 이동 (채팅에서 버블 표시 후 매칭 상세로)
   const destination =
     chat_session_id && segmentId
-      ? `/volunteer/chat/${chat_session_id}?openMatching=${segmentId}`
-      : (url ?? "/volunteer");
+      ? `/volunteer/chat/${chat_session_id}?openMatching=${segmentId}&notifType=${notif_type ?? "matching_proposed"}`
+      : safePath;
 
   event.waitUntil(
     sw.clients

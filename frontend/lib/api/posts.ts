@@ -53,10 +53,12 @@ export interface PhotoUploadUrl {
 // ── API 함수 ──────────────────────────────────────────────────────────────────
 
 interface DashboardRelaySegment {
+  segment_id: number;
   volunteer_name: string;
   from_area: string;
   to_area: string;
   depart_time?: string;
+  ping_status?: import("@/lib/dummy-posts").PingStatus;
 }
 
 interface DashboardPostItem {
@@ -122,10 +124,12 @@ export async function getPosts(): Promise<Post[]> {
     chain_status: item.chain_status ?? undefined,
     matchingReason: item.matching_reason ?? undefined,
     relayChain: item.relay_segments?.map((s) => ({
+      segment_id: s.segment_id,
       volunteer: s.volunteer_name,
       from: s.from_area,
       to: s.to_area,
       time: s.depart_time ?? "",
+      ping_status: s.ping_status,
     })) ?? undefined,
     share_token: item.share_token,
   }));
