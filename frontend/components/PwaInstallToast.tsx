@@ -5,19 +5,18 @@ import {
   getDeferredInstallPrompt,
   clearDeferredInstallPrompt,
   BeforeInstallPromptEvent,
+  isIos,
+  isStandalone,
 } from "@/lib/pwa";
 
 const DISMISSED_KEY = "pwa_toast_dismissed";
 
 function shouldShow(): boolean {
   if (typeof window === "undefined") return false;
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    ("standalone" in navigator &&
-      (navigator as { standalone: boolean }).standalone === true);
-  if (isStandalone) return false;
+  if (isStandalone()) return false;
+  if (isIos()) return false; // iOS는 IosInstallGate(PwaInstallModal)가 담당
   if (localStorage.getItem(DISMISSED_KEY)) return false;
-  return /iPad|iPhone|iPod|Android/.test(navigator.userAgent);
+  return /Android/.test(navigator.userAgent);
 }
 
 export default function PwaInstallToast() {
