@@ -1,0 +1,1894 @@
+{
+  "rest_area": [
+    {
+      "name": "강릉(강릉)",
+      "type": "rest_area",
+      "latitude": 37.758206,
+      "longitude": 128.806648,
+      "address": "영동선 하행",
+      "phone": "033-648-8850",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "강릉(인천)",
+      "type": "rest_area",
+      "latitude": 37.760275,
+      "longitude": 128.8053601,
+      "address": "영동선 상행",
+      "phone": "033-647-9970",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "강천산(광주)",
+      "type": "rest_area",
+      "latitude": 35.3657501,
+      "longitude": 127.105451,
+      "address": "광주대구선 하행",
+      "phone": "063-653-4033",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "강천산(대구)",
+      "type": "rest_area",
+      "latitude": 35.364369,
+      "longitude": 127.104757,
+      "address": "광주대구선 상행",
+      "phone": "063-653-3050",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "거창(광주)",
+      "type": "rest_area",
+      "latitude": 35.708862,
+      "longitude": 128.057962,
+      "address": "광주대구선 하행",
+      "phone": "055-943-0992",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "거창(대구)",
+      "type": "rest_area",
+      "latitude": 35.706469,
+      "longitude": 128.056945,
+      "address": "광주대구선 상행",
+      "phone": "055-943-9534",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "건천(부산)",
+      "type": "rest_area",
+      "latitude": 35.830716,
+      "longitude": 129.1093101,
+      "address": "경부선 하행",
+      "phone": "054-751-6890",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "건천(서울)",
+      "type": "rest_area",
+      "latitude": 35.831894,
+      "longitude": 129.109244,
+      "address": "경부선 상행",
+      "phone": "054-751-7401",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "경산(서울)",
+      "type": "rest_area",
+      "latitude": 35.879323,
+      "longitude": 128.810331,
+      "address": "경부선 상행",
+      "phone": "053-852-5243",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "경주(부산)",
+      "type": "rest_area",
+      "latitude": 35.724761,
+      "longitude": 129.1929501,
+      "address": "경부선 하행",
+      "phone": "054-748-3195",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "고성공룡나라(대전)",
+      "type": "rest_area",
+      "latitude": 35.056665,
+      "longitude": 128.252359,
+      "address": "대전통영선 상행",
+      "phone": "055-674-0494",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "고성공룡나라(통영)",
+      "type": "rest_area",
+      "latitude": 35.0518101,
+      "longitude": 128.262763,
+      "address": "대전통영선 하행",
+      "phone": "055-674-7028",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "고창고인돌(목포)",
+      "type": "rest_area",
+      "latitude": 35.468653,
+      "longitude": 126.673871,
+      "address": "서해안선 하행",
+      "phone": "063-561-6313",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "고창고인돌(서울)",
+      "type": "rest_area",
+      "latitude": 35.4620701,
+      "longitude": 126.673477,
+      "address": "서해안선 상행",
+      "phone": "063-561-6323",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "곡성(순천)",
+      "type": "rest_area",
+      "latitude": 35.258498,
+      "longitude": 127.150737,
+      "address": "호남선 하행",
+      "phone": "061-363-2766",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "곡성(천안)",
+      "type": "rest_area",
+      "latitude": 35.259632,
+      "longitude": 127.152741,
+      "address": "호남선 상행",
+      "phone": "061-362-8300",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "공주(당진)",
+      "type": "rest_area",
+      "latitude": 36.498679,
+      "longitude": 127.164921,
+      "address": "당진영덕선 하행",
+      "phone": "041-854-0050",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "공주(대전)",
+      "type": "rest_area",
+      "latitude": 36.496946,
+      "longitude": 127.1666701,
+      "address": "당진영덕선 상행",
+      "phone": "041-854-6060",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "괴산(양평)",
+      "type": "rest_area",
+      "latitude": 36.831894,
+      "longitude": 127.960141,
+      "address": "중부내륙선 상행",
+      "phone": "043-832-6595",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "괴산(창원)",
+      "type": "rest_area",
+      "latitude": 36.831456,
+      "longitude": 127.957845,
+      "address": "중부내륙선 하행",
+      "phone": "043-832-7966",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "구리(일산)",
+      "type": "rest_area",
+      "latitude": 37.628023,
+      "longitude": 127.139237,
+      "address": "수도권제1순환선 하행",
+      "phone": "031-529-3564",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "구정(삼척)",
+      "type": "rest_area",
+      "latitude": 37.722214,
+      "longitude": 128.8511601,
+      "address": "동해선 하행",
+      "phone": "033-644-8345",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "구정(속초)",
+      "type": "rest_area",
+      "latitude": 37.723012,
+      "longitude": 128.854228,
+      "address": "동해선 상행",
+      "phone": "033-644-4760",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "군산(목포)",
+      "type": "rest_area",
+      "latitude": 35.980591,
+      "longitude": 126.828971,
+      "address": "서해안선 하행",
+      "phone": "063-453-0402",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "군산(서울)",
+      "type": "rest_area",
+      "latitude": 36.018831,
+      "longitude": 126.797698,
+      "address": "서해안선 상행",
+      "phone": "063-453-2818",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "군위(부산)",
+      "type": "rest_area",
+      "latitude": 36.266556,
+      "longitude": 128.574852,
+      "address": "중앙선 하행",
+      "phone": "054-383-6114",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "군위(춘천)",
+      "type": "rest_area",
+      "latitude": 36.266002,
+      "longitude": 128.576774,
+      "address": "중앙선 상행",
+      "phone": "054-383-7114",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "금강(부산)",
+      "type": "rest_area",
+      "latitude": 36.279148,
+      "longitude": 127.672231,
+      "address": "경부선 하행",
+      "phone": "043-731-2233",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "금산인삼랜드(대전)",
+      "type": "rest_area",
+      "latitude": 36.154689,
+      "longitude": 127.497681,
+      "address": "대전통영선 상행",
+      "phone": "041-754-9200",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "금산인삼랜드(통영)",
+      "type": "rest_area",
+      "latitude": 36.152874,
+      "longitude": 127.495954,
+      "address": "대전통영선 하행",
+      "phone": "041-751-2892",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "금왕(제천)",
+      "type": "rest_area",
+      "latitude": 36.9694501,
+      "longitude": 127.590845,
+      "address": "평택제천선 하행",
+      "phone": "043-881-0001",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "금왕(평택)",
+      "type": "rest_area",
+      "latitude": 36.970655,
+      "longitude": 127.589499,
+      "address": "평택제천선 상행",
+      "phone": "043-877-7000",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "기흥(부산)",
+      "type": "rest_area",
+      "latitude": 37.235125,
+      "longitude": 127.104595,
+      "address": "경부선 하행",
+      "phone": "031-286-5001",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "김천(부산)",
+      "type": "rest_area",
+      "latitude": 36.129252,
+      "longitude": 128.164782,
+      "address": "경부선 하행",
+      "phone": "054-435-0211",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "김천(서울)",
+      "type": "rest_area",
+      "latitude": 36.131107,
+      "longitude": 128.164009,
+      "address": "경부선 상행",
+      "phone": "054-433-1523",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "김해금관가야",
+      "type": "rest_area",
+      "latitude": 35.269933,
+      "longitude": 129.003134,
+      "address": "부산외곽선 양방향",
+      "phone": "055-312-2820",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "남성주참외(양평)",
+      "type": "rest_area",
+      "latitude": 35.858422,
+      "longitude": 128.319904,
+      "address": "중부내륙선 상행",
+      "phone": "054-931-5741",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "남성주참외(창원)",
+      "type": "rest_area",
+      "latitude": 35.869015,
+      "longitude": 128.316816,
+      "address": "중부내륙선 하행",
+      "phone": "054-933-7105",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "남한강(통합)",
+      "type": "rest_area",
+      "latitude": 37.482835,
+      "longitude": 127.466735,
+      "address": "중부내륙선 양방향",
+      "phone": "031-771-5991",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "내린천",
+      "type": "rest_area",
+      "latitude": 37.916535,
+      "longitude": 128.286377,
+      "address": "서울양양선 양방향",
+      "phone": "033-852-8602",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "논공(광주)",
+      "type": "rest_area",
+      "latitude": 35.767421,
+      "longitude": 128.403493,
+      "address": "광주대구선 하행",
+      "phone": "070-4304-0600",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "논공(대구)",
+      "type": "rest_area",
+      "latitude": 35.764989,
+      "longitude": 128.402909,
+      "address": "광주대구선 상행",
+      "phone": "070-4304-0620",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "단양팔경(부산)",
+      "type": "rest_area",
+      "latitude": 36.995459,
+      "longitude": 128.287616,
+      "address": "중앙선 상행",
+      "phone": "043-423-5401",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "단양팔경(춘천)",
+      "type": "rest_area",
+      "latitude": 36.942903,
+      "longitude": 128.322142,
+      "address": "중앙선 하행",
+      "phone": "043-421-1671",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "대천(목포)",
+      "type": "rest_area",
+      "latitude": 36.372995,
+      "longitude": 126.555684,
+      "address": "서해안선 하행",
+      "phone": "041-931-6901",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "대천(서울)",
+      "type": "rest_area",
+      "latitude": 36.374457,
+      "longitude": 126.558327,
+      "address": "서해안선 상행",
+      "phone": "041-931-6801",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "덕유산(대전)",
+      "type": "rest_area",
+      "latitude": 35.816481,
+      "longitude": 127.646149,
+      "address": "대전통영선 상행",
+      "phone": "063-353-4200",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "덕유산(통영)",
+      "type": "rest_area",
+      "latitude": 35.813428,
+      "longitude": 127.643173,
+      "address": "대전통영선 하행",
+      "phone": "063-353-5100",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "덕평",
+      "type": "rest_area",
+      "latitude": 37.241456,
+      "longitude": 127.390189,
+      "address": "영동선 양방향",
+      "phone": "031-645-0001",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "동명(부산)",
+      "type": "rest_area",
+      "latitude": 36.0069901,
+      "longitude": 128.546504,
+      "address": "중앙선 하행",
+      "phone": "054-977-6922",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "동명(춘천)",
+      "type": "rest_area",
+      "latitude": 36.006426,
+      "longitude": 128.5493901,
+      "address": "중앙선 상행",
+      "phone": "054-977-6901",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "동해(삼척)",
+      "type": "rest_area",
+      "latitude": 37.601776,
+      "longitude": 129.073636,
+      "address": "동해선 하행",
+      "phone": "033-534-6631",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "마장",
+      "type": "rest_area",
+      "latitude": 37.263849,
+      "longitude": 127.407043,
+      "address": "중부선 양방향",
+      "phone": "031-630-0001",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "망향(부산)",
+      "type": "rest_area",
+      "latitude": 36.8556501,
+      "longitude": 127.180929,
+      "address": "경부선 하행",
+      "phone": "041-557-4000",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "매송(목포)",
+      "type": "rest_area",
+      "latitude": 37.265084,
+      "longitude": 126.888544,
+      "address": "서해안선 하행",
+      "phone": "031-296-1501",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "매송(서울)",
+      "type": "rest_area",
+      "latitude": 37.264769,
+      "longitude": 126.891795,
+      "address": "서해안선 상행",
+      "phone": "031-295-1501",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "문경(양평)",
+      "type": "rest_area",
+      "latitude": 36.621068,
+      "longitude": 128.1523901,
+      "address": "중부내륙선 상행",
+      "phone": "054-554-1610",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "문경(창원)",
+      "type": "rest_area",
+      "latitude": 36.620549,
+      "longitude": 128.149982,
+      "address": "중부내륙선 하행",
+      "phone": "054-554-1655",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "문막(강릉)",
+      "type": "rest_area",
+      "latitude": 37.335469,
+      "longitude": 127.8582201,
+      "address": "영동선 하행",
+      "phone": "033-731-8481",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "문막(인천)",
+      "type": "rest_area",
+      "latitude": 37.297853,
+      "longitude": 127.817261,
+      "address": "영동선 상행",
+      "phone": "033-747-8162",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "문산(순천)",
+      "type": "rest_area",
+      "latitude": 35.171374,
+      "longitude": 128.151591,
+      "address": "남해선 하행",
+      "phone": "055-761-2820",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "문의청남대(영덕)",
+      "type": "rest_area",
+      "latitude": 36.542544,
+      "longitude": 127.483797,
+      "address": "당진영덕선 하행",
+      "phone": "043-715-2820",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "문의청남대(청주)",
+      "type": "rest_area",
+      "latitude": 36.544083,
+      "longitude": 127.484613,
+      "address": "당진영덕선 상행",
+      "phone": "043-223-2820",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "밀양영남루(울산)",
+      "type": "rest_area",
+      "latitude": 35.492884,
+      "longitude": 128.664121,
+      "address": "함양울산선 하행",
+      "phone": "055-355-7970",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "밀양영남루(함양)",
+      "type": "rest_area",
+      "latitude": 35.489732,
+      "longitude": 128.663321,
+      "address": "함양울산선 상행",
+      "phone": "055-355-7972",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "백양사(순천)",
+      "type": "rest_area",
+      "latitude": 35.394425,
+      "longitude": 126.805361,
+      "address": "호남선 하행",
+      "phone": "061-394-9990",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "백양사(천안)",
+      "type": "rest_area",
+      "latitude": 35.393018,
+      "longitude": 126.807376,
+      "address": "호남선 상행",
+      "phone": "061-394-5177",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "벌곡(논산)",
+      "type": "rest_area",
+      "latitude": 36.217974,
+      "longitude": 127.273468,
+      "address": "호남지선 하행",
+      "phone": "041-732-7694",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "벌곡(대전)",
+      "type": "rest_area",
+      "latitude": 36.210451,
+      "longitude": 127.270542,
+      "address": "호남지선 상행",
+      "phone": "041-734-5250",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "보성녹차(순천)",
+      "type": "rest_area",
+      "latitude": 34.807313,
+      "longitude": 127.181003,
+      "address": "남해선 하행",
+      "phone": "070-4325-8808",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "보성녹차(영암)",
+      "type": "rest_area",
+      "latitude": 34.807313,
+      "longitude": 127.181003,
+      "address": "남해선 상행",
+      "phone": "070-4325-8801",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "부안고려청자(목포)",
+      "type": "rest_area",
+      "latitude": 35.671628,
+      "longitude": 126.732073,
+      "address": "서해안선 상행",
+      "phone": "063-776-8003",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "부안고려청자(서울)",
+      "type": "rest_area",
+      "latitude": 35.671598,
+      "longitude": 126.734592,
+      "address": "서해안선 상행",
+      "phone": "063-776-7002",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "부여백제(공주)",
+      "type": "rest_area",
+      "latitude": 36.258352,
+      "longitude": 126.8000701,
+      "address": "서천공주선 상행",
+      "phone": "041-833-5400",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "부여백제(서천)",
+      "type": "rest_area",
+      "latitude": 36.258383,
+      "longitude": 126.796755,
+      "address": "서천공주선 하행",
+      "phone": "041-834-5600",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "사천(부산)",
+      "type": "rest_area",
+      "latitude": 35.073173,
+      "longitude": 128.010802,
+      "address": "남해선 상행",
+      "phone": "055-854-3134",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "사천(순천)",
+      "type": "rest_area",
+      "latitude": 35.074968,
+      "longitude": 128.012589,
+      "address": "남해선 하행",
+      "phone": "055-854-3547",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "산청(대전)",
+      "type": "rest_area",
+      "latitude": 35.333522,
+      "longitude": 127.938998,
+      "address": "대전통영선 상행",
+      "phone": "055-973-5970",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "산청(통영)",
+      "type": "rest_area",
+      "latitude": 35.333504,
+      "longitude": 127.937049,
+      "address": "대전통영선 하행",
+      "phone": "055-973-9036",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "서부산(순천)",
+      "type": "rest_area",
+      "latitude": 35.157197,
+      "longitude": 128.948638,
+      "address": "남해제2지선 하행",
+      "phone": "051-941-2110",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "서산(목포)",
+      "type": "rest_area",
+      "latitude": 36.742991,
+      "longitude": 126.565029,
+      "address": "서해안선 하행",
+      "phone": "041-688-8814",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "서산(서울)",
+      "type": "rest_area",
+      "latitude": 36.734194,
+      "longitude": 126.566302,
+      "address": "서해안선 상행",
+      "phone": "041-688-7714",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "서여주(양평)",
+      "type": "rest_area",
+      "latitude": 37.278607,
+      "longitude": 127.580501,
+      "address": "중부내륙 상행",
+      "phone": "031-885-9760",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "서여주(창원)",
+      "type": "rest_area",
+      "latitude": 37.279412,
+      "longitude": 127.578083,
+      "address": "중부내륙 하행",
+      "phone": "031-884-9714",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "서울만남(부산)",
+      "type": "rest_area",
+      "latitude": 37.460166,
+      "longitude": 127.041908,
+      "address": "경부선 하행",
+      "phone": null,
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "서천(목포)",
+      "type": "rest_area",
+      "latitude": 36.129505,
+      "longitude": 126.626485,
+      "address": "서해안선 하행",
+      "phone": "041-952-5757",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "서천(서울)",
+      "type": "rest_area",
+      "latitude": 36.131929,
+      "longitude": 126.627834,
+      "address": "서해안선 상행",
+      "phone": "041-952-9700",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "선산(양평)",
+      "type": "rest_area",
+      "latitude": 36.277941,
+      "longitude": 128.249296,
+      "address": "중부내륙선 상행",
+      "phone": "054-482-6011",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "선산(창원)",
+      "type": "rest_area",
+      "latitude": 36.274223,
+      "longitude": 128.250745,
+      "address": "중부내륙선 하행",
+      "phone": "054-482-6031",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "섬진강(부산)",
+      "type": "rest_area",
+      "latitude": 34.9847001,
+      "longitude": 127.770697,
+      "address": "호남선 상행",
+      "phone": "061-772-7986",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "섬진강(순천)",
+      "type": "rest_area",
+      "latitude": 34.985669,
+      "longitude": 127.769329,
+      "address": "호남선 하행",
+      "phone": "061-772-7993",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "성주(양평)",
+      "type": "rest_area",
+      "latitude": 36.0082601,
+      "longitude": 128.261541,
+      "address": "중부내륙선 상행",
+      "phone": "054-933-0800",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "성주(창원)",
+      "type": "rest_area",
+      "latitude": 36.010603,
+      "longitude": 128.259675,
+      "address": "중부내륙선 하행",
+      "phone": "054-932-0800",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "속리산(청주)",
+      "type": "rest_area",
+      "latitude": 36.447804,
+      "longitude": 127.869061,
+      "address": "당진영덕선 상행",
+      "phone": "043-544-1466",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "순천(순천)",
+      "type": "rest_area",
+      "latitude": 35.0085501,
+      "longitude": 127.445044,
+      "address": "호남선 하행",
+      "phone": "061-755-4982",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "시흥하늘",
+      "type": "rest_area",
+      "latitude": 37.383794,
+      "longitude": 126.855452,
+      "address": "수도권제1순환선 양방향",
+      "phone": "031-481-9757",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "신탄진(서울)",
+      "type": "rest_area",
+      "latitude": 36.426834,
+      "longitude": 127.418438,
+      "address": "경부선 상행",
+      "phone": "042-934-2442",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "안동(부산)",
+      "type": "rest_area",
+      "latitude": 36.553167,
+      "longitude": 128.641923,
+      "address": "중앙선 하행",
+      "phone": "054-853-4370",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "안동(춘천)",
+      "type": "rest_area",
+      "latitude": 36.5534301,
+      "longitude": 128.645144,
+      "address": "중앙선 상행",
+      "phone": "054-853-4061",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "안산",
+      "type": "rest_area",
+      "latitude": 37.351075,
+      "longitude": 126.818799,
+      "address": "영동선 양방향",
+      "phone": "031-482-7775",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "안성(부산)",
+      "type": "rest_area",
+      "latitude": 37.013407,
+      "longitude": 127.1448001,
+      "address": "경부선 하행",
+      "phone": "031-655-0531",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "안성(서울)",
+      "type": "rest_area",
+      "latitude": 37.076681,
+      "longitude": 127.132496,
+      "address": "경부선 상행",
+      "phone": "031-611-5793",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "안성맞춤(제천)",
+      "type": "rest_area",
+      "latitude": 36.968057,
+      "longitude": 127.274261,
+      "address": "평택제천선 하행",
+      "phone": "031-674-4406",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "안성맞춤(평택)",
+      "type": "rest_area",
+      "latitude": 36.969915,
+      "longitude": 127.274619,
+      "address": "평택제천선 상행",
+      "phone": "031-673-3822",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "양산(서울)",
+      "type": "rest_area",
+      "latitude": 35.323172,
+      "longitude": 129.056867,
+      "address": "경부선 상행",
+      "phone": "055-384-0144",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "언양(서울)",
+      "type": "rest_area",
+      "latitude": 35.597942,
+      "longitude": 129.141801,
+      "address": "경부선 상행",
+      "phone": "052-263-6153",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "여산(순천)",
+      "type": "rest_area",
+      "latitude": 36.048555,
+      "longitude": 127.102333,
+      "address": "호남선 하행",
+      "phone": "063-836-5280",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "여산(천안)",
+      "type": "rest_area",
+      "latitude": 36.048528,
+      "longitude": 127.104716,
+      "address": "호남선 상행",
+      "phone": "063-836-5168",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "여주(강릉)",
+      "type": "rest_area",
+      "latitude": 37.238022,
+      "longitude": 127.568892,
+      "address": "영동선 하행",
+      "phone": "031-882-3120",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "여주(인천)",
+      "type": "rest_area",
+      "latitude": 37.239739,
+      "longitude": 127.569949,
+      "address": "영동선 상행",
+      "phone": "031-882-2900",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "영산(창원)",
+      "type": "rest_area",
+      "latitude": 35.429794,
+      "longitude": 128.495915,
+      "address": "중부내륙지선 하행",
+      "phone": "055-521-2978",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "영천(대구)",
+      "type": "rest_area",
+      "latitude": 36.053254,
+      "longitude": 129.044422,
+      "address": "대구포항선 하행",
+      "phone": "054-338-0037",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "영천(포항)",
+      "type": "rest_area",
+      "latitude": 36.051451,
+      "longitude": 129.042544,
+      "address": "대구포항선 상행",
+      "phone": "054-338-0062",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "예산(당진)",
+      "type": "rest_area",
+      "latitude": 36.619429,
+      "longitude": 126.846389,
+      "address": "당진영덕선 하행",
+      "phone": "041-335-0020",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "예산(대전)",
+      "type": "rest_area",
+      "latitude": 36.6234601,
+      "longitude": 126.839619,
+      "address": "당진영덕선 상행",
+      "phone": "041-334-0094",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "오수(순천)",
+      "type": "rest_area",
+      "latitude": 35.540925,
+      "longitude": 127.309267,
+      "address": "순천완주선 하행",
+      "phone": "063-644-6116",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "오수(완주)",
+      "type": "rest_area",
+      "latitude": 35.540271,
+      "longitude": 127.311622,
+      "address": "순천완주선 상행",
+      "phone": "063-644-5115",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "오창(남이)",
+      "type": "rest_area",
+      "latitude": 36.758481,
+      "longitude": 127.481777,
+      "address": "중부선 하행",
+      "phone": "043-217-1477",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "오창(하남)",
+      "type": "rest_area",
+      "latitude": 36.756581,
+      "longitude": 127.481909,
+      "address": "중부선 상행",
+      "phone": "043-217-8303",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "옥계(속초)",
+      "type": "rest_area",
+      "latitude": 37.616198,
+      "longitude": 129.060129,
+      "address": "동해선 상행",
+      "phone": "033-534-1700",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "옥산(부산)",
+      "type": "rest_area",
+      "latitude": 36.657743,
+      "longitude": 127.369817,
+      "address": "경부선 하행",
+      "phone": "043-260-1053",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "옥천(부산)",
+      "type": "rest_area",
+      "latitude": 36.296863,
+      "longitude": 127.595223,
+      "address": "경부선 하행",
+      "phone": "043-731-8521",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "옥천(서울)",
+      "type": "rest_area",
+      "latitude": 36.297616,
+      "longitude": 127.598777,
+      "address": "경부선 상행",
+      "phone": "043-731-8097",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "옥천만남",
+      "type": "rest_area",
+      "latitude": 36.308718,
+      "longitude": 127.572308,
+      "address": "경부선 양방향",
+      "phone": "043-732-0081",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "와촌(포항)",
+      "type": "rest_area",
+      "latitude": 35.951819,
+      "longitude": 128.775563,
+      "address": "대구포항선 상행",
+      "phone": "053-853-1002",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "외동(부산)",
+      "type": "rest_area",
+      "latitude": 35.672753,
+      "longitude": 129.285277,
+      "address": "울산포항선 하행",
+      "phone": "054-745-0637",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "외동(포항)",
+      "type": "rest_area",
+      "latitude": 35.672847,
+      "longitude": 129.288543,
+      "address": "울산포항선 상행",
+      "phone": "054-745-0631",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "용인(강릉)",
+      "type": "rest_area",
+      "latitude": 37.245583,
+      "longitude": 127.2419801,
+      "address": "영동선 하행",
+      "phone": "031-339-3663",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "용인(인천)",
+      "type": "rest_area",
+      "latitude": 37.248318,
+      "longitude": 127.238342,
+      "address": "영동선 상행",
+      "phone": "031-339-3660",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "울주(울산)",
+      "type": "rest_area",
+      "latitude": 35.510821,
+      "longitude": 129.130435,
+      "address": "밀양울산선 상행",
+      "phone": "052-977-3243",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "울주(함양)",
+      "type": "rest_area",
+      "latitude": 35.5131601,
+      "longitude": 129.128519,
+      "address": "밀양울산선 하행",
+      "phone": "052-933-5242",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "원주(부산)",
+      "type": "rest_area",
+      "latitude": 37.435194,
+      "longitude": 127.929063,
+      "address": "중앙선 하행",
+      "phone": "033-731-4291",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "원주(춘천)",
+      "type": "rest_area",
+      "latitude": 37.434542,
+      "longitude": 127.931768,
+      "address": "중앙선 상행",
+      "phone": "033-731-8194",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "음성(남이)",
+      "type": "rest_area",
+      "latitude": 37.019638,
+      "longitude": 127.480712,
+      "address": "중부선 하행",
+      "phone": "043-878-6410",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "음성(하남)",
+      "type": "rest_area",
+      "latitude": 37.022065,
+      "longitude": 127.484315,
+      "address": "중부선 상행",
+      "phone": "043-878-6403",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "의성(영덕)",
+      "type": "rest_area",
+      "latitude": 36.409501,
+      "longitude": 128.447699,
+      "address": "상주영덕선 하행",
+      "phone": "054-862-9252",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "의성(청주)",
+      "type": "rest_area",
+      "latitude": 36.410954,
+      "longitude": 128.4447101,
+      "address": "상주영덕선 상행",
+      "phone": "054-862-9076",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "이서(순천)",
+      "type": "rest_area",
+      "latitude": 35.803936,
+      "longitude": 127.023705,
+      "address": "호남선 하행",
+      "phone": "063-227-4114",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "이서(천안)",
+      "type": "rest_area",
+      "latitude": 35.801932,
+      "longitude": 127.025759,
+      "address": "호남선 상행",
+      "phone": "063-236-2592",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "이천(남이)",
+      "type": "rest_area",
+      "latitude": 37.264574,
+      "longitude": 127.403687,
+      "address": "중부선 하행",
+      "phone": "031-637-0987",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "이천(하남)",
+      "type": "rest_area",
+      "latitude": 37.293979,
+      "longitude": 127.378203,
+      "address": "중부선 상행",
+      "phone": "031-638-1117",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "입장거봉포도(서울)",
+      "type": "rest_area",
+      "latitude": 36.942997,
+      "longitude": 127.192467,
+      "address": "경부선 상행",
+      "phone": "041-588-7868",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "장유(서부산)",
+      "type": "rest_area",
+      "latitude": 35.212074,
+      "longitude": 128.7935801,
+      "address": "남해선 하행",
+      "phone": "055-313-2610",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "장흥정남진",
+      "type": "rest_area",
+      "latitude": 34.720894,
+      "longitude": 126.931319,
+      "address": "남해선 양방향",
+      "phone": "061-864-5007",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "정읍녹두장군(순천)",
+      "type": "rest_area",
+      "latitude": 35.601465,
+      "longitude": 126.862006,
+      "address": "호남선 하행",
+      "phone": "063-532-0510",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "정읍녹두장군(천안)",
+      "type": "rest_area",
+      "latitude": 35.599975,
+      "longitude": 126.864336,
+      "address": "호남선 상행",
+      "phone": "063-532-2373",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "주암(순천)",
+      "type": "rest_area",
+      "latitude": 35.076197,
+      "longitude": 127.2641001,
+      "address": "호남선 하행",
+      "phone": "061-754-4980",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "주암(천안)",
+      "type": "rest_area",
+      "latitude": 35.076587,
+      "longitude": 127.265762,
+      "address": "호남선 상행",
+      "phone": "061-754-2432",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "죽암(부산)",
+      "type": "rest_area",
+      "latitude": 36.4868101,
+      "longitude": 127.429261,
+      "address": "경부선 하행",
+      "phone": "043-269-0850",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "죽암(서울)",
+      "type": "rest_area",
+      "latitude": 36.496775,
+      "longitude": 127.4306501,
+      "address": "경부선 상행",
+      "phone": "043-260-8035",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "죽전(서울)",
+      "type": "rest_area",
+      "latitude": 37.332371,
+      "longitude": 127.104795,
+      "address": "경부선 상행",
+      "phone": "031-262-3168",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "지리산(광주)",
+      "type": "rest_area",
+      "latitude": 35.483942,
+      "longitude": 127.567106,
+      "address": "광주대구선 하행",
+      "phone": "063-636-7195",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "지리산(대구)",
+      "type": "rest_area",
+      "latitude": 35.481353,
+      "longitude": 127.566804,
+      "address": "광주대구선 상행",
+      "phone": "063-636-7191",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "진안마이산(익산)",
+      "type": "rest_area",
+      "latitude": 35.777898,
+      "longitude": 127.425279,
+      "address": "익산장수선 하행",
+      "phone": "063-432-1380",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "진안마이산(장수)",
+      "type": "rest_area",
+      "latitude": 35.7748201,
+      "longitude": 127.426362,
+      "address": "익산장수선 상행",
+      "phone": "063-432-6350",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "진영(부산)",
+      "type": "rest_area",
+      "latitude": 35.2779101,
+      "longitude": 128.715388,
+      "address": "남해선 상행",
+      "phone": "055-334-8700",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "진영(순천)",
+      "type": "rest_area",
+      "latitude": 35.280059,
+      "longitude": 128.716044,
+      "address": "남해선 하행",
+      "phone": "055-342-3959",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "진주(부산)",
+      "type": "rest_area",
+      "latitude": 35.159772,
+      "longitude": 128.1220101,
+      "address": "남해선 상행",
+      "phone": "055-759-3205",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "처인",
+      "type": "rest_area",
+      "latitude": 37.3418541,
+      "longitude": 127.218541,
+      "address": "세종포천선 양방향",
+      "phone": "031-323-5325",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "천등산(제천)",
+      "type": "rest_area",
+      "latitude": 37.061597,
+      "longitude": 127.939378,
+      "address": "평택제천선 하행",
+      "phone": "043-844-2991",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "천등산(평택)",
+      "type": "rest_area",
+      "latitude": 37.076872,
+      "longitude": 127.989171,
+      "address": "평택제천선 상행",
+      "phone": "043-844-2930",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "천안삼거리(서울)",
+      "type": "rest_area",
+      "latitude": 36.787809,
+      "longitude": 127.173455,
+      "address": "경부선 상행",
+      "phone": "041-551-2480",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "천안호두(부산)",
+      "type": "rest_area",
+      "latitude": 36.730226,
+      "longitude": 127.263879,
+      "address": "경부선 하행",
+      "phone": "041-552-4560",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "청송(영덕)",
+      "type": "rest_area",
+      "latitude": 36.455725,
+      "longitude": 129.0131901,
+      "address": "상주영덕선 상행",
+      "phone": "054-873-9102",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "청송(청주)",
+      "type": "rest_area",
+      "latitude": 36.456721,
+      "longitude": 129.012028,
+      "address": "상주영덕선 하행",
+      "phone": "054-873-5911",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "청주(서울)",
+      "type": "rest_area",
+      "latitude": 36.716005,
+      "longitude": 127.349315,
+      "address": "경부선 상행",
+      "phone": "043-237-1700",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "청통(대구)",
+      "type": "rest_area",
+      "latitude": 35.993928,
+      "longitude": 128.859145,
+      "address": "대구포항선 하행",
+      "phone": "054-337-5009",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "추풍령(부산)",
+      "type": "rest_area",
+      "latitude": 36.200356,
+      "longitude": 128.000331,
+      "address": "경부선 하행",
+      "phone": "054-430-2000",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "추풍령(서울)",
+      "type": "rest_area",
+      "latitude": 36.199708,
+      "longitude": 128.003242,
+      "address": "경부선 상행",
+      "phone": "054-439-3187",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "춘천(부산)",
+      "type": "rest_area",
+      "latitude": 37.8126801,
+      "longitude": 127.766078,
+      "address": "중앙선 하행",
+      "phone": "033-264-0500",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "춘향(순천)",
+      "type": "rest_area",
+      "latitude": 35.3367566,
+      "longitude": 127.3515503,
+      "address": "순천완주선 하행",
+      "phone": "063-631-2020",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "춘향(완주)",
+      "type": "rest_area",
+      "latitude": 35.3376914,
+      "longitude": 127.3537495,
+      "address": "순천완주선 상행",
+      "phone": "063-635-6688",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "충주(양평)",
+      "type": "rest_area",
+      "latitude": 37.023175,
+      "longitude": 127.839297,
+      "address": "중부내륙선 상행",
+      "phone": "043-857-9229",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "충주(창원)",
+      "type": "rest_area",
+      "latitude": 37.022229,
+      "longitude": 127.837071,
+      "address": "중부내륙선 하행",
+      "phone": "043-857-9339",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "치악(부산)",
+      "type": "rest_area",
+      "latitude": 37.253647,
+      "longitude": 128.048514,
+      "address": "중앙선 상행",
+      "phone": "033-762-9234",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "치악(춘천)",
+      "type": "rest_area",
+      "latitude": 37.256692,
+      "longitude": 128.0488701,
+      "address": "중앙선 하행",
+      "phone": "033-762-8030",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "칠곡(부산)",
+      "type": "rest_area",
+      "latitude": 36.019795,
+      "longitude": 128.428517,
+      "address": "경부선 하행",
+      "phone": "054-975-2277",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "칠곡(서울)",
+      "type": "rest_area",
+      "latitude": 36.012005,
+      "longitude": 128.4308001,
+      "address": "경부선 상행",
+      "phone": "054-975-1883",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "칠서(양평)",
+      "type": "rest_area",
+      "latitude": 35.3708801,
+      "longitude": 128.496807,
+      "address": "중부내륙지선 상행",
+      "phone": "055-587-9656",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "통도사(부산)",
+      "type": "rest_area",
+      "latitude": 35.488841,
+      "longitude": 129.090775,
+      "address": "경부선 하행",
+      "phone": "055-383-6145",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "평사(부산)",
+      "type": "rest_area",
+      "latitude": 35.885522,
+      "longitude": 128.867541,
+      "address": "경부선 하행",
+      "phone": "053-852-8651",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "평창(강릉)",
+      "type": "rest_area",
+      "latitude": 37.6055701,
+      "longitude": 128.452681,
+      "address": "영동선 하행",
+      "phone": "033-334-5100",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "평창(인천)",
+      "type": "rest_area",
+      "latitude": 37.610876,
+      "longitude": 128.463363,
+      "address": "영동선 상행",
+      "phone": "033-333-6131",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "평택",
+      "type": "rest_area",
+      "latitude": 37.045585,
+      "longitude": 126.943774,
+      "address": "평택제천선 양방향",
+      "phone": "031-683-4800",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "하남드림",
+      "type": "rest_area",
+      "latitude": 37.530281,
+      "longitude": 127.206084,
+      "address": "중부선 양방향",
+      "phone": "031-791-4200",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "함안(부산)",
+      "type": "rest_area",
+      "latitude": 35.294068,
+      "longitude": 128.346957,
+      "address": "남해선 상행",
+      "phone": "055-582-2191",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "함안(순천)",
+      "type": "rest_area",
+      "latitude": 35.294701,
+      "longitude": 128.344767,
+      "address": "남해선 하행",
+      "phone": "055-582-5470",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "함양(대전)",
+      "type": "rest_area",
+      "latitude": 35.551611,
+      "longitude": 127.7604201,
+      "address": "대전통영선 상행",
+      "phone": "055-963-8001",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "함양(통영)",
+      "type": "rest_area",
+      "latitude": 35.551322,
+      "longitude": 127.758563,
+      "address": "대전통영선 하행",
+      "phone": "055-963-6717",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "함평나비(광주)",
+      "type": "rest_area",
+      "latitude": 35.037283,
+      "longitude": 126.511676,
+      "address": "무안광주선 상행",
+      "phone": "061-324-8840",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "함평나비(무안)",
+      "type": "rest_area",
+      "latitude": 35.038198,
+      "longitude": 126.508813,
+      "address": "무안광주선 하행",
+      "phone": "061-324-8858",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "함평천지(목포)",
+      "type": "rest_area",
+      "latitude": 35.069687,
+      "longitude": 126.478247,
+      "address": "서해안선 하행",
+      "phone": "061-323-3751",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "함평천지(서울)",
+      "type": "rest_area",
+      "latitude": 35.130746,
+      "longitude": 126.482295,
+      "address": "서해안선 상행",
+      "phone": "061-323-3641",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "행담도",
+      "type": "rest_area",
+      "latitude": 36.944819,
+      "longitude": 126.807525,
+      "address": "서해안선 양방향",
+      "phone": "041-358-0700",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "현풍(대구)",
+      "type": "rest_area",
+      "latitude": 35.701841,
+      "longitude": 128.4381001,
+      "address": "중부내륙지선 상행",
+      "phone": "053-615-0337",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "현풍(창원)",
+      "type": "rest_area",
+      "latitude": 35.701783,
+      "longitude": 128.435359,
+      "address": "중부내륙지선 하행",
+      "phone": "053-614-2436",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "홍성(목포)",
+      "type": "rest_area",
+      "latitude": 36.552584,
+      "longitude": 126.579514,
+      "address": "서해안선 하행",
+      "phone": "041-642-1151",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "홍성(서울)",
+      "type": "rest_area",
+      "latitude": 36.5524301,
+      "longitude": 126.5818701,
+      "address": "서해안선 상행",
+      "phone": "041-642-1172",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "홍천(서울)",
+      "type": "rest_area",
+      "latitude": 37.758898,
+      "longitude": 128.0065801,
+      "address": "서울양양선 상행",
+      "phone": "033-436-9000",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "홍천(양양)",
+      "type": "rest_area",
+      "latitude": 37.757369,
+      "longitude": 128.003099,
+      "address": "서울양양선 하행",
+      "phone": "033-436-3000",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "홍천강(춘천)",
+      "type": "rest_area",
+      "latitude": 37.712386,
+      "longitude": 127.827719,
+      "address": "중앙선 상행",
+      "phone": "033-435-1201",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "화서(영덕)",
+      "type": "rest_area",
+      "latitude": 36.444053,
+      "longitude": 127.922637,
+      "address": "당진영덕선 상행",
+      "phone": "054-531-1982",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "화성(목포)",
+      "type": "rest_area",
+      "latitude": 37.143612,
+      "longitude": 126.8790801,
+      "address": "서해안선 하행",
+      "phone": "031-353-8140",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "화성(서울)",
+      "type": "rest_area",
+      "latitude": 37.143497,
+      "longitude": 126.881289,
+      "address": "서해안선 상행",
+      "phone": "031-353-8143",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "황간(부산)",
+      "type": "rest_area",
+      "latitude": 36.248899,
+      "longitude": 127.8526701,
+      "address": "경부선 하행",
+      "phone": "043-742-5805",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "황간(서울)",
+      "type": "rest_area",
+      "latitude": 36.249437,
+      "longitude": 127.854835,
+      "address": "경부선 상행",
+      "phone": "043-742-7633",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "황전(순천)",
+      "type": "rest_area",
+      "latitude": 35.148905,
+      "longitude": 127.454145,
+      "address": "순천완주선 하행",
+      "phone": "061-782-1135",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "황전(완주)",
+      "type": "rest_area",
+      "latitude": 35.153306,
+      "longitude": 127.454683,
+      "address": "순천완주선 상행",
+      "phone": "061-782-1154",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "횡성(강릉)",
+      "type": "rest_area",
+      "latitude": 37.462755,
+      "longitude": 128.133969,
+      "address": "영동선 하행",
+      "phone": "033-342-4231",
+      "source": "nationwide_rest_area_json_20260126"
+    },
+    {
+      "name": "횡성(인천)",
+      "type": "rest_area",
+      "latitude": 37.464983,
+      "longitude": 128.135449,
+      "address": "영동선 상행",
+      "phone": "033-342-4200",
+      "source": "nationwide_rest_area_json_20260126"
+    }
+  ]
+}
