@@ -824,12 +824,12 @@ export default function MatchingDetailPage() {
     setPingConfirming(true);
     try {
       await confirmPing(segmentId);
-    } catch {
-      // 무시 — 이미 응답했거나 핑 미발송 상태
-    } finally {
-      setPingConfirming(false);
       setPingStatus("confirmed");
       setTimeout(() => setPingBannerVisible(false), 1500);
+    } catch {
+      setPingBannerVisible(true);
+    } finally {
+      setPingConfirming(false);
     }
   }
 
@@ -866,7 +866,7 @@ export default function MatchingDetailPage() {
     setLocationChanging(true);
     try {
       const res = await changeHandoverLocation(segmentId, waypointId);
-      setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, ...res.dropoff_location } }));
+      setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, ...res.dropoff_location, lat, lng } }));
     } catch {
       // 백엔드 미연결 시 로컬 업데이트로 대체
       setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, name, address, lat, lng } }));
