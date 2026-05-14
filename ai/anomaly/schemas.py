@@ -9,7 +9,7 @@ DecisionType = Literal[
     "admin_alert",
     "no_show_candidate",
     "chain_break_candidate",
-    "reematch_candidate",
+    "rematch_candidate",
     "penalty_candidate",
 ]
 
@@ -35,7 +35,7 @@ class SosEvent(BaseModel):
     volunteer_id: int
     latitude: float
     longitude: float
-    activity_region: str
+    activity_region: str | None = None
 
 
 class NeedsVerifyEvent(BaseModel):
@@ -72,7 +72,7 @@ class BackupExhaustedEvent(BaseModel):
 
 class PingNoResponseEvent(BaseModel):
     segment_id: int
-    chain_id: int
+    chain_id: int | None = None
     volunteer_id: int
     volunteer_name: str
     scheduled_time: datetime

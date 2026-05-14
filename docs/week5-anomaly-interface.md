@@ -1,11 +1,11 @@
 # Week5 Anomaly Detector Interface
 
-## 개요
+## Overview
 
 - 역할 분리: `BE 감지 -> AI 판정 -> BE 실행`
 - AI는 DB 저장이나 REST 실행 없이 `decision payload`만 반환한다.
 
-## 입력 채널
+## Input Channels
 
 - `pawrelay:sos`
 - `pawrelay:needs_verify`
@@ -14,19 +14,19 @@
 - `pawrelay:ping_no_response`
 - `pawrelay:pre_departure_no_show`
 
-## 출력 채널
+## Output Channel
 
 - `pawrelay:ai:decision`
 
-## 지역 정규화 기준
+## Region Normalization
 
 - AI는 입력 지역 문자열을 17개 시/도 공식 명칭으로 정규화한다.
-- 예:
+- 예시
   - `충남` -> `충청남도`
   - `서울` -> `서울특별시`
   - `Chungcheongnam-do` -> `충청남도`
 
-## 입력 Payload 예시
+## Input Payload Examples
 
 ### `pawrelay:sos`
 
@@ -40,8 +40,8 @@
 }
 ```
 
-예상 결과:
-- `decision = shelter_recommend` 또는 `admin_alert`
+- 현재 BE payload에는 `activity_region`이 없을 수 있다.
+- 이 경우 AI는 shelter 추천 없이 `admin_alert`로 fallback 한다.
 
 ### `pawrelay:needs_verify`
 
@@ -59,8 +59,7 @@
 }
 ```
 
-예상 결과:
-- `decision = no_show_candidate` 또는 `admin_alert`
+- 예상 결과: `no_show_candidate` 또는 `admin_alert`
 
 ### `pawrelay:checkpoint_delay`
 
@@ -79,8 +78,7 @@
 }
 ```
 
-예상 결과:
-- `delay_minutes >= 30` -> `reematch_candidate`
+- `delay_minutes >= 30` -> `rematch_candidate`
 - `delay_minutes >= 60` -> `chain_break_candidate`
 
 ### `pawrelay:backup_exhausted`
@@ -94,8 +92,7 @@
 }
 ```
 
-예상 결과:
-- `decision = shelter_recommend` 또는 `admin_alert`
+- 예상 결과: `shelter_recommend` 또는 `admin_alert`
 
 ### `pawrelay:ping_no_response`
 
@@ -112,8 +109,8 @@
 }
 ```
 
-예상 결과:
-- `decision = admin_alert`
+- 현재 BE payload에는 `chain_id`가 없을 수 있다.
+- 이 경우에도 AI validation 없이 `admin_alert` 판단은 가능하다.
 
 ### `pawrelay:pre_departure_no_show`
 
@@ -130,12 +127,12 @@
 }
 ```
 
-예상 결과:
-- `decision = penalty_candidate`
-- `requires_chain_break = true`
-- `penalty_days = 30`
+- 예상 결과:
+  - `decision = penalty_candidate`
+  - `requires_chain_break = true`
+  - `penalty_days = 30`
 
-## 출력 Payload 예시
+## Output Payload Example
 
 ```json
 {
@@ -159,17 +156,17 @@
 - `admin_alert`
 - `no_show_candidate`
 - `chain_break_candidate`
-- `reematch_candidate`
+- `rematch_candidate`
 - `penalty_candidate`
 
-## 기준값
+## Config
 
 - `RE_MATCH_DELAY_MINUTES = 30`
 - `CHAIN_BREAK_DELAY_MINUTES = 60`
 - `NO_SHOW_PENALTY_DAYS = 30`
 - `NEEDS_VERIFY_GRACE_MINUTES = 30`
 
-## 참고
+## Notes
 
 - 보호소 추천은 `data/shelter.json`을 기준으로 한다.
 - AI는 판정만 수행하고, 실제 실행은 BE가 담당한다.

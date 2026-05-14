@@ -27,7 +27,8 @@ def _chain_id(event):
 def _regions(event):
     if hasattr(event, "activity_regions"):
         return normalize_regions(event.activity_regions)
-    return [normalize_region(event.activity_region)]
+    region = normalize_region(getattr(event, "activity_region", None))
+    return [region] if region else []
 
 
 def _decision(event_type, event, decision, reason, shelters, **extra):
@@ -65,7 +66,7 @@ def _needs_verify_reason(event):
 def _delay_decision(delay_minutes):
     if delay_minutes >= CHAIN_BREAK_DELAY_MINUTES:
         return "chain_break_candidate"
-    return "reematch_candidate"
+    return "rematch_candidate"
 
 
 def _delay_reason(event):

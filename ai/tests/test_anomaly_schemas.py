@@ -18,10 +18,9 @@ def test_parse_sos_event():
         volunteer_id=42,
         latitude=36.35,
         longitude=127.38,
-        activity_region="\ucda9\ub0a8",
     )
     assert event.segment_id == 1
-    assert event.activity_region == "\ucda9\ub0a8"
+    assert event.activity_region is None
 
 
 def test_parse_needs_verify_event():
@@ -65,7 +64,6 @@ def test_parse_backup_exhausted_event():
 def test_parse_ping_no_response_event():
     event = PingNoResponseEvent(
         segment_id=42,
-        chain_id=7,
         volunteer_id=101,
         volunteer_name="Hong",
         scheduled_time="2026-05-07T14:00:00+09:00",
@@ -74,6 +72,7 @@ def test_parse_ping_no_response_event():
         activity_regions=["\ucda9\uccad\ub0a8\ub3c4"],
     )
     assert event.volunteer_id == 101
+    assert event.chain_id is None
     assert event.activity_regions == ["\ucda9\uccad\ub0a8\ub3c4"]
 
 

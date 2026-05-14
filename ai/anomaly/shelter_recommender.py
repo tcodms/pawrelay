@@ -36,6 +36,8 @@ def _to_model(row):
 def recommend_shelters(activity_regions, shelter_path=None, limit=3):
     rows = _load_rows(shelter_path)
     regions = normalize_regions(activity_regions)
+    if not regions:
+        return []
     matched = [row for row in rows if _matches_region(row, regions)]
     selected = matched or rows
     return [_to_model(row) for row in selected[:limit]]

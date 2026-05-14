@@ -34,7 +34,7 @@ async def test_handle_needs_verify_returns_no_show_candidate():
 @pytest.mark.asyncio
 async def test_handle_checkpoint_delay_returns_reematch_candidate():
     decision = await handle_checkpoint_delay(_checkpoint_payload(35))
-    assert decision.decision == "reematch_candidate"
+    assert decision.decision == "rematch_candidate"
 
 
 @pytest.mark.asyncio
@@ -98,7 +98,17 @@ async def test_decide_routes_by_original_channels(tmp_path):
     delay = await decide(CHECKPOINT_DELAY_CHANNEL, _checkpoint_payload(35))
     assert sos.decision == "shelter_recommend"
     assert verify.decision == "no_show_candidate"
-    assert delay.decision == "reematch_candidate"
+    assert delay.decision == "rematch_candidate"
+
+
+@pytest.mark.asyncio
+async def test_handle_sos_without_region_returns_admin_alert(tmp_path):
+    shelter_path = _write_shelters(tmp_path)
+    payload = _sos_payload()
+    payload.pop("activity_region")
+    decision = await handle_sos(payload, shelter_path=shelter_path)
+    assert decision.decision == "admin_alert"
+    assert decision.recommended_shelters == []
 
 
 def _write_shelters(tmp_path):
