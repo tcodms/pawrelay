@@ -58,7 +58,7 @@ interface DashboardRelaySegment {
   from_area: string;
   to_area: string;
   depart_time?: string;
-  ping_status?: "confirmed" | "no_response" | "pending";
+  ping_status?: import("@/lib/dummy-posts").PingStatus;
 }
 
 interface DashboardPostItem {

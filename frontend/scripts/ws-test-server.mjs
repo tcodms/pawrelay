@@ -18,9 +18,9 @@ import { createServer } from "http";
 import { createInterface } from "readline";
 
 // ── ws 패키지 동적 로드 ────────────────────────────────────────────────────────
-let WebSocketServer;
+let WebSocketServer, WebSocket;
 try {
-  ({ WebSocketServer } = await import("ws"));
+  ({ WebSocketServer, WebSocket } = await import("ws"));
 } catch {
   console.error(
     "\n[ERROR] ws 패키지가 없습니다. 아래 명령어로 설치 후 다시 실행하세요.\n\n  npm install -D ws\n"
@@ -46,9 +46,14 @@ function makeUnreadResponse() {
 }
 
 // ── HTTP 서버 (WS 업그레이드 + /notifications/unread 폴백) ─────────────────────
+const ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:3001"];
+
 const httpServer = createServer((req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
 
   if (req.method === "GET" && req.url === "/notifications/unread") {
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -84,7 +89,7 @@ function broadcast(eventName, payload) {
   const msg = JSON.stringify({ event: eventName, payload });
   let sent = 0;
   wss.clients.forEach((client) => {
-    if (client.readyState === 1 /* OPEN */) {
+    if (client.readyState === WebSocket.OPEN) {
       client.send(msg);
       sent++;
     }

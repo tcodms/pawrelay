@@ -828,10 +828,10 @@ export default function ChatRoomPage() {
   useEffect(() => {
     const openMatchingId = searchParams.get("openMatching");
     if (!openMatchingId || initializing) return;
-    if (handledOpenMatchingRef.current === openMatchingId) return;
-    handledOpenMatchingRef.current = openMatchingId;
-
     const notifType = searchParams.get("notifType") ?? "matching_proposed";
+    const compositeKey = `${openMatchingId}:${notifType}`;
+    if (handledOpenMatchingRef.current === compositeKey) return;
+    handledOpenMatchingRef.current = compositeKey;
     const message =
       notifType === "matching_confirmed"
         ? "매칭이 확정됐어요! 봉사 상세 내용을 확인해 주세요. 🎉"

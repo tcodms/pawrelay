@@ -27,7 +27,48 @@ export function useDashboardWs() {
   return useContext(DashboardWsContext);
 }
 
-export function DashboardWsProvider({ children }: { children: React.ReactNode }) {
+// ── 서브 컴포넌트 ─────────────────────────────────────────────────────────────
+
+function UnreadBadge({ unreadCount }: { unreadCount: number }) {
+  if (unreadCount === 0) return null;
+  return (
+    <div
+      aria-label={`읽지 않은 알림 ${unreadCount}개`}
+      className="fixed top-4 right-14 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm"
+    >
+      <Bell size={15} className="text-gray-400" />
+      <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
+        {unreadCount > 99 ? "99+" : unreadCount}
+      </span>
+    </div>
+  );
+}
+
+function WsToastStack({ wsToasts }: { wsToasts: WsToast[] }) {
+  return (
+    <div
+      aria-live="assertive"
+      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[999999] flex flex-col items-center gap-2 pointer-events-none"
+    >
+      {wsToasts.map((t) => (
+        <div
+          key={t.id}
+          role="alert"
+          className="pointer-events-auto flex items-center gap-2.5 rounded-2xl bg-gray-100/95 px-5 py-3 shadow-lg text-[13px] font-medium text-gray-900 whitespace-nowrap"
+        >
+          {t.type === "sos"
+            ? <AlertOctagon size={14} className="shrink-0 text-red-500" />
+            : <AlertTriangle size={14} className="shrink-0 text-amber-500" />}
+          {t.message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── 상태 훅 ──────────────────────────────────────────────────────────────────
+
+function useDashboardWsState() {
   const [pingStatusMap, setPingStatusMap] = useState<Record<number, PingStatus>>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [wsToasts, setWsToasts] = useState<WsToast[]>([]);
@@ -36,10 +77,7 @@ export function DashboardWsProvider({ children }: { children: React.ReactNode })
   function addToast(type: WsToast["type"], message: string) {
     const id = ++nextIdRef.current;
     setWsToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(
-      () => setWsToasts((prev) => prev.filter((t) => t.id !== id)),
-      5000
-    );
+    setTimeout(() => setWsToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
   }
 
   function handleEvent<K extends WsEventName>(event: K, payload: WsPayloadMap[K]) {
@@ -62,65 +100,19 @@ export function DashboardWsProvider({ children }: { children: React.ReactNode })
 
   useWebSocket({ onEvent: handleEvent, onUnreadNotifications: handleUnread });
 
+  return { pingStatusMap, unreadCount, wsToasts };
+}
+
+// ── 프로바이더 ────────────────────────────────────────────────────────────────
+
+export function DashboardWsProvider({ children }: { children: React.ReactNode }) {
+  const { pingStatusMap, unreadCount, wsToasts } = useDashboardWsState();
+
   return (
     <DashboardWsContext.Provider value={{ pingStatusMap, unreadCount }}>
-      {unreadCount > 0 && (
-        <div
-          aria-label={`읽지 않은 알림 ${unreadCount}개`}
-          className="fixed top-4 right-14 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm"
-        >
-          <Bell size={15} className="text-gray-400" />
-          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        </div>
-      )}
-
+      <UnreadBadge unreadCount={unreadCount} />
       {children}
-
-      <div
-        aria-live="assertive"
-        style={{
-          position: "fixed",
-          bottom: "32px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 999999,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "8px",
-          pointerEvents: "none",
-        }}
-      >
-        {wsToasts.map((t) => (
-          <div
-            key={t.id}
-            role="alert"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              background: "rgba(243, 244, 246, 0.97)",
-              color: "#111827",
-              padding: "12px 20px",
-              borderRadius: "16px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
-              fontSize: "13px",
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-              pointerEvents: "auto",
-            }}
-          >
-            {t.type === "sos" ? (
-              <AlertOctagon size={14} style={{ color: "#ef4444", flexShrink: 0 }} />
-            ) : (
-              <AlertTriangle size={14} style={{ color: "#f59e0b", flexShrink: 0 }} />
-            )}
-            {t.message}
-          </div>
-        ))}
-      </div>
+      <WsToastStack wsToasts={wsToasts} />
     </DashboardWsContext.Provider>
   );
 }

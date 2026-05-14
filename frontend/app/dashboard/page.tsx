@@ -288,35 +288,26 @@ function PostCard({
 
 // ── Ping Status Indicator ──────────────────────────────────────────────────────
 
+function ConfirmedDot() {
+  return <span title="출발 확인됨" className="h-2 w-2 rounded-full bg-green-400 shrink-0" />;
+}
+
+function NoResponseIcon() {
+  return (
+    <svg aria-label="핑 미응답 경고" className="shrink-0 text-orange-400"
+      width="12" height="12" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    >
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 function PingStatusIndicator({ status }: { status?: PingStatus }) {
-  if (status === "confirmed") {
-    return (
-      <span
-        title="출발 확인됨"
-        className="h-2 w-2 rounded-full bg-green-400 shrink-0"
-      />
-    );
-  }
-  if (status === "no_response") {
-    return (
-      <svg
-        aria-label="핑 미응답 경고"
-        className="shrink-0 text-orange-400"
-        width="12"
-        height="12"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
-    );
-  }
+  if (status === "confirmed") return <ConfirmedDot />;
+  if (status === "no_response") return <NoResponseIcon />;
   return null;
 }
 
@@ -362,7 +353,7 @@ function InProgressCard({ post, pingStatusMap }: { post: Post; pingStatusMap: Re
                   ? (pingStatusMap[seg.segment_id] ?? seg.ping_status)
                   : seg.ping_status;
               return (
-                <div key={i} className="flex items-center gap-2">
+                <div key={seg.segment_id ?? i} className="flex items-center gap-2">
                   <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FDF3EC]">
                     <span className="text-[9px] font-bold text-[#7A4A28]">{i + 1}</span>
                   </div>

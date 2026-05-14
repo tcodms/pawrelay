@@ -43,7 +43,7 @@ export default withPWA({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: false,
+  disable: process.env.NODE_ENV === "development",
   customWorkerSrc: "worker",
   workboxOptions: {
     disableDevLogs: true,
