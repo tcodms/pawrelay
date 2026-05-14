@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.tasks import (
     approval_reminder,
     checkpoint_delay,
+    departure_no_response,
     departure_ping,
     escalation,
     handover_timeout,
@@ -80,6 +81,14 @@ def setup_scheduler() -> AsyncIOScheduler:
         departure_ping.send_departure_pings,
         trigger=IntervalTrigger(minutes=10),
         id="departure_ping",
+        replace_existing=True,
+    )
+
+    # ── 출발 1시간 전 핑 미응답 경고 (10분 간격) ──────────────
+    scheduler.add_job(
+        departure_no_response.send_departure_no_response_alerts,
+        trigger=IntervalTrigger(minutes=10),
+        id="departure_no_response",
         replace_existing=True,
     )
 
