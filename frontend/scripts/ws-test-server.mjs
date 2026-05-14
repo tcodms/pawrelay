@@ -6,7 +6,8 @@
  *
  * Commands (type in terminal after server starts):
  *   ping.confirmed <segment_id> [volunteer_name]
- *   ping.no_response <segment_id> [volunteer_name]
+ *   departure.no_response <segment_id> [volunteer_name]
+ *   handover.no_response <segment_id> [volunteer_name]
  *   delay <segment_id> [message]
  *   sos <segment_id>
  *   unread <count>        — change unread count returned by /notifications/unread
@@ -103,9 +104,10 @@ const rl = createInterface({ input: process.stdin, output: process.stdout, promp
 function printHelp() {
   console.log(`
 명령어 목록:
-  ping.confirmed <segment_id> [volunteer_name]   — 출발 확인 (초록)
-  ping.no_response <segment_id> [volunteer_name] — 핑 미응답 (주황 경고)
-  delay <segment_id> [message]                   — 지연 신고 토스트
+  ping.confirmed <segment_id> [volunteer_name]        — 출발 확인 (초록)
+  departure.no_response <segment_id> [volunteer_name] — 출발 전 미응답 (주황 경고)
+  handover.no_response <segment_id> [volunteer_name]  — 인계 코드 미응답 (주황 경고)
+  delay <segment_id> [message]                        — 지연 신고 토스트
   sos <segment_id>                               — SOS 토스트
   unread <count>                                 — /notifications/unread 응답 개수 변경
   clients                                        — 연결된 클라이언트 수
@@ -123,10 +125,20 @@ rl.on("line", (line) => {
       broadcast("ping.confirmed", { segment_id, volunteer_name });
       break;
     }
-    case "ping.no_response": {
+    case "departure.no_response": {
       const segment_id = Number(args[0] ?? 1);
       const volunteer_name = args.slice(1).join(" ") || "홍길동";
-      broadcast("ping.no_response", {
+      broadcast("departure.no_response", {
+        segment_id,
+        volunteer_name,
+        scheduled_time: new Date().toISOString(),
+      });
+      break;
+    }
+    case "handover.no_response": {
+      const segment_id = Number(args[0] ?? 1);
+      const volunteer_name = args.slice(1).join(" ") || "홍길동";
+      broadcast("handover.no_response", {
         segment_id,
         volunteer_name,
         scheduled_time: new Date().toISOString(),

@@ -84,9 +84,12 @@ function useDashboardWsState() {
     if (event === "ping.confirmed") {
       const { segment_id } = payload as WsPayloadMap["ping.confirmed"];
       setPingStatusMap((prev) => ({ ...prev, [segment_id]: "confirmed" }));
-    } else if (event === "ping.no_response") {
-      const { segment_id } = payload as WsPayloadMap["ping.no_response"];
-      setPingStatusMap((prev) => ({ ...prev, [segment_id]: "no_response" }));
+    } else if (event === "departure.no_response") {
+      const { segment_id } = payload as WsPayloadMap["departure.no_response"];
+      setPingStatusMap((prev) => ({ ...prev, [segment_id]: "departure_no_response" }));
+    } else if (event === "handover.no_response") {
+      const { segment_id } = payload as WsPayloadMap["handover.no_response"];
+      setPingStatusMap((prev) => ({ ...prev, [segment_id]: "handover_no_response" }));
     } else if (event === "delay.reported") {
       addToast("delay", (payload as WsPayloadMap["delay.reported"]).message);
     } else if (event === "sos.triggered") {

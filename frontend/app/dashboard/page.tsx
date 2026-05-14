@@ -292,9 +292,9 @@ function ConfirmedDot() {
   return <span title="출발 확인됨" className="h-2 w-2 rounded-full bg-green-400 shrink-0" />;
 }
 
-function NoResponseIcon() {
+function NoResponseIcon({ title }: { title: string }) {
   return (
-    <svg aria-label="핑 미응답 경고" className="shrink-0 text-orange-400"
+    <svg aria-label={title} title={title} className="shrink-0 text-orange-400"
       width="12" height="12" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
     >
@@ -307,7 +307,8 @@ function NoResponseIcon() {
 
 function PingStatusIndicator({ status }: { status?: PingStatus }) {
   if (status === "confirmed") return <ConfirmedDot />;
-  if (status === "no_response") return <NoResponseIcon />;
+  if (status === "departure_no_response") return <NoResponseIcon title="출발 전 미응답" />;
+  if (status === "handover_no_response") return <NoResponseIcon title="인계 코드 미응답" />;
   return null;
 }
 
