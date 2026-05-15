@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import MatchingReasonBubble from "@/components/MatchingReasonBubble";
 import { acceptMatching, declineMatching, getSegment } from "@/lib/api/matching";
-import { recordCheckpoint, verifyHandover, requestHandover, approveHandover, changeHandoverLocation, reportSOS, reportDelay } from "@/lib/api/relay";
+import { recordCheckpoint, verifyHandover, requestHandover, approveHandover, changeHandoverLocation, reportSOS, reportDelay, confirmPing } from "@/lib/api/relay";
 import { ApiError } from "@/lib/api";
 
 declare global {
@@ -75,6 +75,7 @@ function KakaoMap({ pickup, dropoff, waypointList }: { pickup: LatLng; dropoff: 
 
   useEffect(() => {
     if (!mapRef.current || !window.kakao?.maps) return;
+    if (!pickup.lat || !pickup.lng || !dropoff.lat || !dropoff.lng) return;
     const { maps } = window.kakao;
     const pickupPos  = new maps.LatLng(pickup.lat,  pickup.lng);
     const dropoffPos = new maps.LatLng(dropoff.lat, dropoff.lng);
@@ -103,17 +104,24 @@ function KakaoMap({ pickup, dropoff, waypointList }: { pickup: LatLng; dropoff: 
 function MapCard({ mapReady, pickup, dropoff, waypointList, kakaoMapUrl }: {
   mapReady: boolean; pickup: LatLng; dropoff: LatLng; waypointList: LatLng[]; kakaoMapUrl: string;
 }) {
+  const hasCoords = !!(pickup.lat && pickup.lng && dropoff.lat && dropoff.lng);
+
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
       <div className="relative w-full h-[220px] bg-gray-100">
-        {mapReady ? (
+        {!hasCoords ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
+            <MapPin size={24} strokeWidth={1.5} />
+            <p className="text-[13px]">지도 정보를 불러올 수 없습니다</p>
+          </div>
+        ) : mapReady ? (
           <KakaoMap pickup={pickup} dropoff={dropoff} waypointList={waypointList} />
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#EEA968] border-t-transparent" />
           </div>
         )}
-        {mapReady && (
+        {hasCoords && mapReady && (
           <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1">
             <div className="flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 shadow-sm backdrop-blur-sm">
               <div className="h-2.5 w-2.5 rounded-full bg-[#EEA968] shrink-0" />
@@ -654,6 +662,9 @@ export default function MatchingDetailPage() {
   const [showSOSModal, setShowSOSModal]           = useState(false);
   const [sosSending, setSosSending]               = useState(false);
   const [sosDone, setSosDone]                     = useState(false);
+  const [pingStatus, setPingStatus]               = useState<string | undefined>(undefined);
+  const [pingConfirming, setPingConfirming]       = useState(false);
+  const [pingBannerVisible, setPingBannerVisible] = useState(true);
   const [sosError, setSosError]                   = useState(false);
 
   useEffect(() => {
@@ -682,6 +693,7 @@ export default function MatchingDetailPage() {
           ...(segment.chain_segments?.length ? { chain_segments: segment.chain_segments } : {}),
         }));
         setStatus(segment.status);
+        setPingStatus(segment.ping_status);
       })
       .catch(() => {
         const fallback = segmentId === 42 ? DUMMY_CONFIRMED_SEGMENT : DUMMY_SEGMENT;
@@ -808,6 +820,19 @@ export default function MatchingDetailPage() {
     }
   }
 
+  async function handlePingConfirm() {
+    setPingConfirming(true);
+    try {
+      await confirmPing(segmentId);
+      setPingStatus("confirmed");
+      setTimeout(() => setPingBannerVisible(false), 1500);
+    } catch {
+      setPingBannerVisible(true);
+    } finally {
+      setPingConfirming(false);
+    }
+  }
+
   async function handleDelay() {
     if (!delayMessage.trim()) return;
     setDelayLoading(true);
@@ -841,7 +866,7 @@ export default function MatchingDetailPage() {
     setLocationChanging(true);
     try {
       const res = await changeHandoverLocation(segmentId, waypointId);
-      setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, ...res.dropoff_location } }));
+      setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, ...res.dropoff_location, lat, lng } }));
     } catch {
       // 백엔드 미연결 시 로컬 업데이트로 대체
       setSeg((prev) => ({ ...prev, dropoff_location: { ...prev.dropoff_location, name, address, lat, lng } }));
@@ -888,6 +913,52 @@ export default function MatchingDetailPage() {
         strategy="afterInteractive"
         onLoad={() => window.kakao.maps.load(() => setMapReady(true))}
       />
+
+      {/* 출발 확인 바텀시트 */}
+      {isAccepted && pingBannerVisible && (pingStatus === "pending" || pingStatus === "confirmed") && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
+          <div className="absolute inset-0 bg-black/40 animate-fade-in" />
+          <div className="relative w-full max-w-2xl bg-white rounded-t-3xl shadow-2xl animate-slide-up">
+            <div className="w-8 h-1 rounded-full bg-gray-200 mx-auto mt-3 mb-4" />
+            {pingStatus === "confirmed" ? (
+              <div className="px-5 pb-5 flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-[#EEA968] shrink-0" />
+                <p className="text-[14px] font-semibold text-gray-800">출발 확인 완료! 안전하게 출발하세요 🐾</p>
+              </div>
+            ) : (
+              <div className="px-5 pb-5 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-2 w-2 rounded-full bg-[#EEA968] animate-pulse shrink-0" />
+                  <div>
+                    <p className="text-[14px] font-bold text-gray-900">출발 2시간 전이에요!</p>
+                    <p className="text-[12px] text-gray-400 mt-0.5">{seg.pickup_location.name} · {seg.depart_time} 출발 — 정상 출발하실 수 있나요?</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePingConfirm}
+                    disabled={pingConfirming}
+                    className="flex-1 h-11 rounded-2xl bg-[#EEA968] text-[13px] font-bold text-white shadow-md shadow-[#EEA968]/30 disabled:opacity-50 active:scale-[0.97] transition-transform"
+                  >
+                    {pingConfirming ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        확인 중...
+                      </span>
+                    ) : "네, 출발할게요!"}
+                  </button>
+                  <button
+                    onClick={() => { setPingBannerVisible(false); setShowDelayModal(true); }}
+                    className="flex-1 h-11 rounded-2xl bg-gray-100 text-[13px] font-semibold text-gray-500 active:scale-[0.97] transition-transform"
+                  >
+                    지연될 것 같아요
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 헤더 */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-100">
